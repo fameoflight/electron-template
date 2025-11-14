@@ -1,7 +1,4 @@
 {
-  "files.readonlyInclude": {
-    "**/__generated__": true
-  },
   "json.schemas": [
     {
       "fileMatch": [
