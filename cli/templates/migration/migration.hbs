@@ -1,0 +1,45 @@
+/**
+ * {{action}} {{tableName}} table
+ *
+ * Generated on: {{timestamp}}
+{{#if description}}
+ *
+ * Changes:
+ * {{description}}
+{{/if}}
+{{#if needsTableRecreation}}
+ *
+ * ⚠️  Note: SQLite requires table recreation for schema changes that include:
+ * - Adding foreign key constraints
+ * - Modifying column types
+ * - Changing NOT NULL constraints
+ *
+ * This migration safely preserves all existing data during the recreation process.
+{{/if}}
+ */
+
+import { BaseMigration } from './BaseMigration.ts';
+import type { MigrationMetadata } from './BaseMigration.ts';
+import type { QueryRunner } from 'typeorm';
+
+export class {{className}} extends BaseMigration {
+    metadata: MigrationMetadata = {
+        name: '{{className}}',
+        tableName: '{{tableName}}',
+        action: '{{action}}' as any,
+        requiresTransaction: {{requiresTransaction}},
+        description: '{{action}} {{tableName}} table'
+    };
+
+    async up(queryRunner: QueryRunner): Promise<void> {
+        await this.executeSQL(queryRunner, `
+            {{{upSql}}}
+        `);
+    }
+
+    async down(queryRunner: QueryRunner): Promise<void> {
+        await this.executeSQL(queryRunner, `
+            {{{downSql}}}
+        `);
+    }
+}

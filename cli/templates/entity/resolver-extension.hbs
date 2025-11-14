@@ -1,0 +1,53 @@
+/**
+ * {{className}}Resolver - Custom resolver extending generated base
+ *
+ * ✅ EDIT THIS FILE to add custom queries and mutations
+ * ⚠️  This file is created once and never overwritten
+ *
+ * Generated base provides (from {{className}}ResolverBase):
+ * - Queries: {{camelName}}(id), {{pluralCamelName}}(args), {{pluralCamelName}}Array(kind)
+ * - Mutations: create, update, createUpdate, destroy, delete, restore
+ * - Helpers: validateInput() (from BaseResolver)
+ *
+ * Add your custom business logic below!
+ */
+
+import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import { {{className}}ResolverBase } from './__generated__/{{className}}ResolverBase.js';
+import { {{className}} } from '@db/entities/{{className}}.js';
+import type { GraphQLContext } from '@shared/types';
+
+@Resolver(() => {{className}})
+export class {{className}}Resolver extends {{className}}ResolverBase {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Custom Queries
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Example: Get entities for current user
+  // @Query(() => [{{className}}], { description: 'Get my {{pluralCamelName}}' })
+  // async my{{className}}s(@Ctx() ctx: GraphQLContext): Promise<{{className}}[]> {
+  //   return await this.getRepository(ctx).find({
+  //     where: { userId: ctx.userId }
+  //   });
+  // }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Custom Mutations
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Example: Custom business logic mutation
+  // @Mutation(() => {{className}}, { description: 'Publish {{camelName}}' })
+  // async publish{{className}}(
+  //   @Arg('id', () => String) id: string,
+  //   @Ctx() ctx: GraphQLContext
+  // ): Promise<{{className}}> {
+  //   const entity = await this.getRepository(ctx).findOneOrFail({ where: { id } });
+  //
+  //   // Reuse inherited helpers!
+  //   // Ownership is now handled automatically by RelayRepository
+  //
+  //   entity.published = true;
+  //   await this.getRepository(ctx).save(entity);
+  //   return entity;
+  // }
+}

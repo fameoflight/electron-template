@@ -1,0 +1,62 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "Message",
+  "description": "Message entity for individual chat messages with versioning support",
+  "indexes": [
+    "chatId",
+    "createdAt",
+    [
+      "chatId",
+      "createdAt"
+    ]
+  ],
+  "graphql": [
+    "update",
+    "delete",
+    "destroy",
+    "list",
+    "array",
+    "single"
+  ],
+  "fields": {
+    "chat": {
+      "type": "relation",
+      "required": true,
+      "description": "Parent chat ID",
+      "relation": {
+        "entity": "Chat",
+        "type": "many-to-one",
+        "onDelete": "CASCADE",
+        "onUpdate": "CASCADE"
+      }
+    },
+    "role": {
+      "type": "enum",
+      "enum": [
+        "user",
+        "assistant",
+        "system"
+      ],
+      "required": true,
+      "description": "Message role in conversation"
+    },
+    "currentVersion": {
+      "type": "relation",
+      "required": true,
+      "description": "Current version of the message",
+      "relation": {
+        "entity": "MessageVersion",
+        "type": "one-to-one"
+      }
+    },
+    "llmModel": {
+      "type": "relation",
+      "required": false,
+      "description": "LLM model ID used for this message (for user messages)",
+      "relation": {
+        "entity": "LLMModel",
+        "type": "many-to-one"
+      }
+    }
+  }
+}

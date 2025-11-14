@@ -1,0 +1,86 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "MessageVersion",
+  "description": "Message version entity for supporting response regeneration and version comparison",
+  "indexes": [
+    "messageId",
+    "llmModelId",
+    "createdAt",
+    [
+      "messageId",
+      "createdAt"
+    ],
+    [
+      "llmModelId",
+      "createdAt"
+    ]
+  ],
+  "fields": {
+    "message": {
+      "type": "relation",
+      "required": false,
+      "description": "Parent message ID",
+      "relation": {
+        "entity": "Message",
+        "type": "many-to-one"
+      }
+    },
+    "content": {
+      "type": "text",
+      "required": true,
+      "description": "Version-specific message content"
+    },
+    "llmModel": {
+      "type": "relation",
+      "required": true,
+      "description": "LLM model used to generate this version",
+      "relation": {
+        "entity": "LLMModel",
+        "type": "many-to-one"
+      }
+    },
+    "isRegenerated": {
+      "type": "boolean",
+      "required": true,
+      "default": false,
+      "description": "Whether this version is a regeneration of an original response"
+    },
+    "parentVersion": {
+      "type": "relation",
+      "required": false,
+      "description": "Previous version for regeneration lineage tracking",
+      "relation": {
+        "entity": "MessageVersion",
+        "type": "many-to-one"
+      }
+    },
+    "contextTokens": {
+      "type": "number",
+      "required": false,
+      "description": "Number of tokens used in conversation context for generation"
+    },
+    "generationTime": {
+      "type": "number",
+      "required": false,
+      "description": "Time in milliseconds taken to generate this response"
+    },
+    "contextMetadata": {
+      "type": "json",
+      "required": false,
+      "description": "Additional metadata about context used for generation (e.g., document sources, summary info)"
+    },
+    "status": {
+      "type": "enum",
+      "enum": [
+        "pending",
+        "streaming",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "required": true,
+      "description": "Version status for tracking streaming state",
+      "default": "pending"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Perfect grid: 4px margins, 4px gap, resulting in 100x100 squares -->
+  
+  <!-- Top Left - Fork -->
+  <rect x="26" y="26" width="100" height="100" rx="2" fill="#1890ff"/>
+  <path d="M 76 96 L 76 72 M 76 72 L 62 58 M 76 72 L 90 58" 
+        stroke="#ffffff" 
+        stroke-width="3" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        fill="none"/>
+  
+  <!-- Top Right - Regenerate -->
+  <rect x="130" y="26" width="100" height="100" rx="2" fill="#1890ff"/>
+  <path d="M 200 72 A 24 24 0 1 1 176 96" 
+        stroke="#ffffff" 
+        stroke-width="3" 
+        stroke-linecap="round" 
+        fill="none"/>
+  <polygon points="176,96 171,90 181,92" fill="#ffffff"/>
+  
+  <!-- Bottom Left - Context Management -->
+  <rect x="26" y="130" width="100" height="100" rx="2" fill="#1890ff"/>
+  <line x1="50" y1="170" x2="102" y2="170" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <line x1="50" y1="180" x2="102" y2="180" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <line x1="50" y1="190" x2="102" y2="190" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Bottom Right - OPEN BOX (lighter shade to indicate open state) -->
+  <rect x="130" y="130" width="100" height="100" rx="2" fill="#40a9ff"/>
+  
+  <!-- Thin lid line at top -->
+  <rect x="130" y="130" width="100" height="6" rx="2" fill="#1890ff" opacity="0.3"/>
+  
+  <!-- Content dots emerging -->
+  <circle cx="170" cy="170" r="3" fill="#ffffff"/>
+  <circle cx="180" cy="180" r="4" fill="#ffffff"/>
+  <circle cx="190" cy="175" r="3" fill="#ffffff"/>
+  
+</svg>

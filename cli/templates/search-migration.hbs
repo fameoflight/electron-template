@@ -1,0 +1,107 @@
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+/**
+ * Add FTS5 (Full-Text Search) support for {{className}} entity
+ * Generated: {{timestamp}}
+ *
+ * This migration is idempotent - it safely removes existing FTS5 setup
+ * before creating the new one, allowing for easy regeneration.
+ */
+export class {{migrationName}} implements MigrationInterface {
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // 0. Clean up existing FTS5 setup (if any) - makes migration idempotent
+    await this.cleanupExistingFTS(queryRunner);
+
+    // 1. Create FTS5 virtual table (standalone, not external content)
+    await queryRunner.query(`
+      CREATE VIRTUAL TABLE {{ftsTableName}} USING fts5(
+        id UNINDEXED,
+        {{#each searchFields}}
+        {{this}}{{#unless @last}}, {{/unless}}{{/each}}
+      );
+    `);
+
+    // 2. Populate existing data (exclude soft-deleted records)
+    {{#if hasSoftDelete}}
+    await queryRunner.query(`
+      INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+      SELECT id, {{searchFieldsList}} FROM {{tableName}} WHERE deletedAt IS NULL;
+    `);
+    {{else}}
+    await queryRunner.query(`
+      INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+      SELECT id, {{searchFieldsList}} FROM {{tableName}};
+    `);
+    {{/if}}
+
+    // 3. Create triggers for automatic sync
+    await queryRunner.query(`
+      CREATE TRIGGER {{ftsTableName}}_insert AFTER INSERT ON {{tableName}} BEGIN
+        INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+        VALUES (new.id, {{{searchFieldsInsert}}});
+      END;
+    `);
+
+    await queryRunner.query(`
+      CREATE TRIGGER {{ftsTableName}}_update AFTER UPDATE ON {{tableName}} BEGIN
+        UPDATE {{ftsTableName}}
+        SET {{{searchFieldsUpdate}}}
+        WHERE id = old.id;
+      END;
+    `);
+
+    await queryRunner.query(`
+      CREATE TRIGGER {{ftsTableName}}_delete AFTER DELETE ON {{tableName}} BEGIN
+        DELETE FROM {{ftsTableName}} WHERE id = old.id;
+      END;
+    `);
+
+    {{#if hasSoftDelete}}
+    // 4. Soft delete handling (exclude from FTS when soft-deleted)
+    await queryRunner.query(`
+      CREATE TRIGGER {{ftsTableName}}_soft_delete AFTER UPDATE ON {{tableName}}
+      WHEN new.deletedAt IS NOT NULL AND old.deletedAt IS NULL
+      BEGIN
+        DELETE FROM {{ftsTableName}} WHERE id = old.id;
+      END;
+    `);
+
+    await queryRunner.query(`
+      CREATE TRIGGER {{ftsTableName}}_restore AFTER UPDATE ON {{tableName}}
+      WHEN new.deletedAt IS NULL AND old.deletedAt IS NOT NULL
+      BEGIN
+        INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+        VALUES (new.id, {{{searchFieldsInsert}}});
+      END;
+    `);
+    {{/if}}
+  }
+
+  /**
+   * Clean up existing FTS5 setup to make migration idempotent
+   */
+  private async cleanupExistingFTS(queryRunner: QueryRunner): Promise<void> {
+    // Drop triggers in reverse order of creation
+    const triggers = [
+      {{#if hasSoftDelete}}
+      '{{ftsTableName}}_restore',
+      '{{ftsTableName}}_soft_delete',
+      {{/if}}
+      '{{ftsTableName}}_delete',
+      '{{ftsTableName}}_update',
+      '{{ftsTableName}}_insert'
+    ];
+
+    for (const trigger of triggers) {
+      await queryRunner.query(`DROP TRIGGER IF EXISTS ${trigger};`);
+    }
+
+    // Drop the virtual table
+    await queryRunner.query(`DROP TABLE IF EXISTS {{ftsTableName}};`);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Reuse cleanup logic for consistency
+    await this.cleanupExistingFTS(queryRunner);
+  }
+}

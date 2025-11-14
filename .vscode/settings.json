@@ -1,0 +1,99 @@
+{
+  "files.readonlyInclude": {
+    "**/__generated__": true
+  },
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "schemas/*.json"
+      ],
+      "schema": "./schemas/entity-schema.json"
+    }
+  ],
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-ssr": true,
+    "**/dist-electron": true,
+    "**/build": true,
+    "**/out": true,
+    "**/release": true,
+    "**/.cache": true,
+    "**/.temp": true,
+    "**/.tmp": true,
+    "**/coverage": true,
+    "**/.nyc_output": true,
+    "**/.next": true,
+    "**/.nuxt": true,
+    "**/.tailwind-output-cache": true,
+    "**/.eslintcache": true,
+    "**/.tsbuildinfo": true,
+    "**/*.tsbuildinfo": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-ssr": true,
+    "**/dist-electron": true,
+    "**/build": true,
+    "**/out": true,
+    "**/release": true,
+    "**/.cache": true,
+    "**/.temp": true,
+    "**/.tmp": true,
+    "**/coverage": true,
+    "**/.nyc_output": true,
+    "**/.next": true,
+    "**/.nuxt": true,
+    "**/.tailwind-output-cache": true,
+    "**/.eslintcache": true,
+    "**/*.tsbuildinfo": true,
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/dist-ssr/**": true,
+    "**/dist-electron/**": true,
+    "**/build/**": true,
+    "**/out/**": true,
+    "**/release/**": true,
+    "**/.cache/**": true,
+    "**/.temp/**": true,
+    "**/.tmp/**": true,
+    "**/coverage/**": true,
+    "**/.nyc_output/**": true,
+    "**/.next/**": true,
+    "**/.nuxt/**": true,
+    "**/.tailwind-output-cache/**": true,
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  },
+  "tailwindCSS.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    [
+      "cva\\(([^)]*)\\)",
+      "[\"'`]([^\"'`]*).*?[\"'`]"
+    ],
+    [
+      "cx\\(([^)]*)\\)",
+      "(?:'|\"|`)([^']*)(?:'|\"|`)"
+    ]
+  ],
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.workspaceSymbols.scope": "allOpenProjects"
+}

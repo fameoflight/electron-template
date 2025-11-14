@@ -1,0 +1,77 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "Connection",
+  "description": "Connection entity",
+  "indexes": [
+    "userId"
+  ],
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "description": "Name of the connection"
+    },
+    "apiKey": {
+      "type": "string",
+      "required": true,
+      "description": "API key for the connection"
+    },
+    "baseUrl": {
+      "type": "string",
+      "required": true,
+      "description": "Base URL for the connection"
+    },
+    "kind": {
+      "type": "enum",
+      "enum": [
+        "OPENAI",
+        "ANTHROPIC"
+      ],
+      "default": "OPENAI",
+      "required": true,
+      "description": "Connection kind"
+    },
+    "provider": {
+      "type": "string",
+      "required": false,
+      "description": "Provider name for the connection"
+    },
+    "customHeaders": {
+      "type": "json",
+      "required": false,
+      "description": "Custom headers for the connection"
+    },
+    "models": {
+      "type": "json",
+      "required": false,
+      "description": "AI models used in creating or analyzing this post",
+      "array": true,
+      "graphql": [
+        "object"
+      ],
+      "itemSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "version",
+          "provider"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_comment": "Copy this file to .notarization.json and fill in your actual values",
+  "appleId": "your-apple-id@example.com",
+  "appleIdPassword": "app-specific-password-here",
+  "teamId": "ABCD123456",
+  "certificate": "Developer ID Application: Your Name (ABCD123456)",
+  "certificatePassword": "",
+  "provider": "YourTeamName",
+  "bundleId": "com.yourcompany.yourapp"
+}

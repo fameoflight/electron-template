@@ -1,0 +1,68 @@
+/**
+ * {{className}}Inputs - Custom inputs extending generated bases
+ *
+ * ✅ EDIT THIS FILE to add custom validation or computed fields
+ * ⚠️  This file is created once and never overwritten
+ *
+ * Generated bases provide (from {{className}}InputsBase):
+ * - Create{{className}}InputBase - All entity fields for creation
+ * - Update{{className}}InputBase - Required id + optional fields for updates
+ * - CreateUpdate{{className}}InputBase - Optional id for upsert operations
+ * - All bases extend BaseInput with validation helpers
+ *
+ * Add your custom fields or override validation below!
+ */
+
+import { InputType, Field } from 'type-graphql';
+import {
+  Create{{className}}InputBase,
+  Update{{className}}InputBase,
+  CreateUpdate{{className}}InputBase
+} from './__generated__/{{className}}InputsBase.js';
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Create Input
+// ═════════════════════════════════════════════════════════════════════════════
+
+@InputType({ description: 'Input for creating {{className}}' })
+export class Create{{className}}Input extends Create{{className}}InputBase {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Custom Fields
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Example: Add a computed field
+  // @Field(() => String, { nullable: true, description: 'Additional metadata' })
+  // @IsOptional()
+  // @IsString()
+  // metadata?: string;
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Custom Validation
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Example: Override validate() to add custom business logic
+  // async validate(): Promise<void> {
+  //   await super.validate();
+  //   if (this.someField && this.otherField) {
+  //     throw new Error('someField and otherField cannot both be set');
+  //   }
+  // }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Update Input
+// ═════════════════════════════════════════════════════════════════════════════
+
+@InputType({ description: 'Input for updating {{className}}' })
+export class Update{{className}}Input extends Update{{className}}InputBase {
+  // Add custom fields or validation here
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CreateUpdate Input (Upsert)
+// ═════════════════════════════════════════════════════════════════════════════
+
+@InputType({ description: 'Input for creating or updating {{className}}' })
+export class CreateUpdate{{className}}Input extends CreateUpdate{{className}}InputBase {
+  // Add custom fields or validation here
+}

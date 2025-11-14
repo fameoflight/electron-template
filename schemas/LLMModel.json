@@ -1,0 +1,61 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "LLMModel",
+  "description": "LLM Model entity",
+  "indexes": [
+    "connectionId"
+  ],
+  "fields": {
+    "connection": {
+      "type": "relation",
+      "required": true,
+      "key": "connectionId",
+      "description": "Connection for this LLM model",
+      "relation": {
+        "entity": "Connection",
+        "type": "many-to-one",
+        "eager": true
+      }
+    },
+    "name": {
+      "type": "string",
+      "required": false,
+      "description": "Name of the model"
+    },
+    "temperature": {
+      "type": "number",
+      "required": true,
+      "description": "Sampling temperature"
+    },
+    "contextLength": {
+      "type": "number",
+      "required": true,
+      "description": "Context length"
+    },
+    "capabilities": {
+      "type": "enum",
+      "enum": [
+        "TEXT",
+        "VISION"
+      ],
+      "array": true,
+      "required": true,
+      "description": "LLM capability types"
+    },
+    "modelIdentifier": {
+      "type": "string",
+      "required": true,
+      "description": "Unique model identifier"
+    },
+    "systemPrompt": {
+      "type": "text",
+      "required": false,
+      "description": "Default system prompt for the model"
+    },
+    "default": {
+      "type": "boolean",
+      "required": false,
+      "description": "Indicates if this is the default llm model"
+    }
+  }
+}

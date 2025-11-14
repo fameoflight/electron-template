@@ -1,0 +1,24 @@
+# Templates Directory
+
+This directory contains Handlebars templates for code generation.
+
+## Available Templates
+
+- **entity.hbs** - TypeORM entity with TypeGraphQL decorators
+- **resolver.hbs** - GraphQL resolver with CRUD operations
+- **job.hbs** - Background job class
+- **migration.hbs** - Database migration
+- **policy.hbs** - Authorization policy
+- **service.hbs** - Service class
+
+## Template Variables
+
+Templates have access to Handlebars helpers:
+- `{{pascalCase name}}` - PascalCase conversion
+- `{{camelCase name}}` - camelCase conversion
+- `{{kebabCase name}}` - kebab-case conversion
+- `{{snakeCase name}}` - snake_case conversion
+- `{{pluralize name}}` - Pluralization
+- `{{singularize name}}` - Singularization
+- `{{timestamp}}` - Current ISO timestamp
+- `{{year}}` - Current year

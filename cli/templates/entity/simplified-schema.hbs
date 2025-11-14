@@ -1,0 +1,46 @@
+{{!-- Simplified Schema JSDoc Template --}}
+/**
+ * {{className}} Entity Schema
+{{#if description}}
+ * {{description}}
+{{/if}}
+ *
+ * ## Base Fields (inherited from OwnedEntity)
+{{#each baseFields}}
+ * @property {{this.type}} {{this.name}} - {{this.description}}
+{{/each}}
+ *
+{{#if fields}}
+ * ## Fields
+{{#each fields}}
+ * @property {{buildTypeString this.type this.array this.required}} {{this.name}}{{#if this.description}} - {{this.description}}{{/if}}{{#if metadata.length}} - {{join metadata ", "}}{{/if}}
+{{/each}}
+ *
+{{/if}}
+{{#if polymorphicRelations}}
+ * ## Polymorphic Relations
+{{#each polymorphicRelations}}
+ * @property {string | null} {{idColumn}} - Foreign key ID
+ * @property {string | null} {{typeColumn}} - Target entity type
+ * @property {Promise<any | null>} {{fieldName}} - Polymorphic getter method
+{{/each}}
+ *
+{{/if}}
+{{#if relationships}}
+ * ## Relationships
+{{#each relationships}}
+ * @property {{buildRelationshipTypeString type targetEntity required eager}} {{name}} - {{targetEntity}}{{#if eager}} (eager-loaded){{else}} (lazy-loaded){{/if}}
+{{/each}}
+ *
+{{/if}}
+{{#if indexes}}
+ * ## Database Indexes
+{{#each indexes}}
+{{#if (eq type "composite")}}
+ * @property {CompositeIndex} [{{join columns ", "}}]
+{{else}}
+ * @property {SingleIndex} {{this.columns.[0]}}
+{{/if}}
+{{/each}}
+{{/if}}
+ */

@@ -1,0 +1,23 @@
+{
+  "recommendations": [
+    "github.copilot",
+    "github.copilot-labs",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "mgmcdermott.vscode-language-babel",
+    "balmor.behave",
+    "aaron-bond.better-comments",
+    "anseki.vscode-color",
+    "jbockle.jbockle-format-files",
+    "graphql.vscode-graphql",
+    "astro-build.astro-vscode",
+    "donjayamanne.githistory",
+    "graphql.vscode-graphql-syntax",
+    "csstools.postcss",
+    "bradlc.vscode-tailwindcss",
+    "wayou.vscode-todo-highlight",
+    "pmneo.tsimporter",
+    "meta.relay",
+    "GraphQL.vscode-graphql-syntax"
+  ]
+}

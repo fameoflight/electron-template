@@ -1,0 +1,178 @@
+#compdef yarn
+#autoload
+
+# Zsh completion for Electron Template yarn commands
+#
+# AUTOMATIC: Reads package.json dynamically, no manual updates needed!
+#
+# Installation:
+#   1. Source this file in your .zshrc:
+#      source /path/to/electron-template/cli/completions/_yarn-electron-template
+#
+#   2. Or copy to your zsh completions directory:
+#      mkdir -p ~/.zsh/completions
+#      cp cli/completions/_yarn-electron-template ~/.zsh/completions/
+#      # Add to .zshrc: fpath=(~/.zsh/completions $fpath)
+#
+#   3. Reload completions: exec zsh
+
+_yarn-electron-template() {
+  local -a commands utils_commands entity_types entities
+
+  # Find package.json (walk up directory tree)
+  local package_json=""
+  local search_dir="$PWD"
+  while [[ "$search_dir" != "/" ]]; do
+    if [[ -f "$search_dir/package.json" ]]; then
+      package_json="$search_dir/package.json"
+      break
+    fi
+    search_dir="$(dirname "$search_dir")"
+  done
+
+  # If no package.json found, bail out
+  if [[ -z "$package_json" ]]; then
+    return 1
+  fi
+
+  # Parse package.json scripts dynamically using node
+  # This ensures completions are ALWAYS up-to-date with package.json
+  if command -v node >/dev/null 2>&1; then
+    local scripts_output
+    scripts_output=$(node -e "
+      try {
+        const pkg = require('$package_json');
+        const scripts = pkg.scripts || {};
+        Object.keys(scripts).forEach(name => {
+          // Extract description from comment or first line of script
+          const script = scripts[name];
+          let desc = '';
+
+          // Common patterns for descriptions
+          if (name.startsWith('db:')) desc = 'Database: ';
+          else if (name.startsWith('test')) desc = 'Test: ';
+          else if (name === 'dev') desc = 'Start development environment';
+          else if (name === 'build') desc = 'Production build';
+          else if (name === 'console') desc = 'Interactive REPL';
+          else if (name === 'console:ide') desc = 'IDE helper with IntelliSense';
+          else if (name === 'fresh') desc = 'Complete fresh start';
+          else if (name === 'clean:deep') desc = 'Nuclear clean';
+          else if (name === 'type-check') desc = 'Type check';
+          else if (name === 'check') desc = 'All quality checks';
+          else if (name === 'fix') desc = 'Auto-fix issues';
+          else if (name.startsWith('project:')) desc = 'Project info: ';
+
+          // Print in format: scriptname:description
+          console.log(name + ':' + desc + script.substring(0, 50));
+        });
+      } catch (e) {
+        // Fail silently if package.json can't be parsed
+      }
+    " 2>/dev/null)
+
+    # Convert node output to zsh array format
+    if [[ -n "$scripts_output" ]]; then
+      while IFS= read -r line; do
+        # Escape colons in script names for zsh completion
+        local escaped_line="${line//:/\\:}"
+        commands+=("$escaped_line")
+      done <<< "$scripts_output"
+    fi
+  fi
+
+  # Fallback: If node parsing fails, provide minimal completions
+  if [[ ${#commands} -eq 0 ]]; then
+    commands=(
+      'dev:Start development'
+      'test:Run tests'
+      'build:Build app'
+      'console:REPL'
+    )
+  fi
+
+  # Utils subcommands (these are stable, defined in cli/utils-cli.ts)
+  utils_commands=(
+    'clean:Clean build artifacts'
+    'dev:Start development'
+    'schema:Generate GraphQL schema'
+    'seed:Seed database'
+    'build:Build production'
+    'console:Interactive REPL'
+    'db\:stats:Database statistics'
+    'db\:inspect:Inspect entity schema'
+    'db\:snapshot:Create backup'
+    'db\:restore-snapshot:Restore backup'
+    'info:Project information'
+    'routes:List routes'
+    'list:List all utilities'
+  )
+
+  # Entity types for generator (stable vocabulary)
+  entity_types=(
+    'string'
+    'text'
+    'number'
+    'boolean'
+    'date'
+    'uuid'
+    'json'
+    'enum'
+  )
+
+  # Get entities dynamically if in project directory
+  if [[ -d "$search_dir/main/db/entities" ]]; then
+    entities=()
+    for entity_file in "$search_dir"/main/db/entities/*.ts; do
+      if [[ -f "$entity_file" ]]; then
+        local entity_name=$(basename "$entity_file" .ts)
+        entities+=("$entity_name")
+      fi
+    done
+  else
+    # Fallback entity list
+    entities=(User Post Job)
+  fi
+
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  # Check if we're completing after 'yarn'
+  if [[ $words[1] == "yarn" ]]; then
+    case $words[2] in
+      utils)
+        # Complete utils subcommands
+        _arguments '1: :->utils_command'
+        case $state in
+          utils_command)
+            _describe 'utils command' utils_commands
+            ;;
+        esac
+        ;;
+      g|generate)
+        # Complete generator commands
+        if [[ $words[3] == "entity" ]]; then
+          _arguments \
+            '1:generator:(entity)' \
+            '2:entity name:' \
+            '*:field definition (name\:type):'
+        else
+          _arguments '1:generator:(entity)'
+        fi
+        ;;
+      db:inspect)
+        # Complete with actual entities from the project
+        _arguments "1:entity:($entities)"
+        ;;
+      *)
+        # Complete main yarn commands (dynamically loaded from package.json)
+        _describe 'yarn command' commands
+        ;;
+    esac
+  fi
+}
+
+# Register the completion function
+compdef _yarn-electron-template yarn
+
+# Also handle npm for compatibility
+compdef _yarn-electron-template npm

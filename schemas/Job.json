@@ -1,0 +1,113 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "Job",
+  "description": "Background job for async task execution",
+  "graphql": false,
+  "indexes": [
+    "userId",
+    [
+      "status",
+      "type"
+    ],
+    [
+      "targetId",
+      "type"
+    ],
+    "nextRetryAt",
+    "scheduledAt",
+    [
+      "status",
+      "queuedAt"
+    ],
+    "dedupeKey"
+  ],
+  "fields": {
+    "type": {
+      "type": "string",
+      "required": true,
+      "description": "Job handler type"
+    },
+    "status": {
+      "type": "enum",
+      "enum": [
+        "PENDING",
+        "RUNNING",
+        "COMPLETED",
+        "POSTPONED",
+        "FAILED"
+      ],
+      "default": "PENDING",
+      "required": true,
+      "description": "Job execution status"
+    },
+    "targetId": {
+      "type": "string",
+      "required": true,
+      "description": "Target entity ID"
+    },
+    "parameters": {
+      "type": "json",
+      "required": true,
+      "description": "Job parameters"
+    },
+    "result": {
+      "type": "json",
+      "required": false,
+      "description": "Job execution result"
+    },
+    "error": {
+      "type": "text",
+      "required": false,
+      "description": "Error message if failed"
+    },
+    "retryCount": {
+      "type": "number",
+      "default": 0,
+      "required": true,
+      "min": 0,
+      "description": "Number of retry attempts"
+    },
+    "priority": {
+      "type": "number",
+      "default": 0,
+      "required": true,
+      "description": "Job priority (0-100 scale)"
+    },
+    "queuedAt": {
+      "type": "date",
+      "required": false,
+      "description": "When job was queued"
+    },
+    "scheduledAt": {
+      "type": "date",
+      "required": false,
+      "description": "When job is scheduled to run"
+    },
+    "startedAt": {
+      "type": "date",
+      "required": false,
+      "description": "When job started execution"
+    },
+    "completedAt": {
+      "type": "date",
+      "required": false,
+      "description": "When job completed"
+    },
+    "nextRetryAt": {
+      "type": "date",
+      "required": false,
+      "description": "When to retry the job"
+    },
+    "timeoutMS": {
+      "type": "number",
+      "default": 300000,
+      "required": true,
+      "description": "Job timeout in milliseconds"
+    },
+    "dedupeKey": {
+      "type": "text",
+      "required": false,
+      "description": "Deduplication key to prevent duplicate jobs"
+    }
+  }
+}

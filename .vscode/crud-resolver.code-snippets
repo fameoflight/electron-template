@@ -1,0 +1,216 @@
+{
+  "CRUD Resolver with Full Operations": {
+    "prefix": "crud-resolver",
+    "description": "Create a complete CRUD resolver with all operations",
+    "body": [
+      "import { Query, Mutation, Arg, Ctx } from 'type-graphql';",
+      "import { ${1:EntityName} } from '@db/entities/${1:EntityName}.js';",
+      "import { ${1:EntityName}Input } from '../inputs/${1:EntityName}Input.js';",
+      "import { BaseResolver, CRUDResolver } from '@base/graphql/index.js';",
+      "import type { GraphQLContext } from '@shared/types';",
+      "import type { ConnectionArgs } from '@base/graphql/relay/Connection.js';",
+      "import { ListKind } from '@main/graphql/enums/ListKind.js';",
+      "",
+      "@CRUDResolver(${1:EntityName}, ${1:EntityName}Input, {",
+      "  only: ['list', 'show', 'array', 'create', 'update', 'createUpdate', 'destroy'],",
+      "  authorize: true,",
+      "  pagination: true",
+      "})",
+      "export class ${1:EntityName}Resolver extends BaseResolver {",
+      "  // Auto-generated CRUD methods - use 'yarn g crud-methods ${1:EntityName}' to generate declarations",
+      "",
+      "  private get repo() {",
+      "    return this.getRelayRepository(${1:EntityName});",
+      "  }",
+      "",
+      "  /**",
+      "   * Custom business logic methods",
+      "   */",
+      "  ${0:// Add custom methods here}",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "CRUD Resolver with Read-Only Operations": {
+    "prefix": "crud-resolver-readonly",
+    "description": "Create a read-only CRUD resolver with list and show operations",
+    "body": [
+      "import { Query, Arg, Ctx } from 'type-graphql';",
+      "import { ${1:EntityName} } from '@db/entities/${1:EntityName}.js';",
+      "import { BaseResolver, CRUDResolver } from '@base/graphql/index.js';",
+      "import type { GraphQLContext } from '@shared/types';",
+      "import type { ConnectionArgs } from '@base/graphql/relay/Connection.js';",
+      "import { ListKind } from '@main/graphql/enums/ListKind.js';",
+      "",
+      "@CRUDResolver(${1:EntityName}, undefined, {",
+      "  only: ['list', 'show'],",
+      "  authorize: false,",
+      "  pagination: true",
+      "})",
+      "export class ${1:EntityName}Resolver extends BaseResolver {",
+      "  // Auto-generated CRUD methods - use 'yarn g crud-methods ${1:EntityName} --only=\"list,show\"' to generate declarations",
+      "",
+      "  private get repo() {",
+      "    return this.getRelayRepository(${1:EntityName});",
+      "  }",
+      "",
+      "  /**",
+      "   * Custom query methods",
+      "   */",
+      "  ${0:// Add custom methods here}",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "CRUD Resolver with Create-Update Only": {
+    "prefix": "crud-resolver-upsert",
+    "description": "Create a CRUD resolver with createUpdate operation (upsert pattern)",
+    "body": [
+      "import { Query, Mutation, Arg, Ctx } from 'type-graphql';",
+      "import { ${1:EntityName} } from '@db/entities/${1:EntityName}.js';",
+      "import { ${1:EntityName}Input } from '../inputs/${1:EntityName}Input.js';",
+      "import { BaseResolver, CRUDResolver } from '@base/graphql/index.js';",
+      "import type { GraphQLContext } from '@shared/types';",
+      "import type { ConnectionArgs } from '@base/graphql/relay/Connection.js';",
+      "import { ListKind } from '@main/graphql/enums/ListKind.js';",
+      "",
+      "@CRUDResolver(${1:EntityName}, ${1:EntityName}Input, {",
+      "  only: ['list', 'show', 'createUpdate'],",
+      "  authorize: true,",
+      "  pagination: true",
+      "})",
+      "export class ${1:EntityName}Resolver extends BaseResolver {",
+      "  // Auto-generated CRUD methods - use 'yarn g crud-methods ${1:EntityName} --only=\"list,show,createUpdate\"' to generate declarations",
+      "",
+      "  private get repo() {",
+      "    return this.getRelayRepository(${1:EntityName});",
+      "  }",
+      "",
+      "  /**",
+      "   * Custom business logic methods",
+      "   */",
+      "  ${0:// Add custom methods here}",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "Custom GraphQL Query": {
+    "prefix": "graphql-query",
+    "description": "Create a custom GraphQL query method",
+    "body": [
+      "@Query(() => [${1:EntityName}], { nullable: true })",
+      "async ${2:methodName}(\\$3:params: ${3:paramType}, @Ctx() ctx: GraphQLContext): Promise<${1:EntityName}[]> {",
+      "  const userId = await this.getCurrentUserId(ctx);",
+      "  const repo = this.getRelayRepository(${1:EntityName});",
+      "  ",
+      "  return await repo.find({",
+      "    where: { $4 },",
+      "    order: { createdAt: 'DESC' }",
+      "  });",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "Custom GraphQL Mutation": {
+    "prefix": "graphql-mutation",
+    "description": "Create a custom GraphQL mutation method",
+    "body": [
+      "@Mutation(() => ${1:EntityName})",
+      "async ${2:methodName}(\\$3:params: ${3:paramType}, @Ctx() ctx: GraphQLContext): Promise<${1:EntityName}> {",
+      "  const userId = await this.getCurrentUserId(ctx);",
+      "  const repo = this.getRelayRepository(${1:EntityName});",
+      "  ",
+      "  // Verify ownership and perform operation",
+      "  return await repo.updateByIdExclude(\\$4, { $5 });",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "Repository Getter Pattern": {
+    "prefix": "repo-getter",
+    "description": "Create a repository getter with proper typing",
+    "body": [
+      "private get repo() {",
+      "  return this.getRelayRepository(${1:EntityName});",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "Ownership Check Pattern": {
+    "prefix": "ownership-check",
+    "description": "Create a method with ownership verification",
+    "body": [
+      "async ${1:methodName}(\\$2:id: string, @Ctx() ctx: GraphQLContext): Promise<${3:ReturnType}> {",
+      "  const userId = await this.getCurrentUserId(ctx);",
+      "  const repo = this.getRelayRepository(${4:EntityName});",
+      "  ",
+      "  // Verify ownership",
+      "  const entity = await repo.findOne({ where: { id: \\$2, userId } });",
+      "  if (!entity) {",
+      "    throw new Error('${4:EntityName} not found or access denied');",
+      "  }",
+      "  ",
+      "  ${0:// Perform operation}",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "Soft Delete Pattern": {
+    "prefix": "soft-delete",
+    "description": "Create a soft delete mutation",
+    "body": [
+      "@Mutation(() => Boolean)",
+      "async delete${1:EntityName}(@Arg('id', () => String) id: string, @Ctx() ctx: GraphQLContext): Promise<boolean> {",
+      "  const userId = await this.getCurrentUserId(ctx);",
+      "  const repo = this.getRelayRepository(${1:EntityName});",
+      "  return await repo.softDeleteWithOwnership(id, userId, '${1:EntityName}');",
+      "}"
+    ],
+    "scope": "typescript"
+  },
+
+  "Restore Soft Deleted Entity": {
+    "prefix": "restore-entity",
+    "description": "Create a restore mutation for soft-deleted entities",
+    "body": [
+      "@Mutation(() => ${1:EntityName})",
+      "async restore${1:EntityName}(@Arg('id', () => String) id: string, @Ctx() ctx: GraphQLContext): Promise<${1:EntityName}> {",
+      "  const userId = await this.getCurrentUserId(ctx);",
+      "  const repo = this.getRelayRepository(${1:EntityName});",
+      "  ",
+      "  // Verify ownership of the soft-deleted entity",
+      "  const deletedEntity = await repo.findOne({",
+      "    where: { id, userId },",
+      "    withDeleted: true",
+      "  });",
+      "  ",
+      "  if (!deletedEntity) {",
+      "    throw new Error('${1:EntityName} not found or you don\\'t have permission to restore it');",
+      "  }",
+      "  ",
+      "  if (!deletedEntity.deletedAt) {",
+      "    throw new Error('${1:EntityName} is not deleted');",
+      "  }",
+      "  ",
+      "  // Restore the entity",
+      "  await repo.raw.restore(id);",
+      "  ",
+      "  // Return the restored entity",
+      "  const restoredEntity = await repo.findById(id);",
+      "  if (!restoredEntity) {",
+      "    throw new Error('Failed to restore ${1:EntityName}');",
+      "  }",
+      "  ",
+      "  return restoredEntity;",
+      "}"
+    ],
+    "scope": "typescript"
+  }
+}

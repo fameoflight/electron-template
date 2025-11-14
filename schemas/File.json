@@ -1,0 +1,119 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "File",
+  "description": "File entity for storing file references with AI-generated descriptions",
+  "indexes": [
+    "fileHash",
+    "fileType",
+    [
+      "fileType",
+      "createdAt"
+    ]
+  ],
+  "graphql": [
+    "create",
+    "delete",
+    "destroy",
+    "single",
+    "list",
+    "array"
+  ],
+  "fields": {
+    "status": {
+      "type": "enum",
+      "enum": [
+        "pending",
+        "error",
+        "processing",
+        "completed"
+      ],
+      "graphql": [
+        "object"
+      ],
+      "required": true,
+      "default": "pending",
+      "description": "File processing status"
+    },
+    "filename": {
+      "type": "string",
+      "required": true,
+      "maxLength": 255,
+      "description": "Original filename with extension"
+    },
+    "fullPath": {
+      "type": "string",
+      "required": true,
+      "description": "Full file path in local storage"
+    },
+    "extension": {
+      "type": "string",
+      "required": true,
+      "maxLength": 10,
+      "description": "File extension (e.g., jpg, png, pdf)"
+    },
+    "fileSize": {
+      "type": "number",
+      "required": true,
+      "graphql": [
+        "object"
+      ],
+      "default": 0,
+      "description": "File size in bytes"
+    },
+    "mimeType": {
+      "type": "string",
+      "required": true,
+      "graphql": [
+        "object"
+      ],
+      "default": "application/octet-stream",
+      "description": "MIME type of the file"
+    },
+    "fileType": {
+      "type": "enum",
+      "enum": [
+        "image",
+        "document",
+        "audio",
+        "video",
+        "other"
+      ],
+      "graphql": [
+        "object"
+      ],
+      "default": "other",
+      "required": true,
+      "description": "File type category"
+    },
+    "fileHash": {
+      "type": "string",
+      "graphql": [
+        "object"
+      ],
+      "default": "<empty>",
+      "description": "SHA-256 hash for deduplication and integrity"
+    },
+    "mkTime": {
+      "type": "number",
+      "graphql": [
+        "object"
+      ],
+      "required": true,
+      "default": 0,
+      "description": "File system modification time"
+    },
+    "metadata": {
+      "type": "json",
+      "required": false,
+      "graphql": [
+        "object"
+      ],
+      "description": "Additional file metadata (dimensions, EXIF data, etc.)"
+    },
+    "owner": {
+      "type": "polymorphic",
+      "required": false,
+      "description": "Reference to the owning entity"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+/**
+ * {{className}} - Custom entity extension
+ *
+ * This file extends the generated {{className}}Base class.
+ * Add custom methods, computed fields, and business logic here.
+ *
+ * The base class is regenerated from schemas/{{className}}.json
+ */
+import { Entity, Index, BeforeInsert } from 'typeorm';
+import { ObjectType, Field } from 'type-graphql';
+import { {{className}}Base } from './__generated__/{{className}}Base.js';
+
+{{#each indexes}}
+{{{this}}}
+{{/each}}
+@ObjectType({ description: '{{description}}'})
+@Entity('{{tableName}}')
+export class {{className}} extends {{className}}Base {
+  // Add custom methods and computed fields here
+
+  // Example: Computed field
+  // @Field(() => String, { description: 'Display name' })
+  // get displayName(): string {
+  //   return `${this.name} (${this.id})`;
+  // }
+
+  // Example: Lifecycle hook
+  // @BeforeInsert()
+  // doSomethingBeforeInsert() {
+  //   // Custom logic
+  // }
+}

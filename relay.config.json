@@ -1,0 +1,13 @@
+{
+  "src": "./",
+  "schema": "./schema.graphql",
+  "language": "typescript",
+  "excludes": [
+    "**/node_modules/**",
+    "**/__mocks__/**",
+    "**/__generated__/**",
+    "**/main/**",
+    "**/shared/**",
+    "**/__tests__/**"
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "./entity-schema.json",
+  "name": "Chat",
+  "description": "Chat conversation entity for managing AI conversations",
+  "indexes": [
+    "llmModel",
+    "status",
+    "updatedAt",
+    [
+      "status",
+      "updatedAt"
+    ]
+  ],
+  "graphql": [
+    "create",
+    "delete",
+    "destroy",
+    "list",
+    "array",
+    "single"
+  ],
+  "fields": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 255,
+      "description": "Chat title"
+    },
+    "description": {
+      "type": "text",
+      "required": false,
+      "description": "Optional chat description"
+    },
+    "status": {
+      "type": "enum",
+      "enum": [
+        "active",
+        "archived",
+        "deleted"
+      ],
+      "required": true,
+      "default": "active",
+      "description": "Chat status for organization"
+    },
+    "streamingStatus": {
+      "type": "enum",
+      "graphql": [
+        "object"
+      ],
+      "enum": [
+        "idle",
+        "streaming"
+      ],
+      "required": true,
+      "default": "idle",
+      "description": "Streaming status of the chat"
+    },
+    "llmModel": {
+      "type": "relation",
+      "key": "llmModelId",
+      "required": true,
+      "description": "Default LLM model for this chat",
+      "relation": {
+        "entity": "LLMModel",
+        "type": "many-to-one",
+        "eager": true
+      }
+    },
+    "systemPrompt": {
+      "type": "text",
+      "required": false,
+      "description": "Custom system prompt override for this chat"
+    },
+    "tags": {
+      "type": "string",
+      "array": true,
+      "required": false,
+      "arrayOptions": {
+        "maxLength": 10,
+        "minLength": 0,
+        "itemMaxLength": 25,
+        "uniqueItems": true
+      },
+      "description": "Chat tags for organization"
+    }
+  }
+}

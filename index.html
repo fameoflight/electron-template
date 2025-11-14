@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/build/favicon/favicon-32x32.png" />
+    <link rel="shortcut icon" href="/build/favicon/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codeblocks</title>
+    <style>
+      /* Loading screen styles */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+      }
+
+      #loading-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .loader {
+        width: 60px;
+        height: 60px;
+        position: relative;
+        margin-bottom: 20px;
+      }
+
+      .loader-circle {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        border-top-color: #ffffff;
+        animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+      }
+
+      .loader-circle:nth-child(2) {
+        width: 80%;
+        height: 80%;
+        top: 10%;
+        left: 10%;
+        animation-delay: 0.2s;
+        border-top-color: rgba(255, 255, 255, 0.8);
+      }
+
+      .loader-circle:nth-child(3) {
+        width: 60%;
+        height: 60%;
+        top: 20%;
+        left: 20%;
+        animation-delay: 0.4s;
+        border-top-color: rgba(255, 255, 255, 0.6);
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-text {
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+      }
+
+      .loading-subtitle {
+        color: rgba(255, 255, 255, 0.7);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        font-size: 14px;
+        margin-top: 8px;
+        letter-spacing: 0.3px;
+      }
+
+      /* Ensure root container is hidden initially */
+      #root {
+        opacity: 0;
+        transition: opacity 0.3s ease-in;
+      }
+
+      #root.loaded {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loader">
+        <div class="loader-circle"></div>
+        <div class="loader-circle"></div>
+        <div class="loader-circle"></div>
+      </div>
+      <div class="loading-text">Codeblocks</div>
+      <div class="loading-subtitle">Loading your workspace...</div>
+    </div>
+
+    <!-- React App Container -->
+    <div id="root"></div>
+
+    <script type="module" src="/ui/index.tsx"></script>
+  </body>
+</html>

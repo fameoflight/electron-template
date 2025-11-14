@@ -1,0 +1,60 @@
+-- FTS5 Setup for {{className}}
+-- Generated: {{timestamp}}
+
+-- 0. Clean up existing FTS5 setup (makes it idempotent)
+{{#if hasSoftDelete}}
+DROP TRIGGER IF EXISTS {{ftsTableName}}_restore;
+DROP TRIGGER IF EXISTS {{ftsTableName}}_soft_delete;
+{{/if}}
+DROP TRIGGER IF EXISTS {{ftsTableName}}_delete;
+DROP TRIGGER IF EXISTS {{ftsTableName}}_update;
+DROP TRIGGER IF EXISTS {{ftsTableName}}_insert;
+DROP TABLE IF EXISTS {{ftsTableName}};
+
+-- 1. Create FTS5 virtual table (standalone, not external content)
+CREATE VIRTUAL TABLE {{ftsTableName}} USING fts5(
+  id UNINDEXED,
+  {{#each searchFields}}
+  {{this}}{{#unless @last}}, {{/unless}}{{/each}}
+);
+
+-- 2. Populate existing data (exclude soft-deleted records)
+{{#if hasSoftDelete}}
+INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+SELECT id, {{searchFieldsList}} FROM {{tableName}} WHERE deletedAt IS NULL;
+{{else}}
+INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+SELECT id, {{searchFieldsList}} FROM {{tableName}};
+{{/if}}
+
+-- 3. Create triggers for automatic sync
+CREATE TRIGGER {{ftsTableName}}_insert AFTER INSERT ON {{tableName}} BEGIN
+  INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+  VALUES (new.id, {{{searchFieldsInsert}}});
+END;
+
+CREATE TRIGGER {{ftsTableName}}_update AFTER UPDATE ON {{tableName}} BEGIN
+  UPDATE {{ftsTableName}}
+  SET {{{searchFieldsUpdate}}}
+  WHERE id = old.id;
+END;
+
+CREATE TRIGGER {{ftsTableName}}_delete AFTER DELETE ON {{tableName}} BEGIN
+  DELETE FROM {{ftsTableName}} WHERE id = old.id;
+END;
+
+{{#if hasSoftDelete}}
+-- 4. Soft delete handling
+CREATE TRIGGER {{ftsTableName}}_soft_delete AFTER UPDATE ON {{tableName}}
+WHEN new.deletedAt IS NOT NULL AND old.deletedAt IS NULL
+BEGIN
+  DELETE FROM {{ftsTableName}} WHERE id = old.id;
+END;
+
+CREATE TRIGGER {{ftsTableName}}_restore AFTER UPDATE ON {{tableName}}
+WHEN new.deletedAt IS NULL AND old.deletedAt IS NOT NULL
+BEGIN
+  INSERT INTO {{ftsTableName}}(id, {{searchFieldsList}})
+  VALUES (new.id, {{{searchFieldsInsert}}});
+END;
+{{/if}}

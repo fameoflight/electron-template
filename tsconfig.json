@@ -1,0 +1,84 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    /* Additional options from old project */
+    "incremental": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ui/*": [
+        "ui/*"
+      ],
+      "@shared/*": [
+        "shared/*"
+      ],
+      "@main/*": [
+        "main/*"
+      ],
+      "@base/*": [
+        "main/base/*"
+      ],
+      "@db/*": [
+        "main/db/*"
+      ],
+      "@cli/*": [
+        "cli/*"
+      ],
+      "@help/*": [
+        "public/help/*"
+      ],
+      "@tests/*": [
+        "__tests__/*"
+      ],
+      "@factories/*": [
+        "__tests__/factories/*"
+      ]
+    },
+    /* Linting */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    "ui",
+    "main",
+    "shared",
+    "cli",
+    "__tests__"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "dist-electron",
+    "cli/__tests__"
+  ]
+}

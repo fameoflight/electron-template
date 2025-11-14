@@ -1,0 +1,348 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Entity Schema",
+  "description": "JSON Schema for entity definitions",
+  "type": "object",
+  "required": [
+    "name",
+    "fields"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Entity class name (PascalCase)",
+      "pattern": "^[A-Z][a-zA-Z0-9]*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Entity description for GraphQL"
+    },
+    "indexes": {
+      "type": "array",
+      "description": "Database indexes (single field or composite)",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Single field index"
+          },
+          {
+            "type": "array",
+            "description": "Composite index",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2
+          }
+        ]
+      }
+    },
+    "graphql": {
+      "oneOf": [
+        {
+          "type": "boolean",
+          "description": "Control GraphQL exposure for this entity. true=include all operations, false=exclude all GraphQL generation (resolvers, inputs, etc.)"
+        },
+        {
+          "type": "array",
+          "description": "Granular GraphQL operation control. Include only specific operations in auto-generation",
+          "items": {
+            "type": "string",
+            "enum": [
+              "create",
+              "createUpdate",
+              "update",
+              "delete",
+              "destroy",
+              "list",
+              "array",
+              "single"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      ],
+      "description": "Control GraphQL exposure for this entity. Use false to skip all GraphQL generation (resolvers, inputs, etc.), true for all operations, or array for granular operation control"
+    },
+    "fields": {
+      "type": "object",
+      "description": "Entity fields",
+      "additionalProperties": {
+        "$ref": "#/definitions/field"
+      },
+      "minProperties": 1
+    }
+  },
+  "definitions": {
+    "field": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "text",
+            "number",
+            "boolean",
+            "date",
+            "uuid",
+            "json",
+            "enum",
+            "relation",
+            "polymorphic"
+          ],
+          "description": "Field data type. Use 'relation' for pure relationship fields without foreign keys. Use 'polymorphic' for polymorphic associations (generates ID and Type columns)."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether field is required (NOT NULL). Default: true. Set to false for optional fields."
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether field must be unique"
+        },
+        "default": {
+          "description": "Default value for field"
+        },
+        "description": {
+          "type": "string",
+          "description": "Field description for GraphQL"
+        },
+        "graphql": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "Control GraphQL exposure. true=include both FK and relation, false=exclude both"
+            },
+            {
+              "type": "array",
+              "description": "Granular GraphQL exposure control for different generation types",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "object",
+                  "inputs",
+                  "foreignKey",
+                  "relation"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          ],
+          "description": "Control GraphQL exposure for this field. Use false to skip all GraphQL generation, true for default behavior, or array for granular control"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9]*$",
+          "description": "Custom foreign key field name (e.g., 'modelId' instead of default 'llmModelId')"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum string length"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum string length"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern for validation"
+        },
+        "relation": {
+          "type": "object",
+          "description": "Relationship configuration",
+          "required": [
+            "entity",
+            "type"
+          ],
+          "properties": {
+            "entity": {
+              "type": "string",
+              "description": "Target entity name"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "many-to-one",
+                "one-to-many",
+                "many-to-many",
+                "one-to-one"
+              ],
+              "description": "Relationship type"
+            },
+            "eager": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether to eagerly load this relationship by default (TypeORM eager loading). When true, the related entity will be automatically loaded with the main query using LEFT JOIN."
+            },
+            "cascade": {
+              "type": "array",
+              "description": "Cascade operations for this relationship. When the parent entity is modified, the same operation will be applied to related entities.",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "insert",
+                  "update",
+                  "remove",
+                  "soft-remove",
+                  "recover"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "onDelete": {
+              "type": "string",
+              "enum": [
+                "CASCADE",
+                "SET NULL",
+                "RESTRICT"
+              ],
+              "description": "Database behavior when the referenced record is deleted"
+            },
+            "onUpdate": {
+              "type": "string",
+              "enum": [
+                "CASCADE",
+                "SET NULL",
+                "RESTRICT"
+              ],
+              "description": "Database behavior when the referenced record is updated"
+            }
+          }
+        },
+        "enum": {
+          "type": "array",
+          "description": "Enum values (required when type is 'enum')",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "array": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the field stores an array of values"
+        },
+        "arrayOptions": {
+          "type": "object",
+          "description": "Array-specific configuration options",
+          "properties": {
+            "maxLength": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of items allowed in the array"
+            },
+            "minLength": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Minimum number of items required in the array"
+            },
+            "itemMaxLength": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum length per item (for string arrays)"
+            },
+            "itemMinLength": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Minimum length per item (for string arrays)"
+            },
+            "uniqueItems": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether array items must be unique"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "enum"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "enum"
+        ]
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "relation"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "relation"
+        ],
+        "errorMessage": {
+          "relation": "Fields with type 'relation' must have a 'relation' object specifying the target entity and relationship type"
+        }
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "polymorphic"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "errorMessage": {
+          "type": "Polymorphic fields generate ID and Type columns automatically. No additional configuration needed."
+        }
+      },
+      "if": {
+        "properties": {
+          "required": {
+            "const": true
+          },
+          "type": {
+            "not": {
+              "const": "relation"
+            }
+          }
+        },
+        "required": [
+          "required",
+          "type"
+        ]
+      },
+      "then": {
+        "if": {
+          "not": {
+            "properties": {
+              "default": {
+                "type": ["string", "number", "boolean", "array"]
+              }
+            },
+            "required": ["default"]
+          }
+        },
+        "then": {
+          "errorMessage": {
+            "": "NOT NULL field without default value: This may cause migration failures if the table contains existing data. Consider adding a 'default' value or setting 'required': false."
+          }
+        }
+      }
+    }
+  }
+}

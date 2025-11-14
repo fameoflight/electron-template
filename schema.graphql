@@ -1,0 +1,1154 @@
+type BaseEntity implements Node {
+  createdAt: DateTimeISO!
+  deletedAt: DateTimeISO
+  id: ID!
+  modelId: String!
+  updatedAt: DateTimeISO!
+}
+
+"""Chat conversation entity for managing AI conversations"""
+type Chat implements Node {
+  createdAt: DateTimeISO!
+  deletedAt: DateTimeISO
+
+  """Optional chat description"""
+  description: String
+  id: ID!
+
+  """Default LLM model for this chat"""
+  llmModel: LLMModel!
+
+  """Default LLM model for this chat"""
+  llmModelId: ID!
+  modelId: String!
+
+  """Chat status for organization"""
+  status: ChatBaseStatus!
+
+  """Streaming status of the chat"""
+  streamingStatus: ChatBaseStreamingStatus!
+
+  """Custom system prompt override for this chat"""
+  systemPrompt: String
+
+  """Chat tags for organization"""
+  tags: [String!]
+
+  """Chat title"""
+  title: String!
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+}
+
+"""Chat status for organization"""
+enum ChatBaseStatus {
+  active
+  archived
+  deleted
+}
+
+"""Streaming status of the chat"""
+enum ChatBaseStreamingStatus {
+  idle
+  streaming
+}
+
+type ChatConnection {
+  edges: [ChatEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ChatEdge {
+  cursor: String!
+  node: Chat!
+}
+
+"""Connection entity"""
+type Connection implements Node {
+  """API key for the connection"""
+  apiKey: String!
+
+  """Base URL for the connection"""
+  baseUrl: String!
+  createdAt: DateTimeISO!
+
+  """Custom headers for the connection"""
+  customHeaders: JSONObject
+  deletedAt: DateTimeISO
+  id: ID!
+
+  """Connection kind"""
+  kind: ConnectionBaseKind!
+  modelId: String!
+
+  """AI models used in creating or analyzing this post"""
+  models: [ConnectionModelType!]
+
+  """Name of the connection"""
+  name: String!
+
+  """Provider name for the connection"""
+  provider: String
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+}
+
+"""Connection kind"""
+enum ConnectionBaseKind {
+  ANTHROPIC
+  OPENAI
+}
+
+type ConnectionConnection {
+  edges: [ConnectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ConnectionEdge {
+  cursor: String!
+  node: Connection!
+}
+
+"""Generated schema"""
+type ConnectionModelType {
+  id: String
+  name: String
+  provider: String
+  version: String
+}
+
+"""Input for creating Chat"""
+input CreateChatInput {
+  """Optional chat description"""
+  description: String
+
+  """Input: Default LLM model for this chat (ID of LLMModel)"""
+  llmModelId: String!
+
+  """Input: Chat status for organization. Required field."""
+  status: ChatBaseStatus!
+
+  """Custom system prompt override for this chat"""
+  systemPrompt: String
+
+  """Input: Chat tags for organization. Max 10 items. Items must be unique."""
+  tags: [String!]
+
+  """Input: Chat title. Required field. Max 255 characters."""
+  title: String!
+}
+
+"""Input for creating Connection"""
+input CreateConnectionInput {
+  """Input: API key for the connection. Required field."""
+  apiKey: String!
+
+  """Input: Base URL for the connection. Required field."""
+  baseUrl: String!
+
+  """Custom headers for the connection"""
+  customHeaders: JSONObject
+
+  """Input: Connection kind. Required field."""
+  kind: ConnectionBaseKind!
+
+  """Input: Name of the connection. Required field."""
+  name: String!
+
+  """Provider name for the connection"""
+  provider: String
+}
+
+"""Input for creating EmbeddingModel"""
+input CreateEmbeddingModelInput {
+  """Input: Connection for this LLM model (ID of Connection)"""
+  connectionId: String!
+
+  """Input: Maximum context length supported by the model. Required field."""
+  contextLength: Float!
+
+  """Indicates if this is the default embedding model"""
+  default: Boolean
+
+  """Input: Dimension of the embedding vectors. Required field."""
+  dimension: Float!
+
+  """Maximum batch size supported by the model"""
+  maxBatchSize: Float
+
+  """Input: Unique identifier for the model. Required field."""
+  modelIdentifier: String!
+
+  """Optional name for the embedding model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+}
+
+"""Input for creating File"""
+input CreateFileInput {
+  """
+  Input: File extension (e.g., jpg, png, pdf). Required field. Max 10 characters.
+  """
+  extension: String!
+
+  """
+  Input: Original filename with extension. Required field. Max 255 characters.
+  """
+  filename: String!
+
+  """Input: Full file path in local storage. Required field."""
+  fullPath: String!
+
+  """Reference to the owning entity ID"""
+  ownerId: String
+
+  """Reference to the owning entity type"""
+  ownerType: String
+}
+
+"""Input for creating LLMModel"""
+input CreateLLMModelInput {
+  """Input: LLM capability types. Required field."""
+  capabilities: [LLMBaseCapabilities!]!
+
+  """Input: Connection for this LLM model (ID of Connection)"""
+  connectionId: String!
+
+  """Input: Context length. Required field."""
+  contextLength: Float!
+
+  """Indicates if this is the default llm model"""
+  default: Boolean
+
+  """Input: Unique model identifier. Required field."""
+  modelIdentifier: String!
+
+  """Name of the model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+
+  """Input: Sampling temperature. Required field."""
+  temperature: Float!
+}
+
+"""Input for creating MessageVersion"""
+input CreateMessageVersionInput {
+  """Input: Version-specific message content. Required field."""
+  content: String!
+
+  """
+  Additional metadata about context used for generation (e.g., document sources, summary info)
+  """
+  contextMetadata: JSONObject
+
+  """Number of tokens used in conversation context for generation"""
+  contextTokens: Float
+
+  """Time in milliseconds taken to generate this response"""
+  generationTime: Float
+
+  """
+  Input: Whether this version is a regeneration of an original response. Required field.
+  """
+  isRegenerated: Boolean!
+
+  """Input: LLM model used to generate this version (ID of LLMModel)"""
+  llmModelId: String!
+
+  """Input: Parent message ID (ID of Message)"""
+  messageId: String
+
+  """
+  Input: Previous version for regeneration lineage tracking (ID of MessageVersion)
+  """
+  parentVersionId: String
+
+  """Input: Version status for tracking streaming state. Required field."""
+  status: MessageVersionBaseStatus!
+}
+
+"""Input for creating or updating Connection"""
+input CreateUpdateConnectionInput {
+  """Input: API key for the connection. Required field."""
+  apiKey: String
+
+  """Input: Base URL for the connection. Required field."""
+  baseUrl: String
+
+  """Custom headers for the connection"""
+  customHeaders: JSONObject
+
+  """ID for update, omit for create"""
+  id: String
+
+  """Input: Connection kind. Required field."""
+  kind: ConnectionBaseKind
+
+  """Input: Name of the connection. Required field."""
+  name: String
+
+  """Provider name for the connection"""
+  provider: String
+}
+
+"""Input for creating or updating EmbeddingModel"""
+input CreateUpdateEmbeddingModelInput {
+  """Input: Connection for this LLM model (ID of Connection)"""
+  connectionId: String!
+
+  """Input: Maximum context length supported by the model. Required field."""
+  contextLength: Float
+
+  """Indicates if this is the default embedding model"""
+  default: Boolean
+
+  """Input: Dimension of the embedding vectors. Required field."""
+  dimension: Float
+
+  """ID for update, omit for create"""
+  id: String
+
+  """Maximum batch size supported by the model"""
+  maxBatchSize: Float
+
+  """Input: Unique identifier for the model. Required field."""
+  modelIdentifier: String
+
+  """Optional name for the embedding model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+}
+
+"""Input for creating or updating LLMModel"""
+input CreateUpdateLLMModelInput {
+  """Input: LLM capability types. Required field."""
+  capabilities: [LLMBaseCapabilities!]
+
+  """Input: Connection for this LLM model (ID of Connection)"""
+  connectionId: String!
+
+  """Input: Context length. Required field."""
+  contextLength: Float
+
+  """Indicates if this is the default llm model"""
+  default: Boolean
+
+  """ID for update, omit for create"""
+  id: String
+
+  """Input: Unique model identifier. Required field."""
+  modelIdentifier: String
+
+  """Name of the model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+
+  """Input: Sampling temperature. Required field."""
+  temperature: Float
+}
+
+"""Input for creating or updating MessageVersion"""
+input CreateUpdateMessageVersionInput {
+  """Input: Version-specific message content. Required field."""
+  content: String
+
+  """
+  Additional metadata about context used for generation (e.g., document sources, summary info)
+  """
+  contextMetadata: JSONObject
+
+  """Number of tokens used in conversation context for generation"""
+  contextTokens: Float
+
+  """Time in milliseconds taken to generate this response"""
+  generationTime: Float
+
+  """ID for update, omit for create"""
+  id: String
+
+  """
+  Input: Whether this version is a regeneration of an original response. Required field.
+  """
+  isRegenerated: Boolean
+
+  """Input: LLM model used to generate this version (ID of LLMModel)"""
+  llmModelId: String!
+
+  """Input: Parent message ID (ID of Message)"""
+  messageId: String
+
+  """
+  Input: Previous version for regeneration lineage tracking (ID of MessageVersion)
+  """
+  parentVersionId: String
+
+  """Input: Version status for tracking streaming state. Required field."""
+  status: MessageVersionBaseStatus
+}
+
+input CreateUserInput {
+  name: String!
+  password: String!
+  username: String!
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
+"""
+scalar DateTimeISO
+
+"""Embedding model entity"""
+type EmbeddingModel implements Node {
+  """Connection for this LLM model"""
+  connection: Connection!
+
+  """Connection for this LLM model"""
+  connectionId: ID!
+
+  """Maximum context length supported by the model"""
+  contextLength: Float!
+  createdAt: DateTimeISO!
+
+  """Indicates if this is the default embedding model"""
+  default: Boolean
+  deletedAt: DateTimeISO
+
+  """Dimension of the embedding vectors"""
+  dimension: Float!
+  id: ID!
+
+  """Maximum batch size supported by the model"""
+  maxBatchSize: Float
+  modelId: String!
+
+  """Unique identifier for the model"""
+  modelIdentifier: String!
+
+  """Optional name for the embedding model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+}
+
+type EmbeddingModelConnection {
+  edges: [EmbeddingModelEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type EmbeddingModelEdge {
+  cursor: String!
+  node: EmbeddingModel!
+}
+
+"""File entity for storing file references with AI-generated descriptions"""
+type File implements Node {
+  createdAt: DateTimeISO!
+  deletedAt: DateTimeISO
+
+  """File extension (e.g., jpg, png, pdf)"""
+  extension: String!
+
+  """SHA-256 hash for deduplication and integrity"""
+  fileHash: String!
+
+  """File size in bytes"""
+  fileSize: Float!
+
+  """File type category"""
+  fileType: FileBaseFileType!
+
+  """Original filename with extension"""
+  filename: String!
+
+  """Full file path in local storage"""
+  fullPath: String!
+  id: ID!
+
+  """Additional file metadata (dimensions, EXIF data, etc.)"""
+  metadata: JSONObject
+
+  """MIME type of the file"""
+  mimeType: String!
+
+  """File system modification time"""
+  mkTime: Float!
+  modelId: String!
+
+  """Reference to the owning entity ID"""
+  ownerId: String
+
+  """Reference to the owning entity type"""
+  ownerType: String
+
+  """File processing status"""
+  status: FileBaseStatus!
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+}
+
+"""File type category"""
+enum FileBaseFileType {
+  audio
+  document
+  image
+  other
+  video
+}
+
+"""File processing status"""
+enum FileBaseStatus {
+  completed
+  error
+  pending
+  processing
+}
+
+type FileConnection {
+  edges: [FileEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type FileEdge {
+  cursor: String!
+  node: File!
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+"""LLM capability types"""
+enum LLMBaseCapabilities {
+  TEXT
+  VISION
+}
+
+"""LLM Model entity"""
+type LLMModel implements Node {
+  """LLM capability types"""
+  capabilities: [LLMBaseCapabilities!]!
+
+  """Connection for this LLM model"""
+  connection: Connection!
+
+  """Connection for this LLM model"""
+  connectionId: ID!
+
+  """Context length"""
+  contextLength: Float!
+  createdAt: DateTimeISO!
+
+  """Indicates if this is the default llm model"""
+  default: Boolean
+  deletedAt: DateTimeISO
+  id: ID!
+  modelId: String!
+
+  """Unique model identifier"""
+  modelIdentifier: String!
+
+  """Name of the model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+
+  """Sampling temperature"""
+  temperature: Float!
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+}
+
+type LLMModelConnection {
+  edges: [LLMModelEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type LLMModelEdge {
+  cursor: String!
+  node: LLMModel!
+}
+
+input LoginInput {
+  password: String!
+  username: String!
+}
+
+"""Message entity for individual chat messages with versioning support"""
+type Message implements Node {
+  chat: Chat
+
+  """Parent chat ID"""
+  chatId: ID!
+  createdAt: DateTimeISO!
+  currentVersion: MessageVersion
+
+  """Current version of the message"""
+  currentVersionId: ID!
+  deletedAt: DateTimeISO
+  id: ID!
+
+  """LLM model ID used for this message (for user messages)"""
+  llmModel: LLMModel
+
+  """LLM model ID used for this message (for user messages)"""
+  llmModelId: ID!
+  modelId: String!
+
+  """Message role in conversation"""
+  role: MessageBaseRole!
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+
+  """List of message versions"""
+  versions: [MessageVersion!]!
+}
+
+"""Message role in conversation"""
+enum MessageBaseRole {
+  assistant
+  system
+  user
+}
+
+type MessageConnection {
+  edges: [MessageEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type MessageEdge {
+  cursor: String!
+  node: Message!
+}
+
+"""
+Message version entity for supporting response regeneration and version comparison
+"""
+type MessageVersion implements Node {
+  """Version-specific message content"""
+  content: String!
+
+  """
+  Additional metadata about context used for generation (e.g., document sources, summary info)
+  """
+  contextMetadata: JSONObject
+
+  """Number of tokens used in conversation context for generation"""
+  contextTokens: Float
+  createdAt: DateTimeISO!
+  deletedAt: DateTimeISO
+
+  """Files attached to this message version"""
+  files: [File!]!
+
+  """Time in milliseconds taken to generate this response"""
+  generationTime: Float
+  id: ID!
+
+  """Whether this version is a regeneration of an original response"""
+  isRegenerated: Boolean!
+
+  """LLM model used to generate this version"""
+  llmModel: LLMModel!
+
+  """LLM model used to generate this version"""
+  llmModelId: ID!
+
+  """Parent message ID"""
+  message: Message
+
+  """Parent message ID"""
+  messageId: ID!
+  modelId: String!
+
+  """Previous version for regeneration lineage tracking"""
+  parentVersion: MessageVersion
+
+  """Previous version for regeneration lineage tracking"""
+  parentVersionId: ID!
+
+  """Version status for tracking streaming state"""
+  status: MessageVersionBaseStatus!
+  updatedAt: DateTimeISO!
+  user: User!
+
+  """User who owns this entity"""
+  userId: String!
+}
+
+"""Version status for tracking streaming state"""
+enum MessageVersionBaseStatus {
+  cancelled
+  completed
+  failed
+  pending
+  streaming
+}
+
+type MessageVersionConnection {
+  edges: [MessageVersionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type MessageVersionEdge {
+  cursor: String!
+  node: MessageVersion!
+}
+
+type Mutation {
+  """Archive chat"""
+  archiveChat(id: String!): Chat!
+
+  """Cancel a streaming message version"""
+  cancelMessageVersion(messageVersionId: String!): Message!
+
+  """Create new Chat"""
+  createChat(input: CreateChatInput!): Chat!
+
+  """Create new Connection"""
+  createConnection(input: CreateConnectionInput!): Connection!
+
+  """Create new EmbeddingModel"""
+  createEmbeddingModel(input: CreateEmbeddingModelInput!): EmbeddingModel!
+
+  """Create new File"""
+  createFile(input: CreateFileInput!): File!
+
+  """Create new LLMModel"""
+  createLLMModel(input: CreateLLMModelInput!): LLMModel!
+
+  """Create new MessageVersion"""
+  createMessageVersion(input: CreateMessageVersionInput!): MessageVersion!
+
+  """Create or update Connection"""
+  createUpdateConnection(input: CreateUpdateConnectionInput!): Connection!
+
+  """Create or update EmbeddingModel"""
+  createUpdateEmbeddingModel(input: CreateUpdateEmbeddingModelInput!): EmbeddingModel!
+
+  """Create or update LLMModel"""
+  createUpdateLLMModel(input: CreateUpdateLLMModelInput!): LLMModel!
+
+  """Create or update MessageVersion"""
+  createUpdateMessageVersion(input: CreateUpdateMessageVersionInput!): MessageVersion!
+  createUser(input: CreateUserInput!): User!
+
+  """Hard delete Chat (permanent)"""
+  deleteChat(id: String!): Boolean!
+
+  """Hard delete Connection (permanent)"""
+  deleteConnection(id: String!): Boolean!
+
+  """Hard delete EmbeddingModel (permanent)"""
+  deleteEmbeddingModel(id: String!): Boolean!
+
+  """Hard delete File (permanent)"""
+  deleteFile(id: String!): Boolean!
+
+  """Hard delete LLMModel (permanent)"""
+  deleteLLMModel(id: String!): Boolean!
+
+  """Hard delete Message (permanent)"""
+  deleteMessage(id: String!): Boolean!
+
+  """Hard delete MessageVersion (permanent)"""
+  deleteMessageVersion(id: String!): Boolean!
+
+  """Soft delete Chat"""
+  destroyChat(id: String!): Boolean!
+
+  """Soft delete Connection"""
+  destroyConnection(id: String!): Boolean!
+
+  """Soft delete EmbeddingModel"""
+  destroyEmbeddingModel(id: String!): Boolean!
+
+  """Soft delete File"""
+  destroyFile(id: String!): Boolean!
+
+  """Soft delete LLMModel"""
+  destroyLLMModel(id: String!): Boolean!
+
+  """Soft delete Message"""
+  destroyMessage(id: String!): Boolean!
+
+  """Soft delete MessageVersion"""
+  destroyMessageVersion(id: String!): Boolean!
+  login(input: LoginInput!): User!
+
+  """Restore soft-deleted Chat"""
+  restoreChat(id: String!): Chat
+
+  """Restore soft-deleted Connection"""
+  restoreConnection(id: String!): Connection
+
+  """Restore soft-deleted EmbeddingModel"""
+  restoreEmbeddingModel(id: String!): EmbeddingModel
+
+  """Restore soft-deleted File"""
+  restoreFile(id: String!): File
+
+  """Restore soft-deleted LLMModel"""
+  restoreLLMModel(id: String!): LLMModel
+
+  """Restore soft-deleted Message"""
+  restoreMessage(id: String!): Message
+
+  """Restore soft-deleted MessageVersion"""
+  restoreMessageVersion(id: String!): MessageVersion
+
+  """Send message (creates new chat if chatId is not provided)"""
+  sendMessage(input: SendMessageInput!): Message!
+
+  """Set an LLM model as the default"""
+  setDefaultLLMModel(id: String!): LLMModel!
+
+  """Update existing Connection"""
+  updateConnection(input: UpdateConnectionInput!): Connection!
+
+  """Update existing EmbeddingModel"""
+  updateEmbeddingModel(input: UpdateEmbeddingModelInput!): EmbeddingModel!
+
+  """Update existing LLMModel"""
+  updateLLMModel(input: UpdateLLMModelInput!): LLMModel!
+
+  """Update existing Message"""
+  updateMessage(input: UpdateMessageInput!): Message!
+
+  """Update existing MessageVersion"""
+  updateMessageVersion(input: UpdateMessageVersionInput!): MessageVersion!
+  updateUser(input: UpdateUserInput!): User!
+  validateSessionKey(sessionKey: String!): User
+}
+
+"""An object with a Globally Unique ID and timestamps"""
+interface Node {
+  """Timestamp when the entity was created"""
+  createdAt: DateTimeISO!
+
+  """Globally unique Relay ID (base64 encoded type:id)"""
+  id: ID!
+
+  """Internal database UUID"""
+  modelId: String!
+
+  """Timestamp when the entity was last updated"""
+  updatedAt: DateTimeISO!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type Query {
+  """Fetch Chat by ID"""
+  chat(id: String!): Chat
+
+  """Get messages for chat"""
+  chatMessages(chatId: String!): [Message!]!
+
+  """Get chat with full conversation history"""
+  chatWithMessages(id: String!): Chat!
+
+  """Fetch Chat collection (paginated)"""
+  chats(after: String, before: String, first: Int, kind: String! = "default", last: Int): ChatConnection!
+
+  """Fetch Chat array"""
+  chatsArray(kind: String! = "default"): [Chat!]!
+
+  """Fetch Connection by ID"""
+  connection(id: String!): Connection
+
+  """Fetch Connection collection (paginated)"""
+  connections(after: String, before: String, first: Int, kind: String! = "default", last: Int): ConnectionConnection!
+
+  """Fetch Connection array"""
+  connectionsArray(kind: String! = "default"): [Connection!]!
+  currentUser: User
+
+  """Fetch EmbeddingModel by ID"""
+  embeddingModel(id: String!): EmbeddingModel
+
+  """Fetch EmbeddingModel collection (paginated)"""
+  embeddingModels(after: String, before: String, first: Int, kind: String! = "default", last: Int): EmbeddingModelConnection!
+
+  """Fetch EmbeddingModel array"""
+  embeddingModelsArray(kind: String! = "default"): [EmbeddingModel!]!
+
+  """Fetch File by ID"""
+  file(id: String!): File
+
+  """Fetch File collection (paginated)"""
+  files(after: String, before: String, first: Int, kind: String! = "default", last: Int): FileConnection!
+
+  """Fetch File array"""
+  filesArray(kind: String! = "default"): [File!]!
+
+  """Fetch Files by owner type and optional owner ID"""
+  filesByOwnerType(ownerId: String, ownerType: String): [File!]!
+
+  """Fetch LLMModel by ID"""
+  lLMModel(id: String!): LLMModel
+
+  """Fetch LLMModel collection (paginated)"""
+  lLMModels(after: String, before: String, first: Int, kind: String! = "default", last: Int): LLMModelConnection!
+
+  """Fetch LLMModel array"""
+  lLMModelsArray(kind: String! = "default"): [LLMModel!]!
+
+  """Fetch Message by ID"""
+  message(id: String!): Message
+
+  """Fetch MessageVersion by ID"""
+  messageVersion(id: String!): MessageVersion
+
+  """Fetch MessageVersion collection (paginated)"""
+  messageVersions(after: String, before: String, first: Int, kind: String! = "default", last: Int): MessageVersionConnection!
+
+  """Fetch MessageVersion array"""
+  messageVersionsArray(kind: String! = "default"): [MessageVersion!]!
+
+  """Fetch Message collection (paginated)"""
+  messages(after: String, before: String, first: Int, kind: String! = "default", last: Int): MessageConnection!
+
+  """Fetch Message array"""
+  messagesArray(kind: String! = "default"): [Message!]!
+
+  """Get my chats"""
+  myChats(status: String): [Chat!]!
+  node(id: ID!): Node
+}
+
+"""
+Unified input for sending messages (creates new chat if chatId is not provided)
+"""
+input SendMessageInput {
+  """File attachment IDs to include with this message"""
+  attachmentIds: [String!]
+
+  """Parent chat ID (omit to create new chat)"""
+  chatId: String
+
+  """User message content"""
+  content: String!
+
+  """LLM model ID to use for this message"""
+  llmModelId: String!
+
+  """System prompt override (only used when creating new chat)"""
+  systemPrompt: String
+
+  """Chat title (only used when creating new chat)"""
+  title: String
+}
+
+"""Input for updating Connection"""
+input UpdateConnectionInput {
+  """Input: API key for the connection. Required field."""
+  apiKey: String
+
+  """Input: Base URL for the connection. Required field."""
+  baseUrl: String
+
+  """Custom headers for the connection"""
+  customHeaders: JSONObject
+
+  """ID of Connection to update"""
+  id: String!
+
+  """Input: Connection kind. Required field."""
+  kind: ConnectionBaseKind
+
+  """Input: Name of the connection. Required field."""
+  name: String
+
+  """Provider name for the connection"""
+  provider: String
+}
+
+"""Input for updating EmbeddingModel"""
+input UpdateEmbeddingModelInput {
+  """Input: Connection for this LLM model (ID of Connection)"""
+  connectionId: String!
+
+  """Input: Maximum context length supported by the model. Required field."""
+  contextLength: Float
+
+  """Indicates if this is the default embedding model"""
+  default: Boolean
+
+  """Input: Dimension of the embedding vectors. Required field."""
+  dimension: Float
+
+  """ID of EmbeddingModel to update"""
+  id: String!
+
+  """Maximum batch size supported by the model"""
+  maxBatchSize: Float
+
+  """Input: Unique identifier for the model. Required field."""
+  modelIdentifier: String
+
+  """Optional name for the embedding model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+}
+
+"""Input for updating LLMModel"""
+input UpdateLLMModelInput {
+  """Input: LLM capability types. Required field."""
+  capabilities: [LLMBaseCapabilities!]
+
+  """Input: Connection for this LLM model (ID of Connection)"""
+  connectionId: String!
+
+  """Input: Context length. Required field."""
+  contextLength: Float
+
+  """Indicates if this is the default llm model"""
+  default: Boolean
+
+  """ID of LLMModel to update"""
+  id: String!
+
+  """Input: Unique model identifier. Required field."""
+  modelIdentifier: String
+
+  """Name of the model"""
+  name: String
+
+  """Default system prompt for the model"""
+  systemPrompt: String
+
+  """Input: Sampling temperature. Required field."""
+  temperature: Float
+}
+
+"""Input for updating Message"""
+input UpdateMessageInput {
+  """Input: Parent chat ID (ID of Chat)"""
+  chatId: String!
+
+  """Input: Current version of the message (ID of MessageVersion)"""
+  currentVersionId: String!
+
+  """ID of Message to update"""
+  id: String!
+
+  """
+  Input: LLM model ID used for this message (for user messages) (ID of LLMModel)
+  """
+  llmModelId: String
+
+  """Input: Message role in conversation. Required field."""
+  role: MessageBaseRole
+}
+
+"""Input for updating MessageVersion"""
+input UpdateMessageVersionInput {
+  """Input: Version-specific message content. Required field."""
+  content: String
+
+  """
+  Additional metadata about context used for generation (e.g., document sources, summary info)
+  """
+  contextMetadata: JSONObject
+
+  """Number of tokens used in conversation context for generation"""
+  contextTokens: Float
+
+  """Time in milliseconds taken to generate this response"""
+  generationTime: Float
+
+  """ID of MessageVersion to update"""
+  id: String!
+
+  """
+  Input: Whether this version is a regeneration of an original response. Required field.
+  """
+  isRegenerated: Boolean
+
+  """Input: LLM model used to generate this version (ID of LLMModel)"""
+  llmModelId: String!
+
+  """Input: Parent message ID (ID of Message)"""
+  messageId: String
+
+  """
+  Input: Previous version for regeneration lineage tracking (ID of MessageVersion)
+  """
+  parentVersionId: String
+
+  """Input: Version status for tracking streaming state. Required field."""
+  status: MessageVersionBaseStatus
+}
+
+input UpdateUserInput {
+  name: String
+  password: String
+  sessionKey: String
+  username: String
+}
+
+"""User entity"""
+type User implements Node {
+  createdAt: DateTimeISO!
+  deletedAt: DateTimeISO
+  id: ID!
+  modelId: String!
+
+  """User name"""
+  name: String!
+
+  """User password"""
+  password: String!
+
+  """Session key for user authentication"""
+  sessionKey: String
+  updatedAt: DateTimeISO!
+
+  """Unique username"""
+  username: String!
+}
