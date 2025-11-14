@@ -29,7 +29,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Basic Polymorphic Fields', () => {
-    it('should generate polymorphic columns and methods correctly', () => {
+    it('should generate polymorphic columns and methods correctly', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Comment',
@@ -59,7 +59,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       // Verify files were created
       expect(fs.existsSync(result.basePath)).toBe(true);
@@ -88,7 +88,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Optional Polymorphic Fields', () => {
-    it('should generate optional polymorphic fields correctly', () => {
+    it('should generate optional polymorphic fields correctly', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Activity',
@@ -113,7 +113,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       const baseContent = fs.readFileSync(result.basePath, 'utf-8');
 
@@ -124,7 +124,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Multiple Polymorphic Fields', () => {
-    it('should handle multiple polymorphic fields in one entity', () => {
+    it('should handle multiple polymorphic fields in one entity', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Notification',
@@ -154,7 +154,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       const baseContent = fs.readFileSync(result.basePath, 'utf-8');
 
@@ -175,7 +175,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Integration with Regular Fields', () => {
-    it('should work alongside regular fields and relationships', () => {
+    it('should work alongside regular fields and relationships', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Like',
@@ -204,7 +204,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       const baseContent = fs.readFileSync(result.basePath, 'utf-8');
 

@@ -86,7 +86,7 @@ describe('Array Options Validation Test', () => {
     const saved1 = await repository.save(entity1);
     const found1 = await repository.findOne({ where: { id: saved1.id } });
 
-    expect(found1?.tags).toBeUndefined();
+    expect(found1?.tags).toBeNull();
 
     const entity2 = new ArrayOptionsTest();
     entity2.title = 'Undefined Tags Test';
