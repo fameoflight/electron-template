@@ -17,7 +17,7 @@ import { CreateLLMModelInput } from '@main/graphql/inputs/LLMModelInputs.js';
 import { CreateUpdateLLMModelInput } from '@main/graphql/inputs/LLMModelInputs.js';
 import { UpdateLLMModelInput } from '@main/graphql/inputs/LLMModelInputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -26,9 +26,9 @@ export class LLMModelConnection extends createConnectionType('LLMModel', LLMMode
 
 @Resolver(() => LLMModel)
 export class LLMModelResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<LLMModel> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<LLMModel> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository(LLMModel, ctx);
+    return this.getOwnedRepository(LLMModel, ctx);
   }
 
   protected get repository(): RelayRepository<LLMModel> {
@@ -87,31 +87,31 @@ export class LLMModelResolverBase extends BaseResolver {
   /**
    * Create new LLMModel
    */
-  @Mutation(() => LLMModel, { description: 'Create new LLMModel' })
+  @FieldMutation(CreateLLMModelInput, LLMModel, {
+    description: 'Create new LLMModel'
+  })
   async createLLMModel(
-    @Arg('input', () => CreateLLMModelInput) input: CreateLLMModelInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateLLMModelInput,
+    ctx: GraphQLContext
   ): Promise<LLMModel> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
-    const entity = this.getRepository(ctx).create(input as any);
+    const entity = this.getRepository(ctx).create(input);
     // Auto-attach userId directly to entity (preserve constructor)
-    (entity as any).userId = ctx.user?.id;
-    return await this.getRepository(ctx).save(entity as any);
+    if (ctx.user) {
+      (entity).userId = ctx.user?.id;
+    }
+    return await this.getRepository(ctx).save(entity);
   }
 
   /**
    * Update existing LLMModel
    */
-  @Mutation(() => LLMModel, { description: 'Update existing LLMModel' })
+  @FieldMutation(UpdateLLMModelInput, LLMModel, {
+    description: 'Update existing LLMModel'
+  })
   async updateLLMModel(
-    @Arg('input', () => UpdateLLMModelInput) input: UpdateLLMModelInput,
-    @Ctx() ctx: GraphQLContext
+    input: UpdateLLMModelInput,
+    ctx: GraphQLContext
   ): Promise<LLMModel> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
 
     // Safely assign only defined, updatable fields (excludes id, userId and undefined values)
@@ -122,14 +122,13 @@ export class LLMModelResolverBase extends BaseResolver {
   /**
    * Create or update LLMModel (upsert)
    */
-  @Mutation(() => LLMModel, { description: 'Create or update LLMModel' })
+  @FieldMutation(CreateUpdateLLMModelInput, LLMModel, {
+    description: 'Create or update LLMModel'
+  })
   async createUpdateLLMModel(
-    @Arg('input', () => CreateUpdateLLMModelInput) input: CreateUpdateLLMModelInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateUpdateLLMModelInput,
+    ctx: GraphQLContext
   ): Promise<LLMModel> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     if (input.id) {
       // Update existing
       const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
@@ -140,10 +139,12 @@ export class LLMModelResolverBase extends BaseResolver {
     } else {
       // Create new
       const { id, ...createData } = input;
-      const entity = this.getRepository(ctx).create(createData as any);
+      const entity = this.getRepository(ctx).create(createData);
       // Auto-attach userId directly to entity (preserve constructor)
-      (entity as any).userId = ctx.user?.id;
-      return await this.getRepository(ctx).save(entity as any);
+      if (ctx.user) {
+        (entity).userId = ctx.user?.id;
+      }
+      return await this.getRepository(ctx).save(entity);
     }
   }
 

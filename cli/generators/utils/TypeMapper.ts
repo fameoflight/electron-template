@@ -1,10 +1,14 @@
 /**
  * TypeMapper - Handles type conversions between GraphQL, TypeScript, and database types
  *
- * Centralizes all type mapping logic to make it easy to maintain and extend
+ * Refactored to use Strategy Pattern:
+ * - Type conversion delegated to TypeStrategyRegistry (eliminates 25 if/else statements)
+ * - Utility methods preserved (naming, pluralization, schema generation)
+ * - Adding new types = register new strategy (no changes to this file)
  */
 
 import { EntityField } from '../../parsers/EntityJsonParser.js';
+import { getTypeStrategyRegistry } from '../strategies/types/index.js';
 
 // Recursive FieldDef to support nested objects/arrays
 type FieldDef = {
@@ -20,22 +24,16 @@ type FieldDef = {
   required?: string[];
 };
 
+
+
 export class TypeMapper {
   /**
    * Maps field types to their corresponding database column types
+   * Delegates to TypeStrategyRegistry
    */
   static getColumnType(field: EntityField): string | null {
-    const typeMap: Record<string, string> = {
-      string: 'varchar',
-      text: 'text',
-      number: 'integer',
-      boolean: 'boolean',
-      date: 'datetime',
-      uuid: 'uuid',
-      json: 'json',
-    };
-
-    return field.type ? typeMap[field.type] || null : null;
+    const registry = getTypeStrategyRegistry();
+    return registry.getColumnType(field);
   }
 
   /**
@@ -55,8 +53,10 @@ export class TypeMapper {
     return `get${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}`;
   }
 
+
   /**
    * Maps field types to their TypeScript equivalents
+   * Delegates to TypeStrategyRegistry (eliminates all if/else chains)
    */
   static getTsType(field: EntityField, entityName: string): string {
     const fieldName = this.singularizeFieldName(field.name);
@@ -159,6 +159,7 @@ export class TypeMapper {
 
   /**
    * Maps field types to their GraphQL equivalents
+   * Delegates to TypeStrategyRegistry (eliminates all if/else chains)
    */
   static getGraphQLType(field: EntityField, entityName: string): string {
     const fieldName = this.singularizeFieldName(field.name);
@@ -369,7 +370,6 @@ export class TypeMapper {
       'boolean': 'z.boolean()',
       'date': 'z.date()',
     } as const;
-
     return typeMap[type as keyof typeof typeMap] || 'z.any()';
   }
 

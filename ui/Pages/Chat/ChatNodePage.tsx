@@ -12,6 +12,15 @@ import UnifiedMessageInput from "@ui/Pages/Chat/UnifiedMessageInput";
 
 const { Title } = Typography;
 
+type MessageType = ChatNodePageQuery$data['chatMessages'][0];
+
+// Helper function to check if a message is currently streaming
+const isMessageStreaming = (message: MessageType): boolean => {
+  const currentVersion = message.versions?.find(v => v.id == message.currentVersionId || v.modelId == message.currentVersionId);
+
+  return currentVersion?.status === 'streaming' || currentVersion?.status === 'pending';
+};
+
 const ChatNodePageQuery = graphql`
   query ChatNodePageQuery($id: String!) {
     chat(id: $id) {
@@ -32,13 +41,13 @@ const ChatNodePageQuery = graphql`
       id
       role
       currentVersionId
-      currentVersion {
-        id
-        status
-        content
-      }
       createdAt
       updatedAt
+      versions {
+        id
+        status
+        modelId
+      }
       ...MessageList_messages
     }
   }
@@ -57,11 +66,7 @@ function ChatNodePage() {
     {
       enabled: !!id,
       deriveRefreshInterval: (data) => {
-        // Poll more frequently when there's a streaming message
-        const typedData = data as ChatNodePageQuery$data;
-        const hasStreamingMessage = typedData.chatMessages?.some(
-          (msg) => msg.currentVersion?.status === 'streaming' || msg.currentVersion?.status === 'pending'
-        );
+        const hasStreamingMessage = data.chatMessages?.some(isMessageStreaming);
         return hasStreamingMessage ? 100 : 1000;
       },
       defaultInterval: 1000,
@@ -97,9 +102,7 @@ function ChatNodePage() {
 
   const chat = chatData?.chat;
   const messages = chatData?.chatMessages || [];
-  const hasStreamingMessage = messages.some(
-    (msg) => msg.currentVersion?.status === 'streaming' || msg.currentVersion?.status === 'pending'
-  );
+  const hasStreamingMessage = messages.some(isMessageStreaming);
 
   if (!chat && !isAutoRefreshing) {
     return (

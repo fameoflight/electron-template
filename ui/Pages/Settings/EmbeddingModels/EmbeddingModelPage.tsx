@@ -65,8 +65,8 @@ function EmbeddingModelPage() {
     EmbeddingModelPageQuery,
     {}
   );
-  const connections = [...(data.connectionsArray || [])];
-  const embeddingModels = [...(data.embeddingModelsArray || [])];
+  const connections = [...(data?.connectionsArray || [])];
+  const embeddingModels = [...(data?.embeddingModelsArray || [])];
   const [modeOrRecord, setMode] = useFormRecordState('list', embeddingModels);
 
   const [commitCreateUpdate, isInFlight] = useCompatMutation<

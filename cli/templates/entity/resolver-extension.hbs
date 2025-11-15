@@ -12,10 +12,11 @@
  * Add your custom business logic below!
  */
 
-import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import { Resolver, Query, Arg, Ctx } from 'type-graphql';
 import { {{className}}ResolverBase } from './__generated__/{{className}}ResolverBase.js';
 import { {{className}} } from '@db/entities/{{className}}.js';
 import type { GraphQLContext } from '@shared/types';
+import { FieldMutation } from '@base/index.js';
 
 @Resolver(() => {{className}})
 export class {{className}}Resolver extends {{className}}ResolverBase {
@@ -35,19 +36,27 @@ export class {{className}}Resolver extends {{className}}ResolverBase {
   // Custom Mutations
   // ──────────────────────────────────────────────────────────────────────────
 
-  // Example: Custom business logic mutation
-  // @Mutation(() => {{className}}, { description: 'Publish {{camelName}}' })
+  // Example: Custom business logic mutation with FieldMutation decorator
+  //
+  // First, create the input in {{className}}Inputs.ts:
+  // @InputType({ description: 'Input for publishing {{camelName}}' })
+  // export class Publish{{className}}Input extends BaseInput {
+  //   @FieldInput(String, { description: '{{className}} to publish', required: true })
+  //   id!: string;
+  // }
+  //
+  // Then use FieldMutation decorator (auto-validates, auto-injects context):
+  // @FieldMutation(Publish{{className}}Input, {{className}}, {
+  //   description: 'Publish {{camelName}}'
+  // })
   // async publish{{className}}(
-  //   @Arg('id', () => String) id: string,
-  //   @Ctx() ctx: GraphQLContext
+  //   input: Publish{{className}}Input,
+  //   ctx: GraphQLContext
   // ): Promise<{{className}}> {
-  //   const entity = await this.getRepository(ctx).findOneOrFail({ where: { id } });
+  //   const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: input.id } });
   //
-  //   // Reuse inherited helpers!
   //   // Ownership is now handled automatically by RelayRepository
-  //
   //   entity.published = true;
-  //   await this.getRepository(ctx).save(entity);
-  //   return entity;
+  //   return await this.getRepository(ctx).save(entity);
   // }
 }

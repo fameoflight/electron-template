@@ -124,7 +124,7 @@ export abstract class FileBase extends OwnedEntity {
   @FieldColumn(String, { required: true, description: 'Full file path in local storage' })
   fullPath!: string;
 
-  @FieldColumnJSON(z.any(), { description: 'Additional file metadata (dimensions, EXIF data, etc.)', nullable: true })
+  @FieldColumnJSON(z.any(), { description: 'Additional file metadata (dimensions, EXIF data, etc.)', required: false })
   metadata?: Record<string, any>;
 
   @FieldColumn(String, { required: true, description: 'MIME type of the file', defaultValue: 'application/octet-stream' })

@@ -119,7 +119,7 @@ export class ValidationHelper {
 
     // Nullable
     if (!field.required) {
-      options.push('nullable: true');
+      options.push('required: false');
     }
 
     // Unique

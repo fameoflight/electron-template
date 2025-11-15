@@ -16,7 +16,7 @@ import { File } from '@db/entities/File.js';
 import { CreateFileInput } from '@main/graphql/inputs/FileInputs.js';
 import { UpdateFileInput } from '@main/graphql/inputs/FileInputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -25,9 +25,9 @@ export class FileConnection extends createConnectionType('File', File) { }
 
 @Resolver(() => File)
 export class FileResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<File> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<File> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository(File, ctx);
+    return this.getOwnedRepository(File, ctx);
   }
 
   protected get repository(): RelayRepository<File> {
@@ -86,18 +86,19 @@ export class FileResolverBase extends BaseResolver {
   /**
    * Create new File
    */
-  @Mutation(() => File, { description: 'Create new File' })
+  @FieldMutation(CreateFileInput, File, {
+    description: 'Create new File'
+  })
   async createFile(
-    @Arg('input', () => CreateFileInput) input: CreateFileInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateFileInput,
+    ctx: GraphQLContext
   ): Promise<File> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
-    const entity = this.getRepository(ctx).create(input as any);
+    const entity = this.getRepository(ctx).create(input);
     // Auto-attach userId directly to entity (preserve constructor)
-    (entity as any).userId = ctx.user?.id;
-    return await this.getRepository(ctx).save(entity as any);
+    if (ctx.user) {
+      (entity).userId = ctx.user?.id;
+    }
+    return await this.getRepository(ctx).save(entity);
   }
 
 

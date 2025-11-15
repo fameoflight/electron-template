@@ -65,7 +65,7 @@ function LLMModelPage() {
     LLMModelPageQuery,
     {}
   );
-  const llmModels = [...(data.lLMModelsArray || [])];
+  const llmModels = [...(data?.lLMModelsArray || [])];
   const [modeOrRecord, setMode] = useFormRecordState('list', llmModels);
 
   const [commitCreateUpdate, isInFlight] = useCompatMutation<
@@ -139,7 +139,7 @@ function LLMModelPage() {
             <LLMModelForm
               form={form}
               record={modeOrRecord === 'new' ? null : modeOrRecord}
-              connections={Array.from(data.connectionsArray || [])}
+              connections={Array.from(data?.connectionsArray || [])}
               onSubmit={onSubmitForm}
             />
 
@@ -150,7 +150,7 @@ function LLMModelPage() {
         ) : (
           <LLMModelList
             records={llmModels}
-            connections={Array.from(data.connectionsArray || [])}
+            connections={Array.from(data?.connectionsArray || [])}
             onEdit={onEditLLMModel}
             onDelete={onDeleteLLMModel}
           />

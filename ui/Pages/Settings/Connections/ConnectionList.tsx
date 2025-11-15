@@ -15,7 +15,6 @@ const fragmentSpec = graphql`
     baseUrl
     provider
     kind
-    customHeaders
     ...ConnectionView_record
   }
 `;

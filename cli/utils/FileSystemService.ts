@@ -493,32 +493,29 @@ export class FileSystemService {
         continue;
       }
 
-      try {
-        const files = await fs.readdir(dirPath);
+      const files = await fs.readdir(dirPath);
 
-        for (const file of files) {
-          const filePath = path.join(dirPath, file);
-          const stat = await fs.stat(filePath);
+      for (const file of files) {
+        const filePath = path.join(dirPath, file);
+        const stat = await fs.stat(filePath);
 
-          if (stat.isFile()) {
-            for (const pattern of patterns) {
-              if (pattern.test(file)) {
-                if (dryRun) {
-                  result.removed.push(`${filePath} [DRY RUN]`);
-                  if (verbose) this.log(`  Would remove: ${filePath}`);
-                } else {
-                  await fs.unlink(filePath);
-                  result.removed.push(filePath);
-                  if (verbose) this.log(`  Removed: ${filePath}`);
-                }
-                break; // Stop checking other patterns for this file
+        if (stat.isFile()) {
+          for (const pattern of patterns) {
+            if (pattern.test(file)) {
+              if (dryRun) {
+                result.removed.push(`${filePath} [DRY RUN]`);
+                if (verbose) this.log(`  Would remove: ${filePath}`);
+              } else {
+                await fs.unlink(filePath);
+                result.removed.push(filePath);
+                if (verbose) this.log(`  Removed: ${filePath}`);
               }
+              break; // Stop checking other patterns for this file
             }
           }
         }
-      } catch (error) {
-        result.errors.push(`Error processing ${dir}: ${error instanceof Error ? error.message : String(error)}`);
       }
+
     }
 
     return result;

@@ -20,6 +20,7 @@
  */
 import { BaseGenerator, GeneratorOptions, GeneratorResult } from './BaseGenerator.js';
 import { generateMigrationName } from '../utils/string-helpers.js';
+import { output } from '../utils/output.js';
 
 export interface SearchGeneratorOptions {
   name: string;
@@ -46,8 +47,8 @@ export class SearchGenerator extends BaseGenerator {
     const ftsTableName = `${tableName}_fts`;
     const migrationName = generateMigrationName(`Add${className}FTS`);
 
-    console.log(`\n🔍 Generating FTS5 Search Migration: ${className}\n`);
-    console.log(`📝 Search Fields: ${this.searchFields.join(', ')}\n`);
+    output.info(`\n🔍 Generating FTS5 Search Migration: ${className}\n`);
+    output.info(`📝 Search Fields: ${this.searchFields.join(', ')}\n`);
 
     // Prepare template context
     const context = {
@@ -70,16 +71,14 @@ export class SearchGenerator extends BaseGenerator {
     const migrationPath = `main/db/migrations/${migrationName}.ts`;
     await this.writeFile(migrationPath, migrationContent);
 
-    console.log('📁 Generated File:');
-    console.log(`   - Migration: ${migrationPath}`);
-    console.log('');
+    output.success('📁 Generated File:');
+    output.info(`   - Migration: ${migrationPath}\n`);
 
-    console.log('💡 Next Steps:');
-    console.log(`   1. Run migration: yarn typeorm migration:run`);
-    console.log(`   2. Add @Searchable({ fields: [${this.searchFields.map(f => `'${f}'`).join(', ')}] }) decorator to ${className} entity`);
-    console.log(`   3. Use @CRUDResolver with searchable: true option`);
-    console.log(`   4. Generate GraphQL schema: yarn graphql`);
-    console.log('');
+    output.info('💡 Next Steps:');
+    output.info(`   1. Run migration: yarn typeorm migration:run`);
+    output.info(`   2. Add @Searchable({ fields: [${this.searchFields.map(f => `'${f}'`).join(', ')}] }) decorator to ${className} entity`);
+    output.info(`   3. Use @CRUDResolver with searchable: true option`);
+    output.info(`   4. Generate GraphQL schema: yarn graphql\n`);
 
     return this.results;
   }

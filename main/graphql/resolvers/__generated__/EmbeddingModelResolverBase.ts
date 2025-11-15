@@ -17,7 +17,7 @@ import { CreateEmbeddingModelInput } from '@main/graphql/inputs/EmbeddingModelIn
 import { CreateUpdateEmbeddingModelInput } from '@main/graphql/inputs/EmbeddingModelInputs.js';
 import { UpdateEmbeddingModelInput } from '@main/graphql/inputs/EmbeddingModelInputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -26,9 +26,9 @@ export class EmbeddingModelConnection extends createConnectionType('EmbeddingMod
 
 @Resolver(() => EmbeddingModel)
 export class EmbeddingModelResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<EmbeddingModel> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<EmbeddingModel> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository(EmbeddingModel, ctx);
+    return this.getOwnedRepository(EmbeddingModel, ctx);
   }
 
   protected get repository(): RelayRepository<EmbeddingModel> {
@@ -87,31 +87,31 @@ export class EmbeddingModelResolverBase extends BaseResolver {
   /**
    * Create new EmbeddingModel
    */
-  @Mutation(() => EmbeddingModel, { description: 'Create new EmbeddingModel' })
+  @FieldMutation(CreateEmbeddingModelInput, EmbeddingModel, {
+    description: 'Create new EmbeddingModel'
+  })
   async createEmbeddingModel(
-    @Arg('input', () => CreateEmbeddingModelInput) input: CreateEmbeddingModelInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateEmbeddingModelInput,
+    ctx: GraphQLContext
   ): Promise<EmbeddingModel> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
-    const entity = this.getRepository(ctx).create(input as any);
+    const entity = this.getRepository(ctx).create(input);
     // Auto-attach userId directly to entity (preserve constructor)
-    (entity as any).userId = ctx.user?.id;
-    return await this.getRepository(ctx).save(entity as any);
+    if (ctx.user) {
+      (entity).userId = ctx.user?.id;
+    }
+    return await this.getRepository(ctx).save(entity);
   }
 
   /**
    * Update existing EmbeddingModel
    */
-  @Mutation(() => EmbeddingModel, { description: 'Update existing EmbeddingModel' })
+  @FieldMutation(UpdateEmbeddingModelInput, EmbeddingModel, {
+    description: 'Update existing EmbeddingModel'
+  })
   async updateEmbeddingModel(
-    @Arg('input', () => UpdateEmbeddingModelInput) input: UpdateEmbeddingModelInput,
-    @Ctx() ctx: GraphQLContext
+    input: UpdateEmbeddingModelInput,
+    ctx: GraphQLContext
   ): Promise<EmbeddingModel> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
 
     // Safely assign only defined, updatable fields (excludes id, userId and undefined values)
@@ -122,14 +122,13 @@ export class EmbeddingModelResolverBase extends BaseResolver {
   /**
    * Create or update EmbeddingModel (upsert)
    */
-  @Mutation(() => EmbeddingModel, { description: 'Create or update EmbeddingModel' })
+  @FieldMutation(CreateUpdateEmbeddingModelInput, EmbeddingModel, {
+    description: 'Create or update EmbeddingModel'
+  })
   async createUpdateEmbeddingModel(
-    @Arg('input', () => CreateUpdateEmbeddingModelInput) input: CreateUpdateEmbeddingModelInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateUpdateEmbeddingModelInput,
+    ctx: GraphQLContext
   ): Promise<EmbeddingModel> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     if (input.id) {
       // Update existing
       const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
@@ -140,10 +139,12 @@ export class EmbeddingModelResolverBase extends BaseResolver {
     } else {
       // Create new
       const { id, ...createData } = input;
-      const entity = this.getRepository(ctx).create(createData as any);
+      const entity = this.getRepository(ctx).create(createData);
       // Auto-attach userId directly to entity (preserve constructor)
-      (entity as any).userId = ctx.user?.id;
-      return await this.getRepository(ctx).save(entity as any);
+      if (ctx.user) {
+        (entity).userId = ctx.user?.id;
+      }
+      return await this.getRepository(ctx).save(entity);
     }
   }
 

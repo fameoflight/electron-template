@@ -116,6 +116,45 @@ describe('zodToGraphQL', () => {
       expect(TestType.name).toBe('WithMetadata');
     });
 
+    it('should properly handle optional nested objects in GraphQL field definitions', () => {
+      // This test specifically targets the bug where optional nested objects
+      // were incorrectly marked as required in GraphQL schema
+      const EmbeddingContentMetadataSchema = z.object({
+        chunkProgress: z.object({
+          current: z.number(),
+          total: z.number(),
+          percentage: z.number(),
+        }).describe("ChunkProgressType: Progress of chunk processing").optional(),
+        processingStage: z.string().optional(),
+        retryCount: z.number().optional(),
+        priority: z.string().optional(),
+        startedAt: z.string().optional(),
+        completedAt: z.string().optional(),
+        estimatedTimeRemaining: z.number().optional(),
+        extractedTextLength: z.number().optional(),
+        detectedLanguage: z.string().optional(),
+      }).describe('EmbeddingContentMetadataSchema: Generated schema for metadata field');
+
+      const MetadataType = zodToGraphQL(EmbeddingContentMetadataSchema);
+
+      expect(MetadataType).toBeDefined();
+      expect(MetadataType.name).toBe('EmbeddingContentMetadataSchema');
+
+      const instance = new MetadataType();
+      expect(instance).toBeDefined();
+
+      // Verify all fields are properly initialized as undefined
+      expect(instance.chunkProgress).toBeUndefined();
+      expect(instance.processingStage).toBeUndefined();
+      expect(instance.retryCount).toBeUndefined();
+      expect(instance.priority).toBeUndefined();
+      expect(instance.startedAt).toBeUndefined();
+      expect(instance.completedAt).toBeUndefined();
+      expect(instance.estimatedTimeRemaining).toBeUndefined();
+      expect(instance.extractedTextLength).toBeUndefined();
+      expect(instance.detectedLanguage).toBeUndefined();
+    });
+
     it('should handle deeply nested objects', () => {
       const DeeplyNested = z.object({
         user: z.object({

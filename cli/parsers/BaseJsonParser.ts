@@ -16,15 +16,8 @@ export abstract class BaseJsonParser<T> {
    * Parse JSON file content with error handling
    */
   protected parseJson(content: string): ParseResult<any> {
-    try {
-      const parsed = JSON.parse(content);
-      return { success: true, data: parsed };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Invalid JSON'
-      };
-    }
+    const parsed = JSON.parse(content);
+    return { success: true, data: parsed };
   }
 
   /**

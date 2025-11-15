@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e7e3527d04d6986ab32ce91029fd3322>>
+ * @generated SignedSource<<b724df1aa2df8a6a861d284cc866e72d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -18,8 +18,8 @@ export type ConnectionView_record$data = {
   readonly id: string;
   readonly kind: ConnectionBaseKind;
   readonly models: ReadonlyArray<{
-    readonly id: string | null | undefined;
-    readonly name: string | null | undefined;
+    readonly id: string;
+    readonly name: string;
   }> | null | undefined;
   readonly name: string;
   readonly provider: string | null | undefined;

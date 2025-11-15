@@ -17,7 +17,7 @@ import { CreateMessageVersionInput } from '@main/graphql/inputs/MessageVersionIn
 import { CreateUpdateMessageVersionInput } from '@main/graphql/inputs/MessageVersionInputs.js';
 import { UpdateMessageVersionInput } from '@main/graphql/inputs/MessageVersionInputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -26,9 +26,9 @@ export class MessageVersionConnection extends createConnectionType('MessageVersi
 
 @Resolver(() => MessageVersion)
 export class MessageVersionResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<MessageVersion> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<MessageVersion> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository(MessageVersion, ctx);
+    return this.getOwnedRepository(MessageVersion, ctx);
   }
 
   protected get repository(): RelayRepository<MessageVersion> {
@@ -87,31 +87,31 @@ export class MessageVersionResolverBase extends BaseResolver {
   /**
    * Create new MessageVersion
    */
-  @Mutation(() => MessageVersion, { description: 'Create new MessageVersion' })
+  @FieldMutation(CreateMessageVersionInput, MessageVersion, {
+    description: 'Create new MessageVersion'
+  })
   async createMessageVersion(
-    @Arg('input', () => CreateMessageVersionInput) input: CreateMessageVersionInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateMessageVersionInput,
+    ctx: GraphQLContext
   ): Promise<MessageVersion> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
-    const entity = this.getRepository(ctx).create(input as any);
+    const entity = this.getRepository(ctx).create(input);
     // Auto-attach userId directly to entity (preserve constructor)
-    (entity as any).userId = ctx.user?.id;
-    return await this.getRepository(ctx).save(entity as any);
+    if (ctx.user) {
+      (entity).userId = ctx.user?.id;
+    }
+    return await this.getRepository(ctx).save(entity);
   }
 
   /**
    * Update existing MessageVersion
    */
-  @Mutation(() => MessageVersion, { description: 'Update existing MessageVersion' })
+  @FieldMutation(UpdateMessageVersionInput, MessageVersion, {
+    description: 'Update existing MessageVersion'
+  })
   async updateMessageVersion(
-    @Arg('input', () => UpdateMessageVersionInput) input: UpdateMessageVersionInput,
-    @Ctx() ctx: GraphQLContext
+    input: UpdateMessageVersionInput,
+    ctx: GraphQLContext
   ): Promise<MessageVersion> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
 
     // Safely assign only defined, updatable fields (excludes id, userId and undefined values)
@@ -122,14 +122,13 @@ export class MessageVersionResolverBase extends BaseResolver {
   /**
    * Create or update MessageVersion (upsert)
    */
-  @Mutation(() => MessageVersion, { description: 'Create or update MessageVersion' })
+  @FieldMutation(CreateUpdateMessageVersionInput, MessageVersion, {
+    description: 'Create or update MessageVersion'
+  })
   async createUpdateMessageVersion(
-    @Arg('input', () => CreateUpdateMessageVersionInput) input: CreateUpdateMessageVersionInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateUpdateMessageVersionInput,
+    ctx: GraphQLContext
   ): Promise<MessageVersion> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     if (input.id) {
       // Update existing
       const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
@@ -140,10 +139,12 @@ export class MessageVersionResolverBase extends BaseResolver {
     } else {
       // Create new
       const { id, ...createData } = input;
-      const entity = this.getRepository(ctx).create(createData as any);
+      const entity = this.getRepository(ctx).create(createData);
       // Auto-attach userId directly to entity (preserve constructor)
-      (entity as any).userId = ctx.user?.id;
-      return await this.getRepository(ctx).save(entity as any);
+      if (ctx.user) {
+        (entity).userId = ctx.user?.id;
+      }
+      return await this.getRepository(ctx).save(entity);
     }
   }
 

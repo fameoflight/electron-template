@@ -6,6 +6,12 @@ type BaseEntity implements Node {
   updatedAt: DateTimeISO!
 }
 
+"""Input for canceling a message version"""
+input CancelMessageVersionInput {
+  """Input: Message version to cancel (ID of MessageVersion)"""
+  messageVersionId: String!
+}
+
 """Chat conversation entity for managing AI conversations"""
 type Chat implements Node {
   createdAt: DateTimeISO!
@@ -119,8 +125,8 @@ type ConnectionEdge {
 
 """Generated schema"""
 type ConnectionModelType {
-  id: String
-  name: String
+  id: String!
+  name: String!
   provider: String
   version: String
 }
@@ -737,7 +743,7 @@ type Mutation {
   archiveChat(id: String!): Chat!
 
   """Cancel a streaming message version"""
-  cancelMessageVersion(messageVersionId: String!): Message!
+  cancelMessageVersion(input: CancelMessageVersionInput!): MessageVersion
 
   """Create new Chat"""
   createChat(input: CreateChatInput!): Chat!

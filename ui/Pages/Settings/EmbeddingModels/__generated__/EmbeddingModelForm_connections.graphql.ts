@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9e9335ef2d816303db812a251b771ad3>>
+ * @generated SignedSource<<ea681c64ee6ac916bc2040b012d3c471>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -15,8 +15,8 @@ export type EmbeddingModelForm_connections$data = ReadonlyArray<{
   readonly id: string;
   readonly kind: ConnectionBaseKind;
   readonly models: ReadonlyArray<{
-    readonly id: string | null | undefined;
-    readonly name: string | null | undefined;
+    readonly id: string;
+    readonly name: string;
   }> | null | undefined;
   readonly name: string;
   readonly provider: string | null | undefined;

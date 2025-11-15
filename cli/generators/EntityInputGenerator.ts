@@ -53,11 +53,6 @@ export class EntityInputGenerator {
     extensionPath?: string;
     extensionCreated: boolean;
   } {
-    // Check if inputs should be generated based on graphql property
-    if (!this.shouldGenerateInputs()) {
-      throw new Error(`Input generation skipped for entity "${this.entity.name}" because graphql: false or inputs not included in graphql array`);
-    }
-
     const className = this.entity.name;
     const data = this.inputPreparator.prepareAllInputsData();
     const code = this.templateManager.render('inputs', data);

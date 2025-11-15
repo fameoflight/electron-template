@@ -83,7 +83,7 @@ import { Connection } from '../Connection.js';
 @ObjectType()
 export abstract class EmbeddingModelBase extends OwnedEntity {
   @Field(() => ID, { description: 'Connection for this LLM model' })
-  @FieldColumn(String, { required: true, description: 'Connection for this LLM model (Foreign key for connection)' })
+  @FieldColumn(String, { description: 'Connection for this LLM model (Foreign key for connection)' })
   connectionId!: string;
 
   @FieldColumn(Number, { required: true, description: 'Maximum context length supported by the model' })

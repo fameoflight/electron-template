@@ -97,7 +97,7 @@ describe('StreamMessageVersionJob', () => {
     const chatWithLlmModel = { ...chat, llmModel: { id: llmModel.id } };
     const messageResult = await new MessageService().createMessagePairAndStream(
       chat.id,
-      'Write a long prose on India',
+      'Write a short summary on India',
       { logPrefix: 'StreamMessageVersionJobTest' }
     );
 

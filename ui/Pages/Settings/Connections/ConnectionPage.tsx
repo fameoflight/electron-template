@@ -36,7 +36,6 @@ const ConnectionPageCreateUpdateMutation = graphql`
       baseUrl
       provider
       kind
-      customHeaders
     }
   }
 `
@@ -53,7 +52,7 @@ function ConnectionPage() {
     ConnectionPagePageQuery,
     {}
   );
-  const connections = data.connectionsArray || [];
+  const connections = data?.connectionsArray || [];
   const [modeOrRecord, setMode] = useFormRecordState('list', connections);
 
   const [commitCreateUpdate, isInFlight] = useCompatMutation<

@@ -94,7 +94,7 @@ export abstract class LLMModelBase extends OwnedEntity {
   capabilities!: LLMModelCapability[];
 
   @Field(() => ID, { description: 'Connection for this LLM model' })
-  @FieldColumn(String, { required: true, description: 'Connection for this LLM model (Foreign key for connection)' })
+  @FieldColumn(String, { description: 'Connection for this LLM model (Foreign key for connection)' })
   connectionId!: string;
 
   @FieldColumn(Number, { required: true, description: 'Context length' })

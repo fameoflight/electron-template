@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Icon Update Command
  *
@@ -119,7 +118,7 @@ export class IconGenerator {
 
       const sortedFiles = files
         .sort()
-        .map(file => `   ${path.relative(this.outputDir, file)}`);
+        .map((file: string) => `   ${path.relative(this.outputDir, file)}`);
 
       console.log(sortedFiles.join('\n'));
     } catch (error) {

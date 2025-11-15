@@ -423,7 +423,7 @@ describe('Entity Generator - GraphQL Operations', () => {
 
       // Check that only create method is present
       expect(generatedContent).toContain('async createCreateOnlyEntity(');
-      expect(generatedContent).toContain('@Mutation(() => CreateOnlyEntity, { description: \'Create new CreateOnlyEntity\' })');
+      expect(generatedContent).toContain('@FieldMutation(CreateCreateOnlyEntityInput,');
 
       // Check that other methods are excluded
       expect(generatedContent).not.toContain('async updateCreateOnlyEntity(');

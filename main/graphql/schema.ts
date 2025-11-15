@@ -1,5 +1,6 @@
 import { buildSchema } from 'type-graphql';
 import { getResolverClasses } from './resolverPaths.js';
+import { RelayIdMiddleware } from '../base/graphql/middleware/RelayIdMiddleware';
 
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
@@ -25,5 +26,7 @@ export async function createGraphQLSchema() {
     validate: true, // Enable automatic input validation using class-validator
     // Enable orphaned types to ensure Node interface is included
     orphanedTypes: [],
+    // Global middleware for automatic Relay ID → local ID conversion
+    globalMiddlewares: [RelayIdMiddleware],
   });
 }

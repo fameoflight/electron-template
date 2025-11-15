@@ -125,8 +125,7 @@ describe('EntityObjectType Decorator', () => {
       @FieldColumn(Date, {
         columnType: 'datetime',
         description: 'Next retry timestamp',
-        required: false,
-        nullable: true
+        required: false
       })
       nextRetryAt?: Date;
     }
@@ -293,7 +292,6 @@ describe('EntityObjectType Decorator', () => {
 
       @FieldColumn(Date, {
         columnType: 'datetime',
-        nullable: true,
         required: false,
         description: 'When job was queued'
       })
@@ -301,7 +299,6 @@ describe('EntityObjectType Decorator', () => {
 
       @FieldColumn(Date, {
         columnType: 'datetime',
-        nullable: true,
         required: false,
         description: 'When to retry next'
       })

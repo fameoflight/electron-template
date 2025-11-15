@@ -118,12 +118,8 @@ export class EntityJsonParser {
    */
   static parseFile(content: string): ParsedEntity {
     // Parse JSON
-    let schema: EntitySchemaJson;
-    try {
-      schema = JSON.parse(content);
-    } catch (error) {
-      throw new Error(`Invalid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    const schema: EntitySchemaJson = JSON.parse(content);
+
 
     // Validate against schema
     const validationError = this.validateSchema(schema);

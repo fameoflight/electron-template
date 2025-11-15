@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<29a81b0f3f6b794e5b91914ca2bc0398>>
+ * @generated SignedSource<<828548bf97ecf2e1848b7ea71748952a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -159,12 +159,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "b7baf9baf507fc82235a7b2a912fabed",
+    "cacheID": "46a485bb498957bf7d901c1c86e7177d",
     "id": null,
     "metadata": {},
     "name": "ConnectionPageQuery",
     "operationKind": "query",
-    "text": "query ConnectionPageQuery {\n  currentUser {\n    id\n  }\n  connectionsArray {\n    id\n    name\n    ...ConnectionList_records\n    ...ConnectionForm_record\n  }\n}\n\nfragment ConnectionForm_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n}\n\nfragment ConnectionList_records on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n  ...ConnectionView_record\n}\n\nfragment ConnectionView_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n  models {\n    id\n    name\n  }\n}\n"
+    "text": "query ConnectionPageQuery {\n  currentUser {\n    id\n  }\n  connectionsArray {\n    id\n    name\n    ...ConnectionList_records\n    ...ConnectionForm_record\n  }\n}\n\nfragment ConnectionForm_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n}\n\nfragment ConnectionList_records on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  ...ConnectionView_record\n}\n\nfragment ConnectionView_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n  models {\n    id\n    name\n  }\n}\n"
   }
 };
 })();

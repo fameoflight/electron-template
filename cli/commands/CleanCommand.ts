@@ -26,8 +26,6 @@ export class CleanCommand extends BaseCommand {
   private fileService = new FileSystemService();
 
   async run(options: Record<string, unknown>): Promise<CommandResult<CleanResult>> {
-    this.loggingEnabled = false;
-
     const cleanOptions = options as unknown as CleanOptions;
 
     const combinedResult: CleanResult = {
@@ -40,7 +38,7 @@ export class CleanCommand extends BaseCommand {
     if (cleanOptions.data) {
       const result = await this.fileService.cleanDirectory('.data', 'Data directory', {
         dryRun: cleanOptions.dryRun,
-        verbose: this.loggingEnabled
+        verbose: this.opts.verbose ?? false
       });
       this.combineResults(combinedResult, result);
     }
@@ -49,7 +47,7 @@ export class CleanCommand extends BaseCommand {
     if (cleanOptions.nodeModules) {
       const result = await this.fileService.cleanDirectory('.node_modules', 'Node modules directory', {
         dryRun: cleanOptions.dryRun,
-        verbose: this.loggingEnabled
+        verbose: this.opts.verbose ?? false
       });
       this.combineResults(combinedResult, result);
     }
@@ -136,7 +134,7 @@ export class CleanCommand extends BaseCommand {
     const directories = ['main', 'ui'];
     return await this.fileService.cleanFilesByPattern(patterns, directories, {
       dryRun,
-      verbose: this.loggingEnabled
+      verbose: this.opts.verbose ?? false
     });
   }
 
@@ -154,7 +152,7 @@ export class CleanCommand extends BaseCommand {
 
     return await this.fileService.cleanFilesByPattern(cacheDirs, ['node_modules'], {
       dryRun,
-      verbose: this.loggingEnabled
+      verbose: this.opts.verbose ?? false
     });
   }
 
@@ -178,7 +176,7 @@ export class CleanCommand extends BaseCommand {
     for (const buildDir of buildDirs) {
       const dirResult = await this.fileService.cleanDirectory(buildDir, `Build directory (${buildDir})`, {
         dryRun,
-        verbose: this.loggingEnabled
+        verbose: this.opts.verbose ?? false
       });
       this.combineResults(result, dirResult);
     }
@@ -199,7 +197,7 @@ export class CleanCommand extends BaseCommand {
     const directories = ['ui', 'main', 'shared'];
     return await this.fileService.cleanFilesByPattern(patterns, directories, {
       dryRun,
-      verbose: this.loggingEnabled
+      verbose: this.opts.verbose ?? false
     });
   }
 
@@ -214,7 +212,7 @@ export class CleanCommand extends BaseCommand {
     // Remove log directories
     const logDirResult = await this.fileService.cleanDirectory('logs', 'Logs directory', {
       dryRun,
-      verbose: this.loggingEnabled
+      verbose: this.opts.verbose ?? false
     });
     this.combineResults(result, logDirResult);
 
@@ -225,7 +223,7 @@ export class CleanCommand extends BaseCommand {
 
     const logFileResult = await this.fileService.cleanFilesByPattern(patterns, ['.'], {
       dryRun,
-      verbose: this.loggingEnabled
+      verbose: this.opts.verbose ?? false
     });
     this.combineResults(result, logFileResult);
 
@@ -247,7 +245,7 @@ export class CleanCommand extends BaseCommand {
       const generatedResult = await this.fileService.cleanDirectory(
         `${dir}/__generated__`,
         `Generated files directory (${dir}/__generated__)`,
-        { dryRun, verbose: this.loggingEnabled }
+        { dryRun, verbose: this.opts.verbose ?? false }
       );
       this.combineResults(result, generatedResult);
     }
@@ -260,7 +258,7 @@ export class CleanCommand extends BaseCommand {
     const subDirResult = await this.fileService.cleanFilesByPattern(
       subDirPatterns,
       ['ui', 'main', 'shared', 'tui', '__tests__'],
-      { dryRun, verbose: this.loggingEnabled }
+      { dryRun, verbose: this.opts.verbose ?? false }
     );
     this.combineResults(result, subDirResult);
 

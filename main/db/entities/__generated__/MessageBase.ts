@@ -92,11 +92,11 @@ export enum MessageRole {
 @ObjectType()
 export abstract class MessageBase extends OwnedEntity {
   @Field(() => ID, { description: 'Parent chat ID' })
-  @FieldColumn(String, { required: true, description: 'Parent chat ID (Foreign key for chat)' })
+  @FieldColumn(String, { description: 'Parent chat ID (Foreign key for chat)' })
   chatId!: string;
 
   @Field(() => ID, { description: 'Current version of the message' })
-  @FieldColumn(String, { required: true, description: 'Current version of the message (Foreign key for currentVersion)' })
+  @FieldColumn(String, { description: 'Current version of the message (Foreign key for currentVersion)' })
   currentVersionId!: string;
 
   @Field(() => ID, { description: 'LLM model ID used for this message (for user messages)' })
@@ -127,6 +127,6 @@ export abstract class MessageBase extends OwnedEntity {
   @JoinColumn({ name: 'llmModelId' })
   @IsOptional()
   @ValidateNested()
-  llmModel?: Promise<LLMModel | null>;
+  llmModel?: Promise<LLMModel>;
 
 }

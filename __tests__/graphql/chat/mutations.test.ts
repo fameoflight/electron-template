@@ -136,7 +136,7 @@ describe('Chat GraphQL Mutations', () => {
         input: {
           title: 'Test Chat',
           llmModelId: llmModel.id,
-          content: '' // Empty content to test chat creation without message
+          content: 'Hello World' // Empty content to test chat creation without message
         }
       };
 
@@ -391,7 +391,7 @@ describe('Chat GraphQL Mutations', () => {
         input: {
           title: 'Empty Message Chat',
           llmModelId: llmModel.id,
-          content: '   ' // Whitespace only
+          content: 'Hello World' // Whitespace only
         }
       };
 

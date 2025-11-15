@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1d47e4e261116ebc0ffc103fe9818763>>
+ * @generated SignedSource<<c21611e4599552efe06aadb1949d5b3a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,8 +16,8 @@ export type LLMModelForm_connections$data = ReadonlyArray<{
   readonly kind: ConnectionBaseKind;
   readonly modelId: string;
   readonly models: ReadonlyArray<{
-    readonly id: string | null | undefined;
-    readonly name: string | null | undefined;
+    readonly id: string;
+    readonly name: string;
   }> | null | undefined;
   readonly name: string;
   readonly provider: string | null | undefined;

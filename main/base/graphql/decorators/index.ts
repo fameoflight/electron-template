@@ -12,6 +12,10 @@ export {
   getComputedFieldMetadata
 } from './fields/ComputedField.js';
 
+// Mutation decorators
+export { FieldMutation } from './FieldMutation.js';
+export type { FieldMutationOptions } from './FieldMutation.js';
+
 // Export unified interface for custom decorators
 export type { FieldColumnOptions } from './fields/types.js';
 export type { ComputedFieldOptions } from './fields/ComputedField.js';

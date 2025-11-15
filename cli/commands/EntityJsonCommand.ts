@@ -11,109 +11,81 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { EntityJsonParser } from '../parsers/EntityJsonParser.js';
 import { GeneratorFactory } from '../generators/GeneratorFactory.js';
-import chalk from 'chalk';
+import { output } from '../utils/output.js';
 
 // Export individual functions for direct use
 export async function generateAllEntities(force: boolean = false): Promise<void> {
   const schemasDir = path.join(process.cwd(), 'schemas');
 
   if (!fs.existsSync(schemasDir)) {
-    console.error(chalk.red('❌ schemas/ directory not found'));
-    console.log(chalk.yellow('💡 Create schemas/ directory and add .json files'));
+    output.error('schemas/ directory not found');
+    output.info('Create schemas/ directory and add .json files');
     process.exit(1);
   }
 
-  try {
-    await generateAllEntitiesInternal(schemasDir, force, 'all');
-  } catch (error) {
-    console.error(chalk.red('❌ Generation failed:'), error);
-    process.exit(1);
-  }
+  await generateAllEntitiesInternal(schemasDir, force, 'all');
+
 }
 
 export async function generateAllEntitiesInputs(force: boolean = false): Promise<void> {
   const schemasDir = path.join(process.cwd(), 'schemas');
 
   if (!fs.existsSync(schemasDir)) {
-    console.error(chalk.red('❌ schemas/ directory not found'));
-    console.log(chalk.yellow('💡 Create schemas/ directory and add .json files'));
+    output.error('schemas/ directory not found');
+    output.info('Create schemas/ directory and add .json files');
     process.exit(1);
   }
 
-  try {
-    await generateAllEntitiesInternal(schemasDir, force, 'inputs');
-  } catch (error) {
-    console.error(chalk.red('❌ Generation failed:'), error);
-    process.exit(1);
-  }
+  await generateAllEntitiesInternal(schemasDir, force, 'inputs');
+
 }
 
 export async function generateAllEntitiesResolvers(force: boolean = false): Promise<void> {
   const schemasDir = path.join(process.cwd(), 'schemas');
 
   if (!fs.existsSync(schemasDir)) {
-    console.error(chalk.red('❌ schemas/ directory not found'));
-    console.log(chalk.yellow('💡 Create schemas/ directory and add .json files'));
+    output.error('schemas/ directory not found');
+    output.info('Create schemas/ directory and add .json files');
     process.exit(1);
   }
 
-  try {
-    await generateAllEntitiesInternal(schemasDir, force, 'resolvers');
-  } catch (error) {
-    console.error(chalk.red('❌ Generation failed:'), error);
-    process.exit(1);
-  }
+  await generateAllEntitiesInternal(schemasDir, force, 'resolvers');
 }
 
 export async function generateSingleEntity(name: string, force: boolean = false): Promise<void> {
   const schemasDir = path.join(process.cwd(), 'schemas');
 
   if (!fs.existsSync(schemasDir)) {
-    console.error(chalk.red('❌ schemas/ directory not found'));
-    console.log(chalk.yellow('💡 Create schemas/ directory and add .json files'));
+    output.error('schemas/ directory not found');
+    output.info('Create schemas/ directory and add .json files');
     process.exit(1);
   }
 
-  try {
-    await generateEntityInternal(schemasDir, name, force, 'all');
-  } catch (error) {
-    console.error(chalk.red('❌ Generation failed:'), error);
-    process.exit(1);
-  }
+  await generateEntityInternal(schemasDir, name, force, 'all');
 }
 
 export async function generateSingleEntityInputs(name: string, force: boolean = false): Promise<void> {
   const schemasDir = path.join(process.cwd(), 'schemas');
 
   if (!fs.existsSync(schemasDir)) {
-    console.error(chalk.red('❌ schemas/ directory not found'));
-    console.log(chalk.yellow('💡 Create schemas/ directory and add .json files'));
+    output.error('schemas/ directory not found');
+    output.info('Create schemas/ directory and add .json files');
     process.exit(1);
   }
 
-  try {
-    await generateEntityInternal(schemasDir, name, force, 'inputs');
-  } catch (error) {
-    console.error(chalk.red('❌ Generation failed:'), error);
-    process.exit(1);
-  }
+  await generateEntityInternal(schemasDir, name, force, 'inputs');
 }
 
 export async function generateSingleEntityResolver(name: string, force: boolean = false): Promise<void> {
   const schemasDir = path.join(process.cwd(), 'schemas');
 
   if (!fs.existsSync(schemasDir)) {
-    console.error(chalk.red('❌ schemas/ directory not found'));
-    console.log(chalk.yellow('💡 Create schemas/ directory and add .json files'));
+    output.error('schemas/ directory not found');
+    output.info('Create schemas/ directory and add .json files');
     process.exit(1);
   }
 
-  try {
-    await generateEntityInternal(schemasDir, name, force, 'resolvers');
-  } catch (error) {
-    console.error(chalk.red('❌ Generation failed:'), error);
-    process.exit(1);
-  }
+  await generateEntityInternal(schemasDir, name, force, 'resolvers');
 }
 
 export function registerEntityJsonCommand(program: Command) {
@@ -123,18 +95,18 @@ export function registerEntityJsonCommand(program: Command) {
 
 async function generateAllEntitiesInternal(schemasDir: string, force: boolean = false, type: 'all' | 'entities' | 'inputs' | 'resolvers' = 'all'): Promise<void> {
   const typeLabel = type === 'all' ? 'entities, inputs, and resolvers' : type;
-  console.log(chalk.bold(`\n🚀 Generating ${typeLabel} from JSON schemas...\n`));
+  output.info(`Generating ${typeLabel} from JSON schemas...`);
 
   // Find all .json files recursively (excluding entity-schema.json)
   const entityFiles = findEntityFiles(schemasDir);
 
   if (entityFiles.length === 0) {
-    console.log(chalk.yellow('⚠️  No entity JSON files found in schemas/'));
-    console.log(chalk.gray('   Create files like: schemas/Post.json'));
+    output.warning('No entity JSON files found in schemas/');
+    output.info('Create files like: schemas/Post.json');
     return;
   }
 
-  console.log(chalk.gray(`Found ${entityFiles.length} entity file(s)\n`));
+  output.info(`Found ${entityFiles.length} entity file(s)`);
 
   let generatedCount = 0;
   let updatedCount = 0;
@@ -144,87 +116,81 @@ async function generateAllEntitiesInternal(schemasDir: string, force: boolean = 
 
   for (const filePath of entityFiles) {
     const relativePath = path.relative(schemasDir, filePath);
-    console.log(chalk.cyan(`📄 Processing: ${relativePath}`));
+    output.info(`Processing: ${relativePath}`);
 
-    try {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const parsed = EntityJsonParser.parseFile(content);
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const parsed = EntityJsonParser.parseFile(content);
 
-      let result;
-      switch (type) {
-        case 'entities':
-          result = await factory.generateEntity(parsed);
-          break;
-        case 'inputs':
-          result = factory.generateInputs(parsed);
-          break;
-        case 'resolvers':
-          result = factory.generateResolver(parsed);
-          break;
-        case 'all':
-        default:
-          result = await factory.generateAll(parsed);
-          break;
-      }
-
-      if (result.success) {
-        if (result.entity?.extensionCreated) {
-          generatedCount++;
-          console.log(chalk.green(`   ✓ Generated new ${type}`));
-        } else {
-          updatedCount++;
-          console.log(chalk.blue(`   ✓ Updated existing ${type}`));
-        }
-
-        // Log generated files
-        if (result.entity) {
-          console.log(chalk.gray(`     Entity Base: ${path.relative(process.cwd(), result.entity.basePath)}`));
-          console.log(chalk.gray(`     Entity Ext:  ${path.relative(process.cwd(), result.entity.extensionPath)}`));
-        }
-        if (result.inputs) {
-          console.log(chalk.gray(`     Inputs:      ${path.relative(process.cwd(), result.inputs.inputsPath)}`));
-        }
-        if (result.resolver) {
-          console.log(chalk.gray(`     Resolver:    ${path.relative(process.cwd(), result.resolver.resolverPath)}`));
-        }
-      } else {
-        errorCount++;
-        console.error(chalk.red(`   ✗ Failed: ${result.errors?.join(', ')}`));
-      }
-      console.log('');
-    } catch (error) {
-      errorCount++;
-      console.error(chalk.red(`   ✗ Failed: ${error}`));
-      console.log('');
+    let result;
+    switch (type) {
+      case 'entities':
+        result = await factory.generateEntity(parsed);
+        break;
+      case 'inputs':
+        result = factory.generateInputs(parsed);
+        break;
+      case 'resolvers':
+        result = factory.generateResolver(parsed);
+        break;
+      case 'all':
+      default:
+        result = await factory.generateAll(parsed);
+        break;
     }
+
+    if (result.success) {
+      if (result.entity?.extensionCreated) {
+        generatedCount++;
+        output.success(`Generated new ${type}`);
+      } else {
+        updatedCount++;
+        output.info(`Updated existing ${type}`);
+      }
+
+      // Log generated files
+      if (result.entity) {
+        output.info(`Entity Base: ${path.relative(process.cwd(), result.entity.basePath)}`);
+        output.info(`Entity Ext:  ${path.relative(process.cwd(), result.entity.extensionPath)}`);
+      }
+      if (result.inputs) {
+        output.info(`Inputs:      ${path.relative(process.cwd(), result.inputs.inputsPath)}`);
+      }
+      if (result.resolver) {
+        output.info(`Resolver:    ${path.relative(process.cwd(), result.resolver.resolverPath)}`);
+      }
+    } else {
+      errorCount++;
+      output.error(`Failed: ${result.errors?.join(', ')}`);
+    }
+
   }
 
-  console.log(chalk.bold('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-  if (generatedCount > 0) console.log(chalk.green(`✓ Generated: ${generatedCount} new ${type}`));
-  if (updatedCount > 0) console.log(chalk.blue(`✓ Updated: ${updatedCount} existing ${type}`));
-  if (errorCount > 0) console.log(chalk.red(`✗ Errors: ${errorCount} failed`));
-  console.log(chalk.bold('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
+  // Summary
+  if (generatedCount > 0) output.success(`Generated: ${generatedCount} new ${type}`);
+  if (updatedCount > 0) output.info(`Updated: ${updatedCount} existing ${type}`);
+  if (errorCount > 0) output.error(`Errors: ${errorCount} failed`);
 
-  console.log(chalk.yellow('💡 Next steps:'));
+  // Next steps
+  output.info('Next steps:');
   if (type === 'all' || type === 'entities') {
-    console.log(chalk.gray('   1. Review generated files in main/db/entities/'));
-    console.log(chalk.gray('   2. Customize in main/db/entities/*.ts (not in generated/)'));
+    output.info('1. Review generated files in main/db/entities/');
+    output.info('2. Customize in main/db/entities/*.ts (not in generated/)');
   }
   if (type === 'all' || type === 'inputs' || type === 'resolvers') {
-    console.log(chalk.gray('   3. Run: yarn graphql (to update GraphQL schema)'));
+    output.info('3. Run: yarn graphql (to update GraphQL schema)');
   }
-  console.log(chalk.gray('   4. Run: yarn type-check (to verify types)\n'));
+  output.info('4. Run: yarn type-check (to verify types)');
 }
 
 async function generateEntityInternal(schemasDir: string, name: string, force: boolean = false, type: 'all' | 'entities' | 'inputs' | 'resolvers' = 'all'): Promise<void> {
   const typeLabel = type === 'all' ? 'entity, inputs, and resolver' : type;
-  console.log(chalk.bold(`\n🚀 Generating ${typeLabel} for: ${name}\n`));
+  output.info(`Generating ${typeLabel} for: ${name}`);
 
   const entityFile = findEntityFile(schemasDir, name);
 
   if (!entityFile) {
-    console.error(chalk.red(`❌ Entity file not found: ${name}.json`));
-    console.log(chalk.gray(`   Searched in: ${schemasDir}`));
+    output.error(`Entity file not found: ${name}.json`);
+    output.info(`Searched in: ${schemasDir}`);
     process.exit(1);
   }
 
@@ -250,33 +216,32 @@ async function generateEntityInternal(schemasDir: string, name: string, force: b
   }
 
   if (result.success) {
-    console.log(chalk.green(`✓ Generated ${typeLabel} for: ${name}`));
+    output.success(`Generated ${typeLabel} for: ${name}`);
 
     // Log generated files
     if (result.entity) {
-      console.log(chalk.gray(`  Entity Base: ${path.relative(process.cwd(), result.entity.basePath)}`));
-      console.log(chalk.gray(`  Entity Ext:  ${path.relative(process.cwd(), result.entity.extensionPath)}`));
+      output.info(`Entity Base: ${path.relative(process.cwd(), result.entity.basePath)}`);
+      output.info(`Entity Ext:  ${path.relative(process.cwd(), result.entity.extensionPath)}`);
     }
     if (result.inputs) {
-      console.log(chalk.gray(`  Inputs:      ${path.relative(process.cwd(), result.inputs.inputsPath)}`));
+      output.info(`Inputs:      ${path.relative(process.cwd(), result.inputs.inputsPath)}`);
     }
     if (result.resolver) {
-      console.log(chalk.gray(`  Resolver:    ${path.relative(process.cwd(), result.resolver.resolverPath)}`));
+      output.info(`Resolver:    ${path.relative(process.cwd(), result.resolver.resolverPath)}`);
     }
   } else {
-    console.error(chalk.red(`❌ Generation failed: ${result.errors?.join(', ')}`));
+    output.error(`Generation failed: ${result.errors?.join(', ')}`);
     process.exit(1);
   }
 
-  console.log('');
-  console.log(chalk.yellow('💡 Next steps:'));
+  output.info('Next steps:');
   if (type === 'all' || type === 'entities') {
-    console.log(chalk.gray(`   1. Customize in main/db/entities/${name}.ts`));
+    output.info(`1. Customize in main/db/entities/${name}.ts`);
   }
   if (type === 'all' || type === 'inputs' || type === 'resolvers') {
-    console.log(chalk.gray('   2. Run: yarn graphql'));
+    output.info('2. Run: yarn graphql');
   }
-  console.log(chalk.gray('   3. Run: yarn type-check\n'));
+  output.info('3. Run: yarn type-check');
 }
 
 function findEntityFiles(dir: string): string[] {

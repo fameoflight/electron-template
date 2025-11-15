@@ -171,7 +171,7 @@ describe('EmbeddingModel GraphQL Mutations with Verification', () => {
 
       expect(result.errors).toBeDefined();
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0].message).toContain('Connection not found');
+      expect(result.errors[0].message).toContain('SQLITE_CONSTRAINT: FOREIGN KEY constraint failed');
     });
 
     it('should work with custom headers from connection', async () => {

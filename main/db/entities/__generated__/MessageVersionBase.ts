@@ -103,7 +103,7 @@ export abstract class MessageVersionBase extends OwnedEntity {
   @FieldColumn(String, { required: true, description: 'Version-specific message content' })
   content!: string;
 
-  @FieldColumnJSON(z.any(), { description: 'Additional metadata about context used for generation (e.g., document sources, summary info)', nullable: true })
+  @FieldColumnJSON(z.any(), { description: 'Additional metadata about context used for generation (e.g., document sources, summary info)', required: false })
   contextMetadata?: Record<string, any>;
 
   @FieldColumn(Number, { required: false, description: 'Number of tokens used in conversation context for generation' })
@@ -116,7 +116,7 @@ export abstract class MessageVersionBase extends OwnedEntity {
   isRegenerated!: boolean;
 
   @Field(() => ID, { description: 'LLM model used to generate this version' })
-  @FieldColumn(String, { required: true, description: 'LLM model used to generate this version (Foreign key for llmModel)' })
+  @FieldColumn(String, { description: 'LLM model used to generate this version (Foreign key for llmModel)' })
   llmModelId!: string;
 
   @Field(() => ID, { description: 'Parent message ID' })
@@ -145,13 +145,13 @@ export abstract class MessageVersionBase extends OwnedEntity {
   @JoinColumn({ name: 'messageId' })
   @IsOptional()
   @ValidateNested()
-  message?: Promise<Message | null>;
+  message?: Promise<Message>;
 
   @Field(() => MessageVersion, { description: 'Previous version for regeneration lineage tracking', nullable: true })
   @ManyToOne(() => MessageVersion)
   @JoinColumn({ name: 'parentVersionId' })
   @IsOptional()
   @ValidateNested()
-  parentVersion?: Promise<MessageVersion | null>;
+  parentVersion?: Promise<MessageVersion>;
 
 }

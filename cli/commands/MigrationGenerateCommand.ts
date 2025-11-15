@@ -1,5 +1,5 @@
 /**
- * Migration Generate Command
+ * Migration Generate Command - Refactored with Service Pattern
  *
  * Generates per-table migration files by comparing two temporary databases.
  * This process is COMPLETELY INDEPENDENT of the actual database state.
@@ -63,11 +63,10 @@ import { TemplateManager } from '../generators/managers/TemplateManager.js';
 import { MigrationValidationService } from '../../main/db/migrations/MigrationValidationService.js';
 import { MigrationSQLGenerator } from '../../main/db/migrations/MigrationSQLGenerator.js';
 import { MigrationValidator } from './MigrationValidator.js';
+import { OutputManager } from '../ui/OutputManager.js';
+import { getDatabasePath } from '../../main/base/utils/index.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-interface GenerateOptions {
+export interface GenerateOptions {
   name?: string;
   dryRun?: boolean;
 }
@@ -98,31 +97,19 @@ export async function migrationGenerateCommand(options: GenerateOptions = {}) {
   const setup = await setupMigrationEnvironment();
   const { currentDataSource, desiredDataSource, tempDatabases } = await setupComparisonDatabases(setup);
 
-  try {
-    const changedTables = await detectSchemaChanges(currentDataSource, desiredDataSource);
-
-    if (changedTables.length === 0) {
-      console.log('✅ No schema changes detected');
-    } else {
-      console.log(`📝 Detected changes in ${changedTables.length} table(s): ${changedTables.join(', ')}`);
-      await handleSchemaChanges({
-        currentDataSource,
-        desiredDataSource,
-        migrationsDir: setup.migrationsDir,
-        changedTables,
-        dryRun: options.dryRun
-      });
-    }
-
-    await cleanupDesiredDatabase(desiredDataSource);
-
-  } catch (error) {
-    console.error('❌ Migration generation failed:', error);
-    process.exit(1);
-  } finally {
-    await cleanupTempDatabases(tempDatabases);
-    console.log('🧹 Cleaned up temporary databases');
+  const changedTables = await detectSchemaChanges(currentDataSource, desiredDataSource);
+  if (changedTables.length > 0) {
+    await handleSchemaChanges({
+      currentDataSource,
+      desiredDataSource,
+      migrationsDir: setup.migrationsDir,
+      changedTables,
+      dryRun: options.dryRun
+    });
   }
+
+  await cleanupDesiredDatabase(desiredDataSource);
+
 }
 
 // ============================================================================
@@ -702,65 +689,72 @@ function generateMigrationFileContent(opts: MigrationFileOptions): string {
 
 /**
  * Revert last migration with backup safety
+ * (Kept in command file as it's a separate command concern)
  */
 export async function revertMigrationSafe(): Promise<void> {
+  const output = new OutputManager({ colors: true });
+
+  const { initializeDatabase } = await import('../../main/db/dataSource.js');
+  const { backupDatabase, restoreFromBackup, cleanupOldBackups } = await import('../../main/db/utils/migrations.js');
+
+  // Create backup before reverting
+  let backupPath: string | null = null;
   try {
-    console.log('🔄 Reverting last migration...');
-
-    const { initializeDatabase } = await import('../../main/db/dataSource.js');
-    const { backupDatabase, restoreFromBackup, cleanupOldBackups } = await import('../../main/db/utils/migrations.js');
-
-    // Create backup before reverting
-    let backupPath: string | null = null;
-    try {
-      backupPath = await backupDatabase();
-    } catch (error) {
-      console.warn('⚠️  Warning: Could not create backup before reverting migration:', error);
-    }
-
-    const dataSource = await initializeDatabase();
-
-    try {
-      // Get migrations to see if there are any to revert
-      const executedMigrations = await dataSource.query(
-        "SELECT * FROM migrations ORDER BY id DESC LIMIT 1"
-      );
-
-      if (executedMigrations.length === 0) {
-        console.log('✅ No migrations to revert');
-        return;
-      }
-
-      const lastMigration = executedMigrations[0];
-      console.log(`📋 Reverting migration: ${lastMigration.name}`);
-
-      // Revert the last migration
-      await dataSource.undoLastMigration();
-      console.log('✅ Migration reverted successfully');
-
-      // Clean up old backups
-      await cleanupOldBackups(path.join(path.dirname(await import('@base/utils/index.js').then(m => m.getDatabasePath())), 'backups'), 5);
-
-    } catch (revertError) {
-      console.error('❌ Migration revert failed!');
-
-      // Attempt rollback if we have a backup
-      if (backupPath) {
-        try {
-          console.log('🔄 Rolling back from backup...');
-          await restoreFromBackup(backupPath);
-          console.log('✅ Successfully rolled back to pre-revert state');
-        } catch (rollbackError) {
-          console.error('❌ Failed to rollback from backup:', rollbackError);
-          console.error('💡 Manual restore required from:', backupPath);
-        }
-      }
-
-      throw revertError;
-    }
-
+    backupPath = await backupDatabase();
   } catch (error) {
-    console.error('❌ Failed to revert migration:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    output.warning('⚠️  Warning: Could not create backup before reverting migration', errorMessage);
+  }
+
+  const dataSource = await initializeDatabase();
+
+  try {
+    // Get migrations to see if there are any to revert
+    const executedMigrations = await dataSource.query(
+      "SELECT * FROM migrations ORDER BY id DESC LIMIT 1"
+    );
+
+    if (executedMigrations.length === 0) {
+      output.success('✅ No migrations to revert');
+      output.cleanup();
+      return;
+    }
+
+    const lastMigration = executedMigrations[0];
+    output.info(`📋 Reverting migration: ${lastMigration.name}`);
+
+    // Revert the last migration
+    await dataSource.undoLastMigration();
+    output.success('✅ Migration reverted successfully');
+
+    // Clean up old backups
+    const dbPath = await getDatabasePath();
+    await cleanupOldBackups(path.join(path.dirname(dbPath), 'backups'), 5);
+
+  } catch (revertError) {
+    output.error('❌ Migration revert failed!');
+
+    // Attempt rollback if we have a backup
+    if (backupPath) {
+      try {
+        output.info('🔄 Rolling back from backup...');
+        await restoreFromBackup(backupPath);
+        output.success('✅ Successfully rolled back to pre-revert state');
+      } catch (rollbackError) {
+        const rollbackMsg = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
+        output.error('❌ Failed to rollback from backup', rollbackMsg);
+        output.error('💡 Manual restore required from:', backupPath);
+      }
+    }
+
+    throw revertError;
+  }
+  try {
+    output.cleanup();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('❌ Failed to revert migration', errorMessage);
     process.exit(1);
   }
 }
+

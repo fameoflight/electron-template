@@ -21,6 +21,12 @@ export class SchemaCommand extends BaseCommand {
   async run(options: Record<string, unknown>): Promise<CommandResult> {
     const schemaOptions = options as unknown as SchemaOptions;
 
+    // Display command header
+    this.output.header('Schema Generation', {
+      subtitle: 'Generate GraphQL schema from entities and resolvers',
+      borderColor: 'cyan',
+    });
+
     if (schemaOptions.watch) {
       return this.runWatchMode(schemaOptions.force);
     } else {
@@ -36,25 +42,29 @@ export class SchemaCommand extends BaseCommand {
     await this.generateEntitiesFromSchemas(force);
 
     // Step 2: Generate GraphQL schema
-    this.info('Generating GraphQL schema...');
+    const schemaSpinner = this.output.spinner('Generating GraphQL schema...', { color: 'green' });
 
-    try {
-      await generateSchema();
-      this.success('GraphQL schema generated successfully!');
+    await generateSchema();
+    schemaSpinner.stop();
 
-      const fileService = FileSystemServiceProvider.getInstance();
-      const schemaPath = fileService.resolveProjectPath('schema.graphql');
-      return {
-        success: true,
-        message: `Schema generated at ${schemaPath}`
-      };
-    } catch (error) {
-      this.error('Failed to generate GraphQL schema:', error);
-      return {
-        success: false,
-        message: `Schema generation failed: ${error instanceof Error ? error.message : String(error)}`
-      };
-    }
+    const fileService = FileSystemServiceProvider.getInstance();
+    const schemaPath = fileService.resolveProjectPath('schema.graphql');
+
+    // Show generated files in a tree
+    this.output.fileTree([
+      { path: schemaPath, status: 'created' }
+    ], {
+      title: 'Generated Files',
+      showStatus: true,
+    });
+
+    this.success('GraphQL schema generated successfully!');
+
+    return {
+      success: true,
+      message: `Schema generated at ${schemaPath}`
+    };
+
   }
 
   /**
@@ -215,17 +225,14 @@ export class SchemaCommand extends BaseCommand {
     setTimeout(async () => {
       if (!this.isWatching) return;
 
-      try {
-        // If schema JSON changed, regenerate entities first (no force in watch mode)
-        if (type === 'schema') {
-          await this.generateEntitiesFromSchemas(false);
-        }
-
-        await generateSchema();
-        this.success('✅ Schema regenerated!');
-      } catch (error) {
-        this.error('❌ Failed to regenerate schema:', error);
+      // If schema JSON changed, regenerate entities first (no force in watch mode)
+      if (type === 'schema') {
+        await this.generateEntitiesFromSchemas(false);
       }
+
+      await generateSchema();
+      this.success('✅ Schema regenerated!');
+
     }, 500);
   }
 

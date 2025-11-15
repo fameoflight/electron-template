@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<63c654c8531ca9f18d4ad95f94364237>>
+ * @generated SignedSource<<fbe3c4edf4574558c6c798662c9d1295>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,7 +14,6 @@ import { FragmentRefs } from "relay-runtime";
 export type ConnectionList_records$data = ReadonlyArray<{
   readonly apiKey: string;
   readonly baseUrl: string;
-  readonly customHeaders: any | null | undefined;
   readonly id: string;
   readonly kind: ConnectionBaseKind;
   readonly name: string;
@@ -78,13 +77,6 @@ const node: ReaderFragment = {
       "storageKey": null
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "customHeaders",
-      "storageKey": null
-    },
-    {
       "args": null,
       "kind": "FragmentSpread",
       "name": "ConnectionView_record"
@@ -94,6 +86,6 @@ const node: ReaderFragment = {
   "abstractKey": null
 };
 
-(node as any).hash = "c7d30fb54434851647f9595bed1d8fa8";
+(node as any).hash = "8365c687fb7b60a4bcd8a4e7c057538c";
 
 export default node;

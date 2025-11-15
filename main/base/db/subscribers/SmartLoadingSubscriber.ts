@@ -1,9 +1,11 @@
 import { EventSubscriber, EntitySubscriberInterface, LoadEvent } from 'typeorm';
 import { BaseEntity } from '../BaseEntity.js';
 import DataSourceProvider from '../DataSourceProvider.js';
+import SmartRelationProxy from '@main/base/db/subscribers/SmartRelationProxy.js';
 
 // Disable SmartLoadingSubscriber in CLI processes
 const CLI = process.env.CLI || 'false';
+
 
 /**
  * Smart Loading Subscriber - Transparent relationship loading via TypeORM lifecycle hooks
@@ -32,6 +34,9 @@ const CLI = process.env.CLI || 'false';
  */
 @EventSubscriber()
 export class SmartLoadingSubscriber implements EntitySubscriberInterface<BaseEntity> {
+  // Cache for entity metadata to avoid repeated lookups
+  private static metadataCache = new Map<string, Map<string, { isArray: boolean } | null>>();
+
   /**
    * Listen to all entities that extend BaseEntity
    */
@@ -113,65 +118,94 @@ export class SmartLoadingSubscriber implements EntitySubscriberInterface<BaseEnt
       // Extract property names from all relationship types
       return metadata.relations.map(relation => relation.propertyName);
     } catch (error: any) {
-      console.warn('SmartLoadingSubscriber: Failed to get entity metadata for smart loading:', entity, error);
+      // Silently return empty array - metadata errors are expected for entities
+      // that haven't been properly initialized yet or are in transition states
       return [];
     }
   }
 
   /**
-   * Attach a smart getter for a specific relationship
+   * Get metadata for a specific relation to determine if it's an array
+   * Uses caching to avoid repeated lookups and reduce error messages
    *
-   * The getter returns:
-   * - Already loaded data if the relation was eagerly loaded (synchronously)
-   * - Cached data if previously loaded (synchronously)
-   * - A Promise that loads the relation on-demand (only when needed)
+   * @param entity - The entity instance
+   * @param relationName - The relation property name
+   * @returns Relation metadata or null
+   */
+  private getRelationMetadata(entity: BaseEntity, relationName: string): { isArray: boolean } | null {
+    try {
+      if (!entity || entity.constructor === Object || !entity.constructor.name) {
+        return null;
+      }
+
+      const entityName = entity.constructor.name;
+
+      // Check cache first
+      const entityCache = SmartLoadingSubscriber.metadataCache.get(entityName);
+      if (entityCache?.has(relationName)) {
+        return entityCache.get(relationName) || null;
+      }
+
+      // Fetch metadata
+      const dataSource = DataSourceProvider.get();
+      const metadata = dataSource.getMetadata(entity.constructor);
+      const relation = metadata.relations.find(r => r.propertyName === relationName);
+
+      const result = relation ? {
+        isArray: relation.relationType === 'many-to-many' || relation.relationType === 'one-to-many'
+      } : null;
+
+      // Cache the result
+      if (!entityCache) {
+        SmartLoadingSubscriber.metadataCache.set(entityName, new Map([[relationName, result]]));
+      } else {
+        entityCache.set(relationName, result);
+      }
+
+      return result;
+    } catch (error: any) {
+      // Silently return null - this is expected for entities without proper metadata
+      return null;
+    }
+  }
+
+  /**
+   * Attach a smart proxy for a specific relationship
    *
-   * IMPORTANT: TypeGraphQL needs synchronous values when available.
-   * Only return promises for unloaded relations.
+   * The proxy provides transparent lazy loading that works with:
+   * - TypeORM save operations (behaves like empty array)
+   * - Promise operations (await entity.relation)
+   * - Array operations (forEach, map, etc.)
+   * - Property access (loads data when needed)
    */
   private attachSmartGetter(entity: any, relationName: string, subscriber: SmartLoadingSubscriber) {
     // Store the original value if TypeORM already loaded this relation
     const descriptor = Object.getOwnPropertyDescriptor(entity, relationName);
     const originalValue = descriptor?.value;
 
-    // Cache keys for tracking loaded state
-    const cacheKey = `__loaded_${relationName}`;
-    const promiseKey = `__promise_${relationName}`;
+    // Check if this is an array relation
+    const relationMetadata = subscriber.getRelationMetadata(entity, relationName);
+    const isArray = relationMetadata?.isArray || false;
 
-    // Replace property with smart getter
+    // If TypeORM already loaded this relation, use it directly
+    if (originalValue !== undefined && originalValue !== null) {
+      // Relation is already loaded, no need for proxy
+      return;
+    }
+
+    // Create smart proxy for lazy loading
+    const proxy = new SmartRelationProxy(
+      entity,
+      relationName,
+      () => subscriber.loadRelation(entity, relationName),
+      isArray
+    );
+
+    // Replace property with smart proxy
     Object.defineProperty(entity, relationName, {
-      get() {
-        // 1. If TypeORM already loaded this relation (via relations: [...]), return it SYNCHRONOUSLY
-        // This is critical for TypeGraphQL non-nullable fields
-        if (originalValue !== undefined) {
-          return originalValue;
-        }
-
-        // 2. If we already loaded and cached this relation, return cached value SYNCHRONOUSLY
-        if (this[cacheKey] !== undefined) {
-          return this[cacheKey];
-        }
-
-        // 3. If we have a pending promise, return it (avoid duplicate loads)
-        if (this[promiseKey]) {
-          return this[promiseKey];
-        }
-
-        // 4. Create new promise to load relation directly from database
-        // This is the ONLY case where we return a promise
-        this[promiseKey] = subscriber.loadRelation(this, relationName).then((result: any) => {
-          // Cache the result for future access
-          this[cacheKey] = result;
-          // Clear the promise (no longer needed)
-          delete this[promiseKey];
-          return result;
-        });
-
-        return this[promiseKey];
-      },
-      // Make the property enumerable so it shows up in JSON.stringify, etc.
+      value: proxy.createProxy(),
+      writable: true,
       enumerable: true,
-      // Allow reconfiguration (for testing or edge cases)
       configurable: true
     });
   }

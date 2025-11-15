@@ -124,7 +124,7 @@ export abstract class JobBase extends OwnedEntity {
   @FieldColumn(Date, { required: false, description: 'When job was queued' })
   queuedAt?: Date;
 
-  @FieldColumnJSON(z.any(), { description: 'Job execution result', nullable: true })
+  @FieldColumnJSON(z.any(), { description: 'Job execution result', required: false })
   result?: Record<string, any>;
 
   @FieldColumn(Number, { required: true, description: 'Number of retry attempts', defaultValue: 0 })

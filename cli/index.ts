@@ -1,27 +1,18 @@
 #!/usr/bin/env node
 /**
- * CLI Entry Point
- * Rails-like code generator for the Electron template
+ * CLI Index - Backward compatible entry point
  *
- * Usage:
- *   yarn generate entity Post title:string content:text
- *   yarn g resolver Post
- *   yarn g job ProcessVideo
+ * Refactored to use unified CLI system while maintaining compatibility
+ * This maintains the original cli/index.ts behavior
  */
-import { Command } from 'commander';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { program } from './cli.ts';
 
-const program = new Command();
-
+// Configure for original CLI behavior
 program
   .name('generate')
   .alias('g')
-  .description('Rails-like code generator for Electron framework')
-  .version('0.0.1');
+  .description('Rails-like code generator for Electron framework');
 
 /**
  * Job Generator Command
@@ -133,15 +124,11 @@ program
     const { generateSchemaSql } = await import('../main/db/utils/migrations.js');
     const { initializeDatabase } = await import('../main/db/dataSource.js');
 
-    try {
-      console.log('🔍 Analyzing database schema...');
-      const dataSource = await initializeDatabase();
-      await generateSchemaSql(dataSource, options.output);
-      console.log('✅ Schema dumped successfully');
-    } catch (error) {
-      console.error('❌ Schema dump failed:', error);
-      process.exit(1);
-    }
+    console.log('🔍 Analyzing database schema...');
+    const dataSource = await initializeDatabase();
+    await generateSchemaSql(dataSource, options.output);
+    console.log('✅ Schema dumped successfully');
+
   });
 
 /**

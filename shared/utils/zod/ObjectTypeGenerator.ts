@@ -61,7 +61,9 @@ export function generateObjectType<T extends z.ZodObject<z.ZodRawShape>>(
   // Add fields to the class with proper type handling
   for (const [key, zodType] of Object.entries(shape)) {
     const fieldZodType = zodType as z.ZodTypeAny;
-    const nullable = !fieldZodType.isOptional?.();
+    const nullable = fieldZodType.isOptional?.() ?? false;
+
+    
     const unwrapped = unwrapZodType(fieldZodType);
 
     let fieldType: any;
