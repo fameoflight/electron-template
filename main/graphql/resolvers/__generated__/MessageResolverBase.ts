@@ -15,7 +15,7 @@ import { IsNull } from 'typeorm';
 import { Message } from '@db/entities/Message.js';
 import { UpdateMessageInput } from '@main/graphql/inputs/MessageInputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -24,9 +24,9 @@ export class MessageConnection extends createConnectionType('Message', Message) 
 
 @Resolver(() => Message)
 export class MessageResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<Message> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<Message> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository(Message, ctx);
+    return this.getOwnedRepository(Message, ctx);
   }
 
   protected get repository(): RelayRepository<Message> {
@@ -46,8 +46,7 @@ export class MessageResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<Message | null> {
-    const localId = fromGlobalIdToLocalId(id);
-    return await this.getRepository(ctx).findOne({ where: { id: localId } });
+    return await this.getRepository(ctx).findOne({ where: { id: id } });
   }
 
   /**
@@ -86,19 +85,25 @@ export class MessageResolverBase extends BaseResolver {
   /**
    * Update existing Message
    */
-  @Mutation(() => Message, { description: 'Update existing Message' })
+  @FieldMutation(UpdateMessageInput, Message, {
+    description: 'Update existing Message'
+  })
   async updateMessage(
-    @Arg('input', () => UpdateMessageInput) input: UpdateMessageInput,
-    @Ctx() ctx: GraphQLContext
+    input: UpdateMessageInput,
+    ctx: GraphQLContext
   ): Promise<Message> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
+    // Create update data object, excluding protected fields and undefined values
+    const updateData: any = {};
+    const excludeFields = ['id', 'userId'];
 
-    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
+    for (const [key, value] of Object.entries(input)) {
+      if (!excludeFields.includes(key) && value !== undefined) {
+        updateData[key] = value;
+      }
+    }
 
-    // Safely assign only defined, updatable fields (excludes id, userId and undefined values)
-    this.safeAssignUpdate(entity, input);
-    return await this.getRepository(ctx).save(entity as any);
+    // Use the repository's updateById method which works properly with TypeORM
+    return await this.getRepository(ctx).updateById(input.id, updateData);
   }
 
 
@@ -111,8 +116,7 @@ export class MessageResolverBase extends BaseResolver {
     @Ctx() ctx: GraphQLContext
   ): Promise<boolean> {
     // Use the repository's softDeleteById method which handles ownership and already-deleted entities
-    const localId = fromGlobalIdToLocalId(id);
-    await this.getRepository(ctx).softDeleteById(localId);
+    await this.getRepository(ctx).softDeleteById(id);
     return true;
   }
 
@@ -124,11 +128,10 @@ export class MessageResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<boolean> {
-    const localId = fromGlobalIdToLocalId(id);
-    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: localId } });
+    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: id } });
 
 
-    await this.getRepository(ctx).hardDeleteById(localId);
+    await this.getRepository(ctx).hardDeleteById(id);
     return true;
   }
 
@@ -140,9 +143,8 @@ export class MessageResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<Message | null> {
-    const localId = fromGlobalIdToLocalId(id);
     const entity = await this.getRepository(ctx).findOne({
-      where: { id: localId },
+      where: { id: id },
       withDeleted: true
     });
 
@@ -151,6 +153,6 @@ export class MessageResolverBase extends BaseResolver {
     }
 
 
-    return await this.getRepository(ctx).recoverById(localId);
+    return await this.getRepository(ctx).recoverById(id);
   }
 }

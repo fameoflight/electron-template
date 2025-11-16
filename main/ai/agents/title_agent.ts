@@ -43,7 +43,7 @@ export class TitleAgent extends BaseAgent {
   async generateTitle(conversationContent: string): Promise<TitleGenerationResult> {
     this.log('Starting title generation');
 
-    const prompt = this.renderTemplate('title_generation', {
+    const prompt = this.renderTemplate('titleGeneration', {
       conversationContent
     });
     this.log('Built prompt for title generation using Handlebars template');
@@ -52,7 +52,6 @@ export class TitleAgent extends BaseAgent {
     this.log('Creating JSON agent with model:', this.modelConfig.modelIdentifier);
 
     // Generate title and description
-    this.log('Calling LLM to generate title and description...');
     const result = await jsonAgent.generate(prompt, TitleGenerationSchema);
     this.log('LLM response received:', result);
 

@@ -41,84 +41,47 @@ export class GeneratorFactory {
       force: options.force || false,
       dryRun: options.dryRun || false,
     };
+
   }
 
   /**
    * Generate entity files only
    */
   async generateEntity(entity: ParsedEntity): Promise<GenerationResult> {
-    try {
-      const generator = new EntityGenerator(entity, this.options.projectRoot, this.options.outputDir);
-      const result = await generator.generate(this.options.force);
+    const generator = new EntityGenerator(entity, this.options.projectRoot, this.options.outputDir);
+    const result = await generator.generate(this.options.force);
 
-      return {
-        entity: result,
-        success: true,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        errors: [error instanceof Error ? error.message : String(error)],
-      };
-    }
+
+    return {
+      entity: result,
+      success: true,
+    };
   }
 
   /**
    * Generate input types only
    */
   generateInputs(entity: ParsedEntity): GenerationResult {
-    try {
-      const generator = new EntityInputGenerator(entity, this.options);
-      const result = generator.generate();
+    const generator = new EntityInputGenerator(entity, this.options);
+    const result = generator.generate();
 
-      return {
-        inputs: result,
-        success: true,
-      };
-    } catch (error) {
-      // Check if this is a "skipped" message (not actually an error)
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('skipped') && message.includes('because')) {
-        // This is an intentional skip, not an error
-        return {
-          success: true,
-        };
-      }
-
-      return {
-        success: false,
-        errors: [message],
-      };
-    }
+    return {
+      inputs: result,
+      success: true,
+    };
   }
 
   /**
    * Generate resolvers only
    */
   generateResolver(entity: ParsedEntity): GenerationResult {
-    try {
-      const generator = new ResolverGenerator(entity, this.options);
-      const result = generator.generate();
+    const generator = new ResolverGenerator(entity, this.options);
+    const result = generator.generate();
 
-      return {
-        resolver: result,
-        success: true,
-      };
-    } catch (error) {
-      // Check if this is a "skipped" message (not actually an error)
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('skipped') && message.includes('because')) {
-        // This is an intentional skip, not an error
-        return {
-          success: true,
-        };
-      }
-
-      return {
-        success: false,
-        errors: [message],
-      };
-    }
+    return {
+      resolver: result,
+      success: true,
+    };
   }
 
   /**
@@ -127,65 +90,48 @@ export class GeneratorFactory {
    */
   async generateAll(entity: ParsedEntity): Promise<GenerationResult> {
     const result: GenerationResult = { success: true, errors: [] };
-
-    try {
-      // Generate entity
-      const entityResult = await this.generateEntity(entity);
-      if (entityResult.entity) {
-        result.entity = entityResult.entity;
-      }
-      if (!entityResult.success) {
-        result.success = false;
-        result.errors!.push(...(entityResult.errors || []));
-      }
-
-      // Generate inputs
-      const inputsResult = this.generateInputs(entity);
-      if (inputsResult.inputs) {
-        result.inputs = inputsResult.inputs;
-      }
-      if (!inputsResult.success) {
-        result.success = false;
-        result.errors!.push(...(inputsResult.errors || []));
-      }
-
-      // Generate resolver
-      const resolverResult = this.generateResolver(entity);
-      if (resolverResult.resolver) {
-        result.resolver = resolverResult.resolver;
-      }
-      if (!resolverResult.success) {
-        result.success = false;
-        result.errors!.push(...(resolverResult.errors || []));
-      }
-
-      return result;
-    } catch (error) {
-      return {
-        success: false,
-        errors: [error instanceof Error ? error.message : String(error)],
-      };
+    const entityResult = await this.generateEntity(entity);
+    if (entityResult.entity) {
+      result.entity = entityResult.entity;
     }
+    if (!entityResult.success) {
+      result.success = false;
+      result.errors!.push(...(entityResult.errors || []));
+    }
+
+    // Generate inputs
+    const inputsResult = this.generateInputs(entity);
+    if (inputsResult.inputs) {
+      result.inputs = inputsResult.inputs;
+    }
+    if (!inputsResult.success) {
+      result.success = false;
+      result.errors!.push(...(inputsResult.errors || []));
+    }
+
+    // Generate resolver
+    const resolverResult = this.generateResolver(entity);
+    if (resolverResult.resolver) {
+      result.resolver = resolverResult.resolver;
+    }
+    if (!resolverResult.success) {
+      result.success = false;
+      result.errors!.push(...(resolverResult.errors || []));
+    }
+    return result;
   }
 
   /**
    * Generate custom operations only
    */
   generateCustomOperations(entity: ParsedEntity, operations: string[]): GenerationResult {
-    try {
-      const generator = new ResolverGenerator(entity, this.options);
-      const result = generator.generateCustomOperations(operations);
+    const generator = new ResolverGenerator(entity, this.options);
+    const result = generator.generateCustomOperations(operations);
 
-      return {
-        resolver: { resolverPath: result, extensionCreated: false },
-        success: true,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        errors: [error instanceof Error ? error.message : String(error)],
-      };
-    }
+    return {
+      resolver: { resolverPath: result, extensionCreated: false },
+      success: true,
+    };
   }
 
   /**

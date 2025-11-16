@@ -1,71 +1,283 @@
 # UI Layer Documentation
 
-> The React-based renderer process for the Electron application, featuring Relay GraphQL, React Router, and Tailwind CSS.
+> A refined, minimalist React-based renderer for the Electron application, featuring an App Store architecture with independent, self-contained apps.
 
 ---
 
 ## Table of Contents
 
+- [Design Philosophy](#design-philosophy)
 - [Architecture Overview](#architecture-overview)
+- [Design System](#design-system)
+- [App Store Pattern](#app-store-pattern)
 - [Project Structure](#project-structure)
 - [Core Technologies](#core-technologies)
 - [Getting Started](#getting-started)
+- [Creating New Apps](#creating-new-apps)
 - [Component Patterns](#component-patterns)
 - [Data Fetching with Relay](#data-fetching-with-relay)
 - [Routing & Navigation](#routing--navigation)
 - [Authentication Flow](#authentication-flow)
 - [Styling Guidelines](#styling-guidelines)
 - [Hooks Reference](#hooks-reference)
-- [IPC Communication](#ipc-communication)
-- [Testing UI Components](#testing-ui-components)
 - [Common Recipes](#common-recipes)
-- [Performance Tips](#performance-tips)
+- [Best Practices](#best-practices)
+
+---
+
+## Design Philosophy
+
+### Refined Minimalism
+
+Every pixel has purpose. The UI embraces **refined minimalism** — not sparse or sterile, but intentionally designed with:
+
+- **Generous whitespace** for breathing room
+- **High contrast typography** (DM Sans, not generic system fonts)
+- **Warm color palette** (stone backgrounds, deep indigo accents)
+- **Soft shadows** that suggest depth without drama
+- **Smooth animations** that feel natural, not showy
+- **Thoughtful micro-interactions** that delight without distraction
+
+**Goal:** Create an interface that feels professionally designed, not generic AI output.
+
+### App Store Architecture
+
+Think **macOS Launchpad** or **iOS home screen**, not traditional web app with global navigation:
+
+```
+Dashboard = App Store Hub
+    ↓ Quick access to primary action (chat)
+    ↓ Grid of apps to launch
+
+Each App = Independent & Self-Contained
+    ↓ Own navigation (tabs)
+    ↓ Own actions (New Chat button)
+    ↓ Consistent chrome (AppContainer)
+    ↓ Back to Dashboard
+```
+
+**Benefits:**
+- **Clear mental model**: Users think "I'm in the Chat app" not "I'm on the chat page"
+- **No navigation conflicts**: Each app manages its own tabs/sections independently
+- **Scalability**: Add new apps without touching global navigation
+- **Focus**: When in an app, you're focused on that workflow
 
 ---
 
 ## Architecture Overview
 
-The UI layer follows a **component-based architecture** with:
-
 ```
-┌────────────────────────────────────────────────┐
-│  Entry Point (index.tsx)                      │
-│  • Hides loading screen                       │
-│  • Mounts React app                           │
-└───────────────────┬────────────────────────────┘
-                    │
-┌───────────────────┴────────────────────────────┐
-│  App Provider (App/index.tsx)                 │
-│  • AuthRelayProvider (auth + Relay env)       │
-│  • MemoryRouter (Electron-compatible routing) │
-│  • AnimatePresence (Framer Motion)            │
-└───────────────────┬────────────────────────────┘
-                    │
-┌───────────────────┴────────────────────────────┐
-│  Routes (App/Routes.tsx)                      │
-│  • AppLayout (auth guard)                     │
-│  • Page-level routes                          │
-└───────────────────┬────────────────────────────┘
-                    │
-┌───────────────────┴────────────────────────────┐
-│  Pages (Pages/*)                              │
-│  • Dashboard, Settings, User pages            │
-│  • Relay queries/mutations                    │
-└───────────────────┬────────────────────────────┘
-                    │
-┌───────────────────┴────────────────────────────┐
-│  Components (Components/*)                    │
-│  • Reusable UI primitives                     │
-│  • Relay fragments                            │
-└────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  Dashboard (App Store Hub)                     │
+│  • Welcome hero with user greeting             │
+│  • App grid (Chat, Documents, Settings)        │
+│  • Quick chat input (primary action)           │
+│  • Stats cards                                 │
+└────────────────┬────────────────────────────────┘
+                 │ Navigate to app
+┌────────────────┴────────────────────────────────┐
+│  AppContainer (Consistent Chrome)              │
+│  • Back to Dashboard button                    │
+│  • App icon + name                             │
+│  • Tab navigation with animated indicator      │
+│  • Action buttons (e.g., "New Chat")           │
+│  • User avatar menu                            │
+│  • Sticky header with backdrop blur            │
+└────────────────┬────────────────────────────────┘
+                 │ Outlet
+┌────────────────┴────────────────────────────────┐
+│  App-Specific Content                          │
+│  • Chat: Message list, input, conversations    │
+│  • Documents: Upload, manage, search           │
+│  • Settings: Connections, models, config       │
+└─────────────────────────────────────────────────┘
 ```
 
-### Key Design Principles
+### Component Hierarchy
 
-1. **Fragment Colocation**: Components request their own data via Relay fragments
-2. **Auth-First**: All routes protected by default via `AppLayout`
-3. **Type Safety**: TypeScript + Relay generated types
-4. **Electron-Aware**: Uses `MemoryRouter` (no browser history) and IPC bridge
+```
+App/index.tsx (AuthRelayProvider, MemoryRouter)
+    ↓
+Routes.tsx (Route definitions)
+    ↓
+AppLayout.tsx (Auth guard, page transitions)
+    ↓
+├─ Dashboard (App Store Hub)
+└─ App Containers (Chat, Documents, Settings)
+       ↓
+   AppContainer.tsx (Reusable chrome)
+       ↓
+   App-specific routes (via <Outlet />)
+```
+
+---
+
+## Design System
+
+### Color Palette
+
+**Not generic grays — warm, refined colors:**
+
+```css
+/* Backgrounds - Warm Whites */
+--color-background-primary: #FAFAF9   /* Stone-50 */
+--color-surface: #FFFFFF               /* Pure white for cards */
+
+/* Text - High Contrast */
+--color-text-primary: #0A0A0A         /* Near black */
+--color-text-secondary: #525252       /* Neutral-600 */
+--color-text-tertiary: #A3A3A3        /* Neutral-400 */
+
+/* Brand - Deep Indigo (Single Source of Truth) */
+--color-primary-600: #4F46E5          /* Primary action */
+--color-primary-700: #4338CA          /* Primary hover */
+
+/* Accents - Amber for Success, Rose for Errors */
+--color-success-600: #D97706          /* Amber, not green */
+--color-error-600: #E11D48            /* Rose, not red */
+
+/* Borders & Dividers */
+--color-border-default: #E7E5E4       /* Stone-200 */
+```
+
+### Typography
+
+```css
+/* Fonts - Refined, Not Generic */
+--font-sans: "DM Sans"                /* Not Inter/Roboto */
+--font-mono: "JetBrains Mono"         /* Elegant monospace */
+
+/* Type Scale - 6 Levels */
+--font-size-xs: 0.75rem      /* 12px */
+--font-size-sm: 0.875rem     /* 14px */
+--font-size-base: 1rem       /* 16px */
+--font-size-lg: 1.125rem     /* 18px */
+--font-size-xl: 1.25rem      /* 20px */
+--font-size-2xl: 1.5rem      /* 24px */
+```
+
+### Spacing
+
+```css
+/* 8px Grid System */
+--spacing-2: 0.5rem    /* 8px */
+--spacing-4: 1rem      /* 16px */
+--spacing-6: 1.5rem    /* 24px */
+--spacing-8: 2rem      /* 32px */
+```
+
+### Shadows
+
+```css
+/* Soft & Refined - Not Harsh */
+--shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03)
+--shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.04)
+--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06)
+--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08)
+```
+
+### Animations
+
+```css
+/* Durations */
+--duration-fast: 150ms      /* Quick interactions */
+--duration-normal: 300ms    /* Standard transitions */
+--duration-slow: 500ms      /* Deliberate animations */
+
+/* Easing Curves */
+--ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1)
+```
+
+**All design tokens defined in `ui/App/index.css` using Tailwind v4 `@theme` directive.**
+
+---
+
+## App Store Pattern
+
+### Dashboard (App Store Hub)
+
+The landing page after login serves as a launcher:
+
+```tsx
+// ui/Pages/Dashboard/index.tsx
+<div>
+  {/* Hero Section */}
+  <WelcomeHero userName={user.name} />
+
+  {/* App Grid */}
+  <div className="grid grid-cols-3 gap-4">
+    <GridItem
+      name="Chat"
+      description="Start conversations with AI"
+      icon={<ChatIcon />}
+      onClick={() => navigate('/chat')}
+    />
+    <GridItem name="Documents" ... />
+    <GridItem name="Settings" ... />
+  </div>
+
+  {/* Quick Chat Input (Primary Action) */}
+  <UnifiedMessageInput onComplete={handleQuickChat} />
+</div>
+```
+
+### App Container Pattern
+
+Every app uses `AppContainer` for consistent chrome:
+
+```tsx
+// ui/Pages/Chat/ChatContainer.tsx
+import AppContainer from '@ui/Components/AppContainer';
+
+export default function ChatContainer() {
+  return (
+    <AppContainer
+      appName="Chat"
+      appIcon={<ChatIcon />}
+      tabs={[
+        { id: 'list', label: 'All Chats', href: '/chat' },
+      ]}
+      activeTabId={activeTabId}
+      actions={
+        <button onClick={createNewChat}>
+          New Chat
+        </button>
+      }
+    >
+      <Outlet /> {/* App-specific routes */}
+    </AppContainer>
+  );
+}
+```
+
+### Co-located Routes
+
+Each app owns its routes in `Routes.tsx`:
+
+```tsx
+// ui/Pages/Chat/Routes.tsx
+import ChatListPage from './ChatListPage';
+import ChatNodePage from './ChatNodePage';
+
+const ChatRoutes = [
+  { index: true, element: <ChatListPage /> },
+  { path: ':id', element: <ChatNodePage /> },
+];
+
+export default ChatRoutes;
+```
+
+```tsx
+// ui/App/Routes.tsx (main router)
+import ChatContainer from '@ui/Pages/Chat/ChatContainer';
+import ChatRoutes from '@ui/Pages/Chat/Routes';
+
+{
+  path: 'chat',
+  element: <ChatContainer />,
+  children: ChatRoutes,  // Co-located!
+}
+```
 
 ---
 
@@ -73,65 +285,62 @@ The UI layer follows a **component-based architecture** with:
 
 ```
 ui/
-├── index.tsx                    # React entry point
+├── index.tsx                      # React entry point
 ├── App/
-│   ├── index.tsx               # App wrapper with providers
-│   ├── Routes.tsx              # Route definitions
-│   └── index.css               # Global styles (Tailwind)
+│   ├── index.tsx                 # App wrapper with providers
+│   ├── Routes.tsx                # Main router (imports containers)
+│   └── index.css                 # Design system (Tailwind v4 theme)
 │
-├── Pages/                      # Page-level components
+├── Pages/                        # Page-level components
 │   ├── Dashboard/
-│   │   └── index.tsx           # Dashboard home
-│   ├── User/
-│   │   ├── AuthPage.tsx        # Login/Register
-│   │   ├── LoginForm.tsx       # Login form
-│   │   ├── UserForm.tsx        # Reusable user form
-│   │   └── UserUpdatePage.tsx  # Update profile page
-│   └── Settings/
-│       ├── index.tsx           # Settings layout
-│       ├── Profile.tsx         # Profile settings
-│       └── Support.tsx         # Support page
+│   │   └── index.tsx             # App Store hub
+│   │
+│   ├── Chat/                     # Chat App
+│   │   ├── ChatContainer.tsx    # App wrapper with AppContainer
+│   │   ├── Routes.tsx            # Co-located routes
+│   │   ├── ChatListPage.tsx     # All chats view
+│   │   ├── ChatNodePage.tsx     # Individual chat
+│   │   ├── MessageList.tsx      # Message display
+│   │   ├── MessageVersionView.tsx # Message bubbles
+│   │   └── UnifiedMessageInput.tsx # Message input
+│   │
+│   ├── Documents/                # Documents App
+│   │   ├── DocumentsContainer.tsx
+│   │   ├── Routes.tsx
+│   │   ├── DocumentsList.tsx    # Upload & manage
+│   │   └── DocumentsSearch.tsx  # Vector search
+│   │
+│   ├── Settings/                 # Settings App
+│   │   ├── SettingsContainer.tsx
+│   │   ├── Routes.tsx
+│   │   └── [setting pages...]
+│   │
+│   └── User/
+│       ├── AuthPage.tsx          # Login/Register
+│       └── UserUpdatePage.tsx    # Profile editing
 │
-├── Components/                 # Reusable UI components
-│   ├── AppLayout.tsx           # Auth guard + layout wrapper
-│   ├── PageContainer.tsx       # Standard page wrapper
-│   ├── LinkButton.tsx          # Router-aware button
-│   ├── Tabs.tsx                # Tab navigation
-│   ├── Select.tsx              # Dropdown select
-│   ├── EmptyState.tsx          # Empty state placeholder
-│   ├── FilterSearch/           # Advanced search/filter
-│   │   ├── index.tsx
-│   │   ├── FilterDropdown.tsx
-│   │   └── FilterTags.tsx
-│   └── ...                     # More components
+├── Components/                   # Reusable UI components
+│   ├── AppContainer.tsx          # App chrome wrapper (NEW)
+│   ├── AppLayout.tsx             # Auth guard + transitions
+│   ├── GridItem.tsx              # App launcher card
+│   ├── Select.tsx                # Dropdown select
+│   ├── EmptyState.tsx            # Empty state placeholder
+│   └── ...
 │
-├── hooks/                      # Custom React hooks
-│   ├── relay.tsx               # Relay query/mutation wrappers
-│   ├── usePollQuery.tsx        # Polling queries
-│   ├── useFetchKey.tsx         # Force refetch hook
-│   ├── useHistory.ts           # Router history helper
-│   └── useFormRecordState.tsx  # Form state management
+├── hooks/                        # Custom React hooks
+│   ├── relay.tsx                 # Relay query/mutation wrappers
+│   ├── usePollQuery.tsx          # Polling queries
+│   ├── useUploadFiles.tsx        # File upload
+│   └── ...
 │
-├── contexts/                   # React contexts
-│   └── AuthRelayProvider.tsx   # Auth + Relay environment
+├── contexts/
+│   └── AuthRelayProvider.tsx     # Auth + Relay environment
 │
-├── relay/                      # Relay configuration
-│   ├── index.ts                # Public API
-│   └── environment.ts          # Relay environment factory
+├── relay/
+│   └── environment.ts            # Relay environment factory
 │
-├── HotKey/                     # Keyboard shortcuts
-│   ├── HotKeyComponent.tsx     # Global hotkey handler
-│   ├── HotKeyHelp.tsx          # Hotkey help modal
-│   ├── hotkeys.ts              # Hotkey definitions
-│   └── helpers.tsx             # Hotkey utilities
-│
-├── __generated__/              # Relay-generated types (auto)
-│   └── *.graphql.ts            # Query/mutation types
-│
-├── types/                      # Type definitions
-│   └── electron.d.ts           # Electron API types
-│
-└── vite-env.d.ts               # Vite environment types
+└── __generated__/                # Relay-generated types (auto)
+    └── *.graphql.ts
 ```
 
 ---
@@ -144,9 +353,9 @@ ui/
 | **React Router** | 7 | Navigation (MemoryRouter) |
 | **Relay** | 20 | GraphQL client with normalized cache |
 | **TypeScript** | 5.9 | Type safety |
-| **Tailwind CSS** | v4 | Utility-first styling |
-| **Ant Design** | 5 | UI component library |
-| **Framer Motion** | 12 | Animations |
+| **Tailwind CSS** | v4 | Utility-first styling + design tokens |
+| **Ant Design** | 5 | UI component library (themed) |
+| **Framer Motion** | 12 | Smooth animations |
 | **Headless UI** | 2 | Unstyled accessible components |
 | **Heroicons** | 2 | Icon library |
 
@@ -160,246 +369,242 @@ ui/
 # Start dev server (Vite + Relay + Electron)
 yarn dev
 
+# Type check only (faster than full build)
+yarn type-check
+
 # Build UI for production
 yarn build
-
-# Type check only (faster than build)
-yarn tsc
 ```
 
-### Creating a New Page
+### Design System Reference
 
-1. **Create the page component:**
+All design tokens are in `ui/App/index.css`:
 
-```typescript
-// ui/Pages/Post/PostList.tsx
-import React from 'react';
-import { graphql } from 'relay-runtime';
-import { useNetworkLazyLoadQuery } from '@ui/hooks/relay';
+```tsx
+// Use CSS variables directly
+<div className="bg-[var(--color-surface)] text-[var(--color-text-primary)]">
+  <h1>Title</h1>
+</div>
 
-export default function PostList() {
-  const data = useNetworkLazyLoadQuery(
-    graphql`
-      query PostListQuery {
-        posts(first: 20) {
-          edges {
-            node {
-              id
-              title
-              createdAt
-            }
-          }
-        }
-      }
-    `,
-    {}
-  );
+// Or use Tailwind utilities (automatically mapped)
+<div className="bg-white text-gray-900">
+  <h1>Title</h1>
+</div>
+
+// Predefined component classes
+<div className="surface-elevated">
+  <button className="btn-primary">Click Me</button>
+</div>
+```
+
+---
+
+## Creating New Apps
+
+### 1. Create App Container
+
+```tsx
+// ui/Pages/MyApp/MyAppContainer.tsx
+import AppContainer from '@ui/Components/AppContainer';
+import { Outlet, useLocation } from 'react-router-dom';
+
+export default function MyAppContainer() {
+  const location = useLocation();
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Posts</h1>
-      <div className="space-y-2">
-        {data.posts.edges.map(({ node }) => (
-          <div key={node.id} className="p-4 bg-white rounded shadow">
-            <h2>{node.title}</h2>
-          </div>
-        ))}
-      </div>
-    </div>
+    <AppContainer
+      appName="My App"
+      appIcon={<MyIcon />}
+      tabs={[
+        { id: 'list', label: 'List', href: '/myapp/list' },
+        { id: 'settings', label: 'Settings', href: '/myapp/settings' },
+      ]}
+      activeTabId={determineActiveTab(location)}
+      actions={<button>New Item</button>}
+    >
+      <Outlet />
+    </AppContainer>
   );
 }
 ```
 
-2. **Add route to `App/Routes.tsx`:**
+### 2. Create Co-located Routes
 
-```typescript
-import PostList from '@ui/Pages/Post/PostList';
+```tsx
+// ui/Pages/MyApp/Routes.tsx
+import ListPage from './ListPage';
+import DetailPage from './DetailPage';
 
-// Inside routes array:
+const MyAppRoutes = [
+  { index: true, element: <ListPage /> },
+  { path: 'list', element: <ListPage /> },
+  { path: ':id', element: <DetailPage /> },
+];
+
+export default MyAppRoutes;
+```
+
+### 3. Create App Index
+
+```tsx
+// ui/Pages/MyApp/index.tsx
+export { default } from './MyAppContainer';
+```
+
+### 4. Register in Main Router
+
+```tsx
+// ui/App/Routes.tsx
+import MyAppContainer from '@ui/Pages/MyApp';
+import MyAppRoutes from '@ui/Pages/MyApp/Routes';
+
+// Add to routes array:
 {
-  path: 'posts',
-  element: <PostList />,
+  path: 'myapp',
+  element: <MyAppContainer />,
+  children: MyAppRoutes,
 }
 ```
 
-3. **Regenerate Relay artifacts:**
+### 5. Add to Dashboard
 
-```bash
-yarn graphql  # or yarn relay
-```
-
-4. **Navigate to the page:**
-
-```typescript
-import { useNavigate } from 'react-router-dom';
-
-const navigate = useNavigate();
-navigate('/posts');
+```tsx
+// ui/Pages/Dashboard/index.tsx
+const items: GridItemType[] = [
+  // ...existing apps
+  {
+    id: 'myapp',
+    name: 'My App',
+    description: 'Description of your app',
+    icon: <MyIcon />,
+  },
+];
 ```
 
 ---
 
 ## Component Patterns
 
-### 1. Page Component Pattern
+### Page Component Pattern
 
-**Pages** are top-level route components that:
-- Fetch data via Relay queries
-- Handle page-level state
-- Compose smaller components
+Pages are top-level route components:
 
-```typescript
-// ui/Pages/Post/PostDetail.tsx
-import React from 'react';
+```tsx
 import { graphql } from 'relay-runtime';
-import { useParams } from 'react-router-dom';
 import { useNetworkLazyLoadQuery } from '@ui/hooks/relay';
+import { motion } from 'framer-motion';
 
-export default function PostDetail() {
-  const { id } = useParams();
-
+export default function MyPage() {
   const data = useNetworkLazyLoadQuery(
     graphql`
-      query PostDetailQuery($id: ID!) {
-        post(id: $id) {
-          id
-          title
-          content
-          author {
-            name
-          }
-        }
+      query MyPageQuery {
+        items { id name }
       }
     `,
-    { id }
+    {}
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold">{data.post.title}</h1>
-      <p className="text-gray-600">By {data.post.author.name}</p>
-      <div className="mt-4 prose">{data.post.content}</div>
-    </div>
-  );
-}
-```
-
-### 2. Component with Fragment Pattern
-
-**Components** request data via Relay fragments:
-
-```typescript
-// ui/Components/PostCard.tsx
-import React from 'react';
-import { graphql, useFragment } from 'react-relay';
-
-interface PostCardProps {
-  post: any; // Relay fragment ref
-}
-
-export default function PostCard({ post }: PostCardProps) {
-  const data = useFragment(
-    graphql`
-      fragment PostCard_post on Post {
-        id
-        title
-        excerpt
-        createdAt
-      }
-    `,
-    post
-  );
-
-  return (
-    <div className="p-4 bg-white rounded shadow">
-      <h3 className="text-xl font-semibold">{data.title}</h3>
-      <p className="text-gray-600">{data.excerpt}</p>
-      <time className="text-sm text-gray-400">{data.createdAt}</time>
-    </div>
-  );
-}
-```
-
-### 3. Layout Component Pattern
-
-**Layouts** provide consistent page structure:
-
-```typescript
-// ui/Components/ContentLayout.tsx
-import React from 'react';
-
-interface ContentLayoutProps {
-  title: string;
-  actions?: React.ReactNode;
-  children: React.ReactNode;
-}
-
-export default function ContentLayout({ title, actions, children }: ContentLayoutProps) {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">{title}</h1>
-          {actions && <div>{actions}</div>}
-        </div>
-        <div>{children}</div>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          {data.items.map(item => (
+            <div key={item.id} className="surface p-6">
+              {item.name}
+            </div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );
 }
 ```
 
-### 4. Form Component Pattern
+### Component with Fragment Pattern
 
-**Forms** use controlled inputs + Relay mutations:
+```tsx
+import { graphql, useFragment } from 'react-relay';
 
-```typescript
-// ui/Pages/Post/PostForm.tsx
-import React, { useState } from 'react';
-import { graphql } from 'relay-runtime';
-import { useCompatMutation } from '@ui/hooks/relay';
-import { Button, Input } from 'antd';
+interface ItemCardProps {
+  item: any; // Relay fragment ref
+}
 
-export default function PostForm() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-
-  const [commit, isInFlight] = useCompatMutation(graphql`
-    mutation PostFormMutation($input: PostInput!) {
-      createPost(input: $input) {
+export default function ItemCard({ item }: ItemCardProps) {
+  const data = useFragment(
+    graphql`
+      fragment ItemCard_item on Item {
         id
-        title
+        name
+        description
       }
-    }
-  `);
-
-  const handleSubmit = () => {
-    commit({
-      variables: { input: { title, content } },
-      onCompleted: () => {
-        setTitle('');
-        setContent('');
-      },
-    });
-  };
+    `,
+    item
+  );
 
   return (
-    <div className="space-y-4">
-      <Input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <Input.TextArea
-        placeholder="Content"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={6}
-      />
-      <Button type="primary" onClick={handleSubmit} loading={isInFlight}>
-        Create Post
-      </Button>
+    <div className="surface-elevated p-6">
+      <h3 className="text-xl font-semibold">{data.name}</h3>
+      <p className="text-[var(--color-text-secondary)]">{data.description}</p>
     </div>
+  );
+}
+```
+
+### Empty State Pattern
+
+```tsx
+import { motion } from 'framer-motion';
+import { DocumentIcon } from '@heroicons/react/24/outline';
+
+export default function EmptyState() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center py-16"
+    >
+      <div className="relative inline-block">
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-[var(--color-primary-100)] rounded-full blur-2xl opacity-40" />
+
+        {/* Icon */}
+        <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-[var(--color-primary-50)] border border-[var(--color-primary-100)]">
+          <DocumentIcon className="w-10 h-10 text-[var(--color-primary-600)]" />
+        </div>
+      </div>
+
+      <h3 className="mt-4 text-lg font-semibold text-[var(--color-text-primary)]">
+        No items yet
+      </h3>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+        Get started by creating your first item
+      </p>
+    </motion.div>
+  );
+}
+```
+
+### Card with Animation Pattern
+
+```tsx
+import { motion } from 'framer-motion';
+
+export default function ItemCard({ item, index }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      whileHover={{ y: -4 }}
+      className="surface-elevated p-6 cursor-pointer"
+      style={{ boxShadow: 'var(--shadow-sm)' }}
+    >
+      {/* Content */}
+    </motion.div>
   );
 }
 ```
@@ -410,19 +615,16 @@ export default function PostForm() {
 
 ### Query Pattern
 
-```typescript
+```tsx
 import { graphql } from 'relay-runtime';
 import { useNetworkLazyLoadQuery } from '@ui/hooks/relay';
 
 const data = useNetworkLazyLoadQuery(
   graphql`
     query MyQuery($first: Int!) {
-      posts(first: $first) {
+      items(first: $first) {
         edges {
-          node {
-            id
-            title
-          }
+          node { id name }
         }
       }
     }
@@ -433,209 +635,84 @@ const data = useNetworkLazyLoadQuery(
 
 ### Query with Refetch Pattern
 
-```typescript
+```tsx
 import { useNetworkLazyReloadQuery } from '@ui/hooks/relay';
 
-const [data, refetch, fetchKey] = useNetworkLazyReloadQuery(
-  graphql`
-    query MyQuery {
-      posts {
-        edges {
-          node { id title }
-        }
-      }
-    }
-  `,
+const [data, refetch] = useNetworkLazyReloadQuery(
+  graphql`query MyQuery { items { id name } }`,
   {}
 );
 
-// Call refetch() to reload data
-<Button onClick={refetch}>Refresh</Button>
+<button onClick={refetch}>Refresh</button>
 ```
 
 ### Mutation Pattern
 
-```typescript
+```tsx
 import { useCompatMutation } from '@ui/hooks/relay';
 
 const [commit, isInFlight] = useCompatMutation(
   graphql`
-    mutation CreatePostMutation($input: PostInput!) {
-      createPost(input: $input) {
-        id
-        title
+    mutation CreateItemMutation($input: ItemInput!) {
+      createItem(input: $input) {
+        id name
       }
     }
   `
 );
 
 commit({
-  variables: { input: { title: 'Hello' } },
-  onCompleted: (response, errors) => {
-    if (!errors) {
-      console.log('Success:', response);
-    }
+  variables: { input: { name: 'New Item' } },
+  onCompleted: (response) => {
+    console.log('Created:', response);
   },
 });
-```
-
-### Polling Pattern
-
-```typescript
-import { usePollQuery } from '@ui/hooks/usePollQuery';
-
-const data = usePollQuery(
-  graphql`
-    query JobStatusQuery {
-      jobs(first: 10) {
-        edges {
-          node {
-            id
-            status
-          }
-        }
-      }
-    }
-  `,
-  {},
-  {
-    pollInterval: 5000, // Poll every 5 seconds
-  }
-);
-```
-
-### Pagination Pattern
-
-```typescript
-const data = useNetworkLazyLoadQuery(
-  graphql`
-    query PostsQuery($first: Int!, $after: String) {
-      posts(first: $first, after: $after) {
-        edges {
-          node {
-            id
-            title
-          }
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  `,
-  { first: 20 }
-);
-
-// Load more
-const loadMore = () => {
-  if (data.posts.pageInfo.hasNextPage) {
-    // Refetch with new cursor
-    refetch({ after: data.posts.pageInfo.endCursor });
-  }
-};
 ```
 
 ---
 
 ## Routing & Navigation
 
-### Route Configuration
-
-Routes are defined in `App/Routes.tsx`:
-
-```typescript
-import { useRoutes } from 'react-router-dom';
-
-function Routes() {
-  const routes = useRoutes([
-    {
-      path: '/',
-      element: <AppLayout />, // Auth guard
-      children: [
-        { index: true, element: <Dashboard /> },
-        { path: 'posts', element: <PostList /> },
-        { path: 'posts/:id', element: <PostDetail /> },
-        { path: 'settings', element: <Settings /> },
-        { path: '*', element: <NotFoundPage /> },
-      ],
-    },
-  ]);
-
-  return routes;
-}
-```
-
 ### Programmatic Navigation
 
-```typescript
+```tsx
 import { useNavigate } from 'react-router-dom';
 
 function MyComponent() {
   const navigate = useNavigate();
 
-  const goToPosts = () => {
-    navigate('/posts');
-  };
-
-  const goToPostDetail = (id: string) => {
-    navigate(`/posts/${id}`);
-  };
-
-  const goBack = () => {
-    navigate(-1);
-  };
+  return (
+    <button onClick={() => navigate('/chat')}>
+      Go to Chat
+    </button>
+  );
 }
 ```
 
 ### Link Navigation
 
-```typescript
+```tsx
 import { Link } from 'react-router-dom';
 
-<Link to="/posts" className="text-blue-600 hover:underline">
-  View Posts
+<Link to="/documents" className="text-[var(--color-primary-600)]">
+  View Documents
 </Link>
-```
-
-### LinkButton Component
-
-Use `LinkButton` for button-styled links:
-
-```typescript
-import LinkButton from '@ui/Components/LinkButton';
-
-<LinkButton to="/posts" type="primary">
-  View Posts
-</LinkButton>
 ```
 
 ---
 
 ## Authentication Flow
 
-### How Auth Works
-
-1. **Login/Register** → Sets `sessionKey` in localStorage
-2. **AuthRelayProvider** → Reads `sessionKey` and creates Relay environment
-3. **AppLayout** → Guards routes, redirects to `/auth` if not authenticated
-4. **Logout** → Clears `sessionKey` and redirects to `/auth`
-
 ### Using Auth in Components
 
-```typescript
+```tsx
 import { useAuth } from '@ui/contexts/AuthRelayProvider';
 
 function MyComponent() {
-  const { user, loading, login, logout, refreshCurrentUser } = useAuth();
+  const { user, loading, logout } = useAuth();
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <div>Not logged in</div>;
-  }
+  if (loading) return <Skeleton />;
+  if (!user) return <div>Not logged in</div>;
 
   return (
     <div>
@@ -646,524 +723,203 @@ function MyComponent() {
 }
 ```
 
-### Protected Routes
-
-All routes under `<AppLayout />` are automatically protected:
-
-```typescript
-// App/Routes.tsx
-{
-  path: '/',
-  element: <AppLayout />, // ← Auth guard
-  children: [
-    { index: true, element: <Dashboard /> }, // Protected
-    { path: 'posts', element: <PostList /> }, // Protected
-  ],
-}
-```
-
-### Login Flow Example
-
-```typescript
-// Pages/User/AuthPage.tsx
-import { useAuth } from '@ui/contexts/AuthRelayProvider';
-import { useCompatMutation } from '@ui/hooks/relay';
-
-function LoginForm() {
-  const { login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const [commitLogin, isInFlight] = useCompatMutation(graphql`
-    mutation AuthPageLoginMutation($input: LoginInput!) {
-      login(input: $input) {
-        id
-        name
-        username
-        sessionKey
-      }
-    }
-  `);
-
-  const handleLogin = () => {
-    commitLogin({
-      variables: { input: { username, password } },
-      onCompleted: (response) => {
-        login(response.login); // Sets user in context
-        navigate('/'); // Redirects to dashboard
-      },
-    });
-  };
-
-  return (
-    <form>
-      <input value={username} onChange={(e) => setUsername(e.target.value)} />
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <button onClick={handleLogin} disabled={isInFlight}>Login</button>
-    </form>
-  );
-}
-```
+All routes under `<AppLayout />` are automatically protected.
 
 ---
 
 ## Styling Guidelines
 
-### Tailwind CSS Usage
+### Using Design System
 
-Use Tailwind utility classes for styling:
+```tsx
+// CSS Variables
+<div className="bg-[var(--color-surface)] text-[var(--color-text-primary)]">
+  Content
+</div>
 
-```typescript
-<div className="p-6 bg-white rounded-lg shadow-md">
-  <h1 className="text-2xl font-bold text-gray-900">Title</h1>
-  <p className="mt-2 text-gray-600">Description</p>
+// Component Classes
+<div className="surface-elevated">
+  <button className="btn-primary">Click Me</button>
+  <span className="badge-success">Completed</span>
+</div>
+
+// Spacing (8px grid)
+<div className="p-6 space-y-4">
+  <div className="mb-8">Content</div>
+</div>
+```
+
+### Animations
+
+```tsx
+import { motion } from 'framer-motion';
+
+// Page entrance
+<motion.div
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3 }}
+>
+  Content
+</motion.div>
+
+// Staggered list
+<div className="fade-in-stagger">
+  {items.map(item => <div>{item}</div>)}
 </div>
 ```
 
 ### Responsive Design
 
-```typescript
+```tsx
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
   {/* Content */}
 </div>
-```
 
-### Dark Mode (Future)
-
-Tailwind v4 supports dark mode:
-
-```typescript
-<div className="bg-white dark:bg-gray-900">
-  <p className="text-gray-900 dark:text-white">Text</p>
+<div className="p-4 sm:p-6 lg:p-8">
+  <div className="max-w-7xl mx-auto">
+    {/* Content */}
+  </div>
 </div>
-```
-
-### Ant Design Components
-
-Use Ant Design for complex UI components:
-
-```typescript
-import { Button, Input, Modal, notification, Skeleton } from 'antd';
-
-<Button type="primary" size="large">Click Me</Button>
-<Input placeholder="Enter text" />
-<Modal title="Confirm" open={visible} onOk={handleOk}>
-  Are you sure?
-</Modal>
-```
-
-### Framer Motion Animations
-
-```typescript
-import { motion } from 'framer-motion';
-
-<motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  exit={{ opacity: 0, y: -20 }}
-  transition={{ duration: 0.3 }}
->
-  Content
-</motion.div>
 ```
 
 ---
 
 ## Hooks Reference
 
-### `useNetworkLazyLoadQuery`
-
-Fetch data with Relay (always hits network):
-
-```typescript
-import { useNetworkLazyLoadQuery } from '@ui/hooks/relay';
-
-const data = useNetworkLazyLoadQuery(graphql`...`, variables, {
-  fetchPolicy: 'store-and-network', // Default
-});
-```
-
-### `useNetworkLazyReloadQuery`
-
-Fetch data with manual refetch:
-
-```typescript
-import { useNetworkLazyReloadQuery } from '@ui/hooks/relay';
-
-const [data, refetch, fetchKey] = useNetworkLazyReloadQuery(graphql`...`, variables);
-
-// Call refetch() to reload
-<Button onClick={refetch}>Refresh</Button>
-```
-
-### `useCompatMutation`
-
-Execute GraphQL mutations with error handling:
-
-```typescript
-import { useCompatMutation } from '@ui/hooks/relay';
-
-const [commit, isInFlight] = useCompatMutation(graphql`...`);
-
-commit({
-  variables: { input: {} },
-  onCompleted: (response, errors) => {
-    // Errors are automatically shown via notification.error
-  },
-});
-```
-
-### `usePollQuery`
-
-Poll GraphQL queries at intervals:
-
-```typescript
-import { usePollQuery } from '@ui/hooks/usePollQuery';
-
-const data = usePollQuery(graphql`...`, variables, {
-  pollInterval: 5000, // 5 seconds
-});
-```
-
 ### `useAuth`
-
 Access authentication state:
-
-```typescript
-import { useAuth } from '@ui/contexts/AuthRelayProvider';
-
+```tsx
 const { user, loading, login, logout, refreshCurrentUser } = useAuth();
 ```
 
-### `useFetchKey`
-
-Force refetch queries:
-
-```typescript
-import useFetchKey from '@ui/hooks/useFetchKey';
-
-const [fetchKey, updateFetchKey] = useFetchKey();
-
-// Use fetchKey in query options
-const data = useNetworkLazyLoadQuery(graphql`...`, variables, { fetchKey });
-
-// Call updateFetchKey() to refetch
-<Button onClick={updateFetchKey}>Refresh</Button>
+### `useNetworkLazyLoadQuery`
+Fetch data with Relay:
+```tsx
+const data = useNetworkLazyLoadQuery(graphql`...`, variables);
 ```
 
-### `useFormRecordState`
-
-Manage form state for records:
-
-```typescript
-import { useFormRecordState } from '@ui/hooks/useFormRecordState';
-
-const [formState, setFormState] = useFormRecordState(initialRecord);
-
-<Input
-  value={formState.name}
-  onChange={(e) => setFormState({ name: e.target.value })}
-/>
+### `useNetworkLazyReloadQuery`
+Fetch data with manual refetch:
+```tsx
+const [data, refetch] = useNetworkLazyReloadQuery(graphql`...`, variables);
 ```
 
----
-
-## IPC Communication
-
-### Using IPC from Renderer
-
-The `window.electron` API provides type-safe IPC:
-
-```typescript
-// Type definitions in ui/electron.d.ts
-interface ElectronAPI {
-  'graphql-query': (args: { query: string; variables: any; context?: any }) => Promise<any>;
-  'file-dialog:open': (options: any) => Promise<string[]>;
-  'file-dialog:save': (options: any) => Promise<string>;
-}
-
-declare global {
-  interface Window {
-    electron: ElectronAPI;
-  }
-}
+### `useCompatMutation`
+Execute mutations:
+```tsx
+const [commit, isInFlight] = useCompatMutation(graphql`...`);
 ```
 
-### Example: Opening File Dialog
-
-```typescript
-const openFile = async () => {
-  const files = await window.electron['file-dialog:open']({
-    properties: ['openFile'],
-    filters: [{ name: 'Images', extensions: ['png', 'jpg'] }],
-  });
-
-  console.log('Selected files:', files);
-};
-```
-
-### Example: GraphQL Query via IPC
-
-```typescript
-const result = await window.electron['graphql-query']({
-  query: `
-    query GetUser($id: ID!) {
-      user(id: $id) { id name }
-    }
-  `,
-  variables: { id: '123' },
-  context: { sessionKey: 'abc' },
-});
-```
-
----
-
-## Testing UI Components
-
-### Test Setup
-
-```typescript
-// __tests__/ui/MyComponent.test.tsx
-import { render, screen } from '@testing-library/react';
-import MyComponent from '@ui/Components/MyComponent';
-
-describe('MyComponent', () => {
-  it('should render title', () => {
-    render(<MyComponent title="Hello" />);
-    expect(screen.getByText('Hello')).toBeInTheDocument();
-  });
-});
-```
-
-### Testing with Relay
-
-```typescript
-import { createMockEnvironment, MockPayloadGenerator } from 'relay-test-utils';
-import { RelayEnvironmentProvider } from 'react-relay';
-
-const environment = createMockEnvironment();
-
-render(
-  <RelayEnvironmentProvider environment={environment}>
-    <MyComponent />
-  </RelayEnvironmentProvider>
-);
-
-// Resolve query
-environment.mock.resolveMostRecentOperation((operation) =>
-  MockPayloadGenerator.generate(operation, {
-    User: () => ({ id: '1', name: 'Alice' }),
-  })
-);
-```
-
-### Testing User Interactions
-
-```typescript
-import userEvent from '@testing-library/user-event';
-
-it('should submit form', async () => {
-  const user = userEvent.setup();
-  render(<LoginForm />);
-
-  await user.type(screen.getByPlaceholderText('Username'), 'alice');
-  await user.type(screen.getByPlaceholderText('Password'), 'secret');
-  await user.click(screen.getByRole('button', { name: 'Login' }));
-
-  expect(mockLogin).toHaveBeenCalled();
-});
+### `usePollQuery`
+Poll queries at intervals:
+```tsx
+const data = usePollQuery(graphql`...`, variables, { pollInterval: 5000 });
 ```
 
 ---
 
 ## Common Recipes
 
-### 1. Add a New Page with Data
+### Add Animation to Cards
 
-```bash
-# 1. Create GraphQL resolver (main/graphql/resolvers/)
-# 2. Generate schema
-yarn graphql
-
-# 3. Create page component
-mkdir ui/Pages/Post
-touch ui/Pages/Post/PostList.tsx
-
-# 4. Add query to component
-# 5. Add route to Routes.tsx
-# 6. Test with yarn dev
+```tsx
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  whileHover={{ y: -4 }}
+  className="surface-elevated"
+>
+  {/* Content */}
+</motion.div>
 ```
 
-### 2. Create a Reusable Component
+### Create Status Badge
 
-```typescript
-// ui/Components/Card.tsx
-interface CardProps {
-  title: string;
-  children: React.ReactNode;
-}
+```tsx
+const statusColors = {
+  completed: 'badge-success',
+  failed: 'badge-error',
+  running: 'badge-primary',
+};
 
-export default function Card({ title, children }: CardProps) {
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-xl font-bold mb-4">{title}</h3>
-      {children}
-    </div>
-  );
-}
+<span className={statusColors[status]}>
+  {status}
+</span>
 ```
 
-### 3. Add a Modal
+### Add Notification
 
-```typescript
-import { Modal } from 'antd';
-import { useState } from 'react';
+```tsx
+import { message } from 'antd';
 
-function MyComponent() {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <>
-      <Button onClick={() => setVisible(true)}>Open Modal</Button>
-      <Modal
-        title="Confirm"
-        open={visible}
-        onOk={() => setVisible(false)}
-        onCancel={() => setVisible(false)}
-      >
-        Are you sure?
-      </Modal>
-    </>
-  );
-}
-```
-
-### 4. Add a Notification
-
-```typescript
-import { notification } from 'antd';
-
-notification.success({
-  message: 'Success',
-  description: 'Your changes have been saved.',
-});
-
-notification.error({
-  message: 'Error',
-  description: 'Something went wrong.',
-});
-```
-
-### 5. Add Keyboard Shortcuts
-
-```typescript
-// ui/HotKey/hotkeys.ts
-export const hotkeys = [
-  {
-    key: 'cmd+k',
-    description: 'Open command palette',
-    handler: () => {
-      // Handle shortcut
-    },
-  },
-];
+message.success('Changes saved!');
+message.error('Something went wrong');
 ```
 
 ---
 
-## Performance Tips
+## Best Practices
 
-### 1. Use Relay Fragments
+### Design
 
-Fragment colocation improves performance and maintainability:
+1. ✅ Use CSS variables for colors (`var(--color-primary-600)`)
+2. ✅ Follow 8px spacing grid
+3. ✅ Use `surface` and `surface-elevated` classes for cards
+4. ✅ Add entrance animations to pages (`motion.div`)
+5. ✅ Include empty states with icons and helpful text
+6. ✅ Use generous whitespace (don't cram content)
 
-```typescript
-// Instead of fetching all fields in parent:
-const data = useNetworkLazyLoadQuery(graphql`
-  query MyQuery {
-    user {
-      id
-      name
-      email
-      avatar
-      bio
-      # ... 20 more fields
-    }
-  }
-`);
+### Architecture
 
-// Use fragments:
-const data = useNetworkLazyLoadQuery(graphql`
-  query MyQuery {
-    user {
-      ...UserCard_user
-    }
-  }
-`);
+7. ✅ Keep routes co-located with their app
+8. ✅ Use AppContainer for all apps (consistent chrome)
+9. ✅ Dashboard is for launching apps, not navigation
+10. ✅ Each app is independent and self-contained
 
-// Component requests only what it needs:
-function UserCard({ user }) {
-  const data = useFragment(graphql`
-    fragment UserCard_user on User {
-      id
-      name
-      avatar
-    }
-  `, user);
-}
+### Code
+
+11. ✅ Use Relay fragments for component data requirements
+12. ✅ Keep components small (< 200 lines)
+13. ✅ Use TypeScript for all components and props
+14. ✅ Extract custom hooks for reusable logic
+15. ✅ Handle loading states with Skeleton
+16. ✅ Show error messages with notifications
+
+---
+
+## Design Patterns Reference
+
+### Warm Colors Over Cold
+
+```tsx
+// ❌ Avoid: Cold grays
+bg-gray-50 bg-gray-100
+
+// ✅ Use: Warm stone
+bg-[var(--color-background-primary)]  /* #FAFAF9 */
+bg-[var(--color-surface)]              /* #FFFFFF */
 ```
 
-### 2. Lazy Load Routes
+### Deep Indigo Over Generic Blue
 
-```typescript
-import { lazy, Suspense } from 'react';
+```tsx
+// ❌ Avoid: Generic blue
+bg-blue-600
 
-const PostList = lazy(() => import('@ui/Pages/Post/PostList'));
-
-<Suspense fallback={<div>Loading...</div>}>
-  <PostList />
-</Suspense>
+// ✅ Use: Deep indigo
+bg-[var(--color-primary-600)]  /* #4F46E5 */
 ```
 
-### 3. Optimize Re-renders
+### Amber/Rose Over Green/Red
 
-```typescript
-import { memo } from 'react';
+```tsx
+// ❌ Avoid: Generic green/red
+text-green-600 text-red-600
 
-const ExpensiveComponent = memo(({ data }) => {
-  // Only re-renders if data changes
-  return <div>{data}</div>;
-});
-```
-
-### 4. Use Relay Cache
-
-```typescript
-// Store-and-network: Render cached data immediately, then fetch
-const data = useNetworkLazyLoadQuery(graphql`...`, variables, {
-  fetchPolicy: 'store-and-network',
-});
-
-// Store-only: Only use cached data
-const data = useNetworkLazyLoadQuery(graphql`...`, variables, {
-  fetchPolicy: 'store-only',
-});
-```
-
-### 5. Debounce Search Inputs
-
-```typescript
-import { useMemo } from 'react';
-import { debounce } from 'lodash';
-
-const debouncedSearch = useMemo(
-  () => debounce((value: string) => {
-    // Perform search
-  }, 300),
-  []
-);
-
-<Input onChange={(e) => debouncedSearch(e.target.value)} />
+// ✅ Use: Amber/Rose
+text-[var(--color-success-600)]  /* Amber #D97706 */
+text-[var(--color-error-600)]    /* Rose #E11D48 */
 ```
 
 ---
@@ -1172,53 +928,21 @@ const debouncedSearch = useMemo(
 
 ### Relay Compiler Errors
 
-If you see `Unknown fragment` errors:
-
 ```bash
-# Regenerate schema and Relay artifacts
-yarn graphql
+yarn graphql  # Regenerate schema and artifacts
 ```
 
 ### TypeScript Errors
 
-If you see type errors:
-
 ```bash
-# Type check
-yarn tsc
+yarn type-check  # Faster than yarn build
 ```
 
-### HMR Not Working
+### Design System Not Applied
 
-If hot module replacement stops working:
-
-```bash
-# Restart dev server
-yarn dev
-```
-
-### IPC Errors
-
-If `window.electron` is undefined:
-
-- Check that `preload.ts` is loaded correctly
-- Verify `contextIsolation: true` in `BrowserWindow`
-- Check that handlers are registered in `main/handlers/registry.ts`
-
----
-
-## Best Practices
-
-1. ✅ **Use Relay fragments** for component data requirements
-2. ✅ **Colocate queries** with the component that uses them
-3. ✅ **Use TypeScript** for all components and props
-4. ✅ **Follow naming conventions** (PascalCase for components)
-5. ✅ **Use Tailwind** for styling (avoid inline styles)
-6. ✅ **Keep components small** (< 200 lines)
-7. ✅ **Extract custom hooks** for reusable logic
-8. ✅ **Use `useAuth`** instead of direct localStorage access
-9. ✅ **Handle loading states** with Skeleton or Spin
-10. ✅ **Show error messages** with notification.error
+- Check `ui/App/index.css` is imported
+- Verify Tailwind v4 `@theme` directive is present
+- Restart dev server (`yarn dev`)
 
 ---
 
@@ -1227,10 +951,11 @@ If `window.electron` is undefined:
 - [React Docs](https://react.dev/)
 - [Relay Docs](https://relay.dev/)
 - [React Router Docs](https://reactrouter.com/)
-- [Tailwind CSS Docs](https://tailwindcss.com/)
-- [Ant Design Docs](https://ant.design/)
+- [Tailwind CSS v4 Docs](https://tailwindcss.com/)
 - [Framer Motion Docs](https://www.framer.com/motion/)
 
 ---
+
+**Philosophy:** Every pixel has purpose. Refined minimalism means every element is intentionally designed, not generic or rushed. The App Store pattern ensures users have clear mental models and focused workflows.
 
 **Happy Building! 🚀**

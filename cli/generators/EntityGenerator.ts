@@ -24,6 +24,7 @@ import { ResolverPathGenerator } from './generators/ResolverPathGenerator.js';
 import { TypeMapper } from './utils/TypeMapper.js';
 import { ValidationHelper } from './utils/ValidationHelper.js';
 import { SimplifiedSchemaGenerator } from '../utils/SimplifiedSchemaGenerator.js';
+import { output } from '../utils/output.js';
 
 export class EntityGenerator {
   private entity: ParsedEntity;
@@ -80,6 +81,7 @@ export class EntityGenerator {
     // because entities may be needed internally for database operations
     // GraphQL exposure is controlled at the resolver and input level
     const basePath = this.generateBaseEntity();
+    output.success(`Generated entity base class at ${basePath}`);
     const { path: extensionPath, created: extensionCreated } = this.generateEntityExtension(force);
     const entityPathsPath = await this.generateEntityPaths();
     const resolverPathsPath = await this.generateResolverPaths();
@@ -93,6 +95,7 @@ export class EntityGenerator {
    */
   private generateBaseEntity(): string {
     const className = this.entity.name;
+
     const data = this.prepareEntityTemplateData();
     const code = this.templateManager.render('base', data);
 
@@ -185,6 +188,7 @@ export class EntityGenerator {
       polymorphicMethods: this.fieldPreparator.getPolymorphicFields(),
     };
   }
+
 
   /**
    * Prepare interface definitions for JSON fields with itemSchema and regular JSON fields with schemas
@@ -321,7 +325,6 @@ export class EntityGenerator {
         if (field.type == 'relation') {
           continue; // Skip relationship fields
         }
-        console.log(field);
         problematicFields.push({ name: field.name, type: field.type || 'unknown' });
       }
     }
@@ -329,10 +332,10 @@ export class EntityGenerator {
     // Show one compact warning per entity with field list
     if (problematicFields.length > 0) {
       const fieldNames = problematicFields.map(f => f.name).join(', ');
-      console.log(`⚠️  Entity "${this.entity.name}" has ${problematicFields.length} NOT NULL field${problematicFields.length === 1 ? '' : 's'} without defaults`);
-      console.log(`   ⋮ ${fieldNames}`);
-      console.log(`   💡 Consider adding default values or making fields nullable to avoid migration failures`);
-      console.log('');
+      output.warning(`⚠️  Entity "${this.entity.name}" has ${problematicFields.length} NOT NULL field${problematicFields.length === 1 ? '' : 's'} without defaults`);
+      output.info(`   ⋮ ${fieldNames}`);
+      output.info(`   💡 Consider adding default values or making fields nullable to avoid migration failures`);
+      output.info('');
     }
   }
 }

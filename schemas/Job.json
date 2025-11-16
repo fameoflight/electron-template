@@ -34,6 +34,7 @@
         "RUNNING",
         "COMPLETED",
         "POSTPONED",
+        "RETRY",
         "FAILED"
       ],
       "default": "PENDING",

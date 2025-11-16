@@ -16,7 +16,7 @@ import { Chat } from '@db/entities/Chat.js';
 import { CreateChatInput } from '@main/graphql/inputs/ChatInputs.js';
 import { UpdateChatInput } from '@main/graphql/inputs/ChatInputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -25,9 +25,9 @@ export class ChatConnection extends createConnectionType('Chat', Chat) { }
 
 @Resolver(() => Chat)
 export class ChatResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<Chat> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<Chat> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository(Chat, ctx);
+    return this.getOwnedRepository(Chat, ctx);
   }
 
   protected get repository(): RelayRepository<Chat> {
@@ -47,8 +47,7 @@ export class ChatResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<Chat | null> {
-    const localId = fromGlobalIdToLocalId(id);
-    return await this.getRepository(ctx).findOne({ where: { id: localId } });
+    return await this.getRepository(ctx).findOne({ where: { id: id } });
   }
 
   /**
@@ -86,18 +85,19 @@ export class ChatResolverBase extends BaseResolver {
   /**
    * Create new Chat
    */
-  @Mutation(() => Chat, { description: 'Create new Chat' })
+  @FieldMutation(CreateChatInput, Chat, {
+    description: 'Create new Chat'
+  })
   async createChat(
-    @Arg('input', () => CreateChatInput) input: CreateChatInput,
-    @Ctx() ctx: GraphQLContext
+    input: CreateChatInput,
+    ctx: GraphQLContext
   ): Promise<Chat> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
-    const entity = this.getRepository(ctx).create(input as any);
+    const entity = this.getRepository(ctx).create(input);
     // Auto-attach userId directly to entity (preserve constructor)
-    (entity as any).userId = ctx.user?.id;
-    return await this.getRepository(ctx).save(entity as any);
+    if (ctx.user) {
+      (entity).userId = ctx.user?.id;
+    }
+    return await this.getRepository(ctx).save(entity);
   }
 
 
@@ -111,8 +111,7 @@ export class ChatResolverBase extends BaseResolver {
     @Ctx() ctx: GraphQLContext
   ): Promise<boolean> {
     // Use the repository's softDeleteById method which handles ownership and already-deleted entities
-    const localId = fromGlobalIdToLocalId(id);
-    await this.getRepository(ctx).softDeleteById(localId);
+    await this.getRepository(ctx).softDeleteById(id);
     return true;
   }
 
@@ -124,11 +123,10 @@ export class ChatResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<boolean> {
-    const localId = fromGlobalIdToLocalId(id);
-    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: localId } });
+    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: id } });
 
 
-    await this.getRepository(ctx).hardDeleteById(localId);
+    await this.getRepository(ctx).hardDeleteById(id);
     return true;
   }
 
@@ -140,9 +138,8 @@ export class ChatResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<Chat | null> {
-    const localId = fromGlobalIdToLocalId(id);
     const entity = await this.getRepository(ctx).findOne({
-      where: { id: localId },
+      where: { id: id },
       withDeleted: true
     });
 
@@ -151,6 +148,6 @@ export class ChatResolverBase extends BaseResolver {
     }
 
 
-    return await this.getRepository(ctx).recoverById(localId);
+    return await this.getRepository(ctx).recoverById(id);
   }
 }

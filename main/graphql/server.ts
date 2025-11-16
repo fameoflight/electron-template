@@ -66,14 +66,16 @@ export async function executeGraphQLQuery<T = unknown>(
 
 
   if (errors.length) {
+    // get query line by line with line numbers
+    const queryLines = query.split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n');
     const errorContext = {
       errors: errors,
-      query,
       variables,
       context,
     }
     // TODO: Integrate with a logging service like Sentry here
     console.log('GraphQL Execution Errors:', JSON.stringify(errorContext, null, 2));
+    console.log('GraphQL Query with Line Numbers:\n', queryLines);
   }
 
   return {

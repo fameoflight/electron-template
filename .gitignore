@@ -16,7 +16,7 @@ node_modules/
 dist/
 dist-ssr/
 dist-electron/
-build/
+build/**
 out/
 
 # But keep app icons (they need to be version controlled)

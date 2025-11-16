@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9aebd7abcc6e6bb6e1cb1bfbfed6ff10>>
+ * @generated SignedSource<<4391057dc2a60b078b68ac47ca4a075a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,7 +12,7 @@ import { ConcreteRequest } from 'relay-runtime';
 export type LLMBaseCapabilities = "TEXT" | "VISION" | "%future added value";
 export type CreateUpdateLLMModelInput = {
   capabilities?: ReadonlyArray<LLMBaseCapabilities> | null | undefined;
-  connectionId: string;
+  connectionId?: string | null | undefined;
   contextLength?: number | null | undefined;
   default?: boolean | null | undefined;
   id?: string | null | undefined;

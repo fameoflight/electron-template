@@ -7,6 +7,7 @@
 import Handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
+import { cyberOutput } from '../../utils/output.js';
 
 export class TemplateManager {
   private templates: Map<string, HandlebarsTemplateDelegate> = new Map();
@@ -164,7 +165,7 @@ export class TemplateManager {
       const templatePath = path.join(templateDir, file);
 
       if (!fs.existsSync(templatePath)) {
-        console.warn(`Template file not found: ${templatePath}`);
+        cyberOutput.warning(`Template file not found: ${templatePath}`);
         continue;
       }
 
@@ -174,7 +175,7 @@ export class TemplateManager {
         this.templates.set(templateName, Handlebars.compile(templateContent));
 
               } catch (error) {
-        console.error(`Error loading template ${file}:`, error);
+        cyberOutput.error(`Error loading template ${file}:`, error instanceof Error ? error.message : String(error));
         throw new Error(`Failed to load template: ${file}`);
       }
     }
@@ -207,7 +208,7 @@ export class TemplateManager {
     try {
       return template(data);
     } catch (error) {
-      console.error(`Error rendering template ${name}:`, error);
+      cyberOutput.error(`Error rendering template ${name}:`, error instanceof Error ? error.message : String(error));
       throw new Error(`Failed to render template: ${name}`);
     }
   }

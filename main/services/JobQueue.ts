@@ -1,3 +1,4 @@
+/* eslint-disable @codeblocks/file-size-limit */
 import { Repository, In, Not, IsNull, LessThanOrEqual } from 'typeorm';
 import { Job, JobStatus } from '@main/db/entities/Job.js';
 import { User } from '@main/base/db/User.js';
@@ -25,6 +26,7 @@ export interface JobStatusMetadata {
  * - Simple job registration instead of complex registry pattern
  * - Same polling and retry logic but easier to understand
  */
+// eslint-disable-next-line @codeblocks/class-props-limit
 class JobQueue {
   private jobRepo: Repository<Job>;
   private jobs = new Map<string, new () => BaseJob>();

@@ -10,7 +10,7 @@ export { createTestJob, createTestJobs } from './jobFactory';
 export { createConnection, createConnections, createConnectionsOfDifferentKinds } from './connectionFactory';
 export { createLLMModel, createLLMModels } from './llmModelFactory';
 export { createEmbeddingModel, createEmbeddingModels } from './embeddingModelFactory';
-export { createFile, createFiles, createFileWithContent, createFilesWithContent } from './fileFactory';
+export { createFileEntity, createFiles, createFileWithContent, createFilesWithContent } from './fileFactory';
 export { createChat, createChats } from './chatFactory';
 export { createMessage, createMessages, createConversation } from './messageFactory';
 

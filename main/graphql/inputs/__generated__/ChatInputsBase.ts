@@ -91,7 +91,7 @@ export class UpdateChatInputBase extends BaseInput {
   @FieldInput(String, { inputType: 'update', description: 'Optional chat description' })
   description?: string;
 
-  @FieldInput(String, { inputType: 'update', description: 'Input: Default LLM model for this chat (ID of LLMModel)', required: true })
+  @FieldInput(String, { inputType: 'update', description: 'Input: Default LLM model for this chat (ID of LLMModel)', required: false })
   llmModelId?: string;
 
   @FieldInputEnum(ChatStatus, { inputType: 'update', description: 'Input: Chat status for organization. Required field.', default: 'active' })
@@ -124,7 +124,7 @@ export class CreateUpdateChatInputBase extends BaseInput {
   @FieldInput(String, { inputType: 'createUpdate', description: 'Optional chat description' })
   description?: string;
 
-  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Default LLM model for this chat (ID of LLMModel)', required: true })
+  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Default LLM model for this chat (ID of LLMModel)', required: false })
   llmModelId?: string;
 
   @FieldInputEnum(ChatStatus, { inputType: 'createUpdate', description: 'Input: Chat status for organization. Required field.', default: 'active' })

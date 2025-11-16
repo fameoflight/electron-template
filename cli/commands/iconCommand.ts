@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Icon Update Command
  *
@@ -14,6 +13,7 @@
  */
 import { Command } from 'commander';
 import { FileSystemService, GitUtils, IconUtils, type IconSizes } from '../utils/index.js';
+import { cyberOutput } from '../utils/output.js';
 import * as path from 'path';
 
 export class IconGenerator {
@@ -33,9 +33,9 @@ export class IconGenerator {
    * Generate all icon formats from SVG
    */
   async generateAll(): Promise<void> {
-    console.log('🎨 Generating icons from SVG...');
-    console.log(`Input: ${this.inputSvg}`);
-    console.log(`Output: ${this.outputDir}`);
+    cyberOutput.info('Generating icons from SVG...');
+    cyberOutput.info(`Input: ${this.inputSvg}`);
+    cyberOutput.info(`Output: ${this.outputDir}`);
 
     try {
       // Validate input file exists
@@ -47,14 +47,14 @@ export class IconGenerator {
       // Check dependencies
       const deps = await this.iconUtils.checkDependencies();
       if (!deps.sharp) {
-        console.warn('⚠️  Sharp not found. Install with: yarn add -D sharp');
+        cyberOutput.warning('Sharp not found. Install with: yarn add -D sharp');
         return;
       }
 
       const sizes = IconUtils.getStandardSizes();
 
       // Generate PNG files for Linux
-      console.log(`\n📦 Generating ${Object.keys(sizes.linux).length} PNG files...`);
+      cyberOutput.info(`Generating ${Object.keys(sizes.linux).length} PNG files...`);
       const pngFiles = await this.iconUtils.generatePngFiles(
         this.inputSvg,
         this.outputDir,
@@ -63,46 +63,46 @@ export class IconGenerator {
       );
       pngFiles.forEach(file => {
         const relativePath = path.relative(this.outputDir, file);
-        console.log(`  ✓ ${relativePath}`);
+        cyberOutput.success(`Created ${relativePath}`);
       });
 
       // Generate Windows ICO
       if (deps.pngToIco) {
-        console.log('\n🪟 Generating Windows ICO file...');
+        cyberOutput.info('Generating Windows ICO file...');
         const icoFile = await this.iconUtils.generateIcoFile(
           this.inputSvg,
           this.outputDir,
           sizes.ico
         );
-        console.log(`  ✓ ${path.basename(icoFile)}`);
+        cyberOutput.success(`Created ${path.basename(icoFile)}`);
       } else {
-        console.warn('\n⚠️  Skipping ICO generation - png-to-ico not available');
+        cyberOutput.warning('Skipping ICO generation - png-to-ico not available');
       }
 
       // Generate macOS ICNS
-      console.log('\n🍎 Generating macOS ICNS file...');
+      cyberOutput.info('Generating macOS ICNS file...');
       const icnsResult = await this.iconUtils.generateIcnsFile(
         this.inputSvg,
         this.outputDir,
         sizes.icns
       );
-      console.log(`  ✓ ${path.basename(icnsResult)}`);
+      cyberOutput.success(`Created ${path.basename(icnsResult)}`);
 
       // Generate favicon package
-      console.log('\n🌐 Generating favicon package...');
+      cyberOutput.info('Generating favicon package...');
       await this.iconUtils.generateFaviconPackage(
         this.inputSvg,
         this.outputDir,
         sizes.favicon
       );
-      console.log(`  ✓ favicon/ package`);
+      cyberOutput.success('Created favicon/ package');
 
-      console.log('\n✅ Icon generation completed successfully!');
-      console.log('\n📁 Generated files:');
+      cyberOutput.success('Icon generation completed successfully!');
+      cyberOutput.info('Generated files:');
       await this.listGeneratedFiles();
 
     } catch (error) {
-      console.error('\n❌ Error generating icons:', error);
+      cyberOutput.error('Error generating icons:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -119,11 +119,11 @@ export class IconGenerator {
 
       const sortedFiles = files
         .sort()
-        .map(file => `   ${path.relative(this.outputDir, file)}`);
+        .map((file: string) => `   ${path.relative(this.outputDir, file)}`);
 
-      console.log(sortedFiles.join('\n'));
+      cyberOutput.info(sortedFiles.join('\n'));
     } catch (error) {
-      console.error('Could not list generated files:', error);
+      cyberOutput.error('Could not list generated files:', error instanceof Error ? error.message : String(error));
     }
   }
 }
@@ -141,29 +141,28 @@ export const iconCommand = new Command('icons')
   .option('--git-add', 'Automatically add generated icons to Git', false)
   .action(async (inputSvg: string, outputDir: string, options) => {
     try {
-      console.log('🎨 Complete App Icon Replacement');
-      console.log('=================================');
+      cyberOutput.header('Complete App Icon Replacement');
 
       if (options.dryRun) {
-        console.log('\n🔍 Dry run mode - no files will be modified');
-        console.log(`\n📱 Input SVG: ${path.resolve(inputSvg)}`);
+        cyberOutput.info('Dry run mode - no files will be modified');
+        cyberOutput.info(`Input SVG: ${path.resolve(inputSvg)}`);
 
         if (!options.noReplace) {
-          console.log('\n🔄 Files that will be replaced:');
-          console.log('  • public/system-tray.svg (tray icon)');
-          console.log('  • public/app-favicon.svg (favicon)');
-          console.log('  • ui/assets/app-logo.svg (UI component icon)');
-          console.log('\n⚙️  Configuration that will be updated:');
-          console.log('  • SystemTrayService.ts (icon reference)');
-          console.log('  • index.html (favicon reference)');
-          console.log('  • package.json (build icon paths)');
+          cyberOutput.info('Files that will be replaced:');
+          cyberOutput.info('• public/system-tray.svg (tray icon)');
+          cyberOutput.info('• public/app-favicon.svg (favicon)');
+          cyberOutput.info('• ui/assets/app-logo.svg (UI component icon)');
+          cyberOutput.info('Configuration that will be updated:');
+          cyberOutput.info('• SystemTrayService.ts (icon reference)');
+          cyberOutput.info('• index.html (favicon reference)');
+          cyberOutput.info('• package.json (build icon paths)');
         }
 
-        console.log('\n📦 Icon formats that will be generated:');
-        console.log('  • PNG files for Linux (16x16 to 1024x1024)');
-        console.log('  • ICO file for Windows');
-        console.log('  • ICNS file for macOS');
-        console.log('  • Favicon package for web usage');
+        cyberOutput.info('Icon formats that will be generated:');
+        cyberOutput.info('• PNG files for Linux (16x16 to 1024x1024)');
+        cyberOutput.info('• ICO file for Windows');
+        cyberOutput.info('• ICNS file for macOS');
+        cyberOutput.info('• Favicon package for web usage');
         return;
       }
 
@@ -182,34 +181,35 @@ export const iconCommand = new Command('icons')
         await replacer.addToGit();
       }
 
-      console.log('\n✅ Icon replacement completed successfully!');
+      cyberOutput.success('Icon replacement completed successfully!');
 
       if (!options.noReplace) {
-        console.log('\n📋 Summary of changes:');
+        cyberOutput.info('Summary of changes:');
         await replacer.showSummary();
       }
 
-      console.log('\n💡 Next steps:');
-      console.log('  1. Test the application: yarn dev');
-      console.log('  2. Build to verify all icons: yarn build');
-      console.log('  3. Check tray icon, favicon, and app icons are updated');
+      cyberOutput.info('Next steps:');
+      cyberOutput.info('1. Test the application: yarn dev');
+      cyberOutput.info('2. Build to verify all icons: yarn build');
+      cyberOutput.info('3. Check tray icon, favicon, and app icons are updated');
 
       if (!options.gitAdd) {
-        console.log('  4. Commit the generated icons: git add build/icons/ && git commit -m "Update app icons"');
+        cyberOutput.info('4. Commit the generated icons: git add build/icons/ && git commit -m "Update app icons"');
       } else {
-        console.log('  4. Icons already added to Git - commit when ready: git commit -m "Update app icons"');
+        cyberOutput.info('4. Icons already added to Git - commit when ready: git commit -m "Update app icons"');
       }
 
     } catch (error) {
-      console.error('\n❌ Icon replacement failed:', error);
-      console.log('\n💡 Troubleshooting:');
-      console.log('  • Ensure the input SVG file exists and is readable');
-      console.log('  • Install required dependencies: yarn add -D sharp png-to-ico');
-      console.log('  • For ICNS generation on macOS, install Xcode command line tools');
+      cyberOutput.error('Icon replacement failed:', error instanceof Error ? error.message : String(error));
+      cyberOutput.info('Troubleshooting:');
+      cyberOutput.info('• Ensure the input SVG file exists and is readable');
+      cyberOutput.info('• Install required dependencies: yarn add -D sharp png-to-ico');
+      cyberOutput.info('• For ICNS generation on macOS, install Xcode command line tools');
       process.exit(1);
     }
   });
 
+// eslint-disable-next-line @codeblocks/class-props-limit
 export class IconReplacer {
   private inputSvg: string;
   private outputDir: string;
@@ -225,14 +225,14 @@ export class IconReplacer {
   }
 
   async generateIcons(): Promise<void> {
-    console.log('\n📦 Generating app icon formats...');
+    cyberOutput.info('Generating app icon formats...');
     const generator = new IconGenerator(this.inputSvg, this.outputDir);
     await generator.generateAll();
     this.changes.push(`Generated icons in ${this.outputDir}`);
   }
 
   async replaceAll(): Promise<void> {
-    console.log('\n🔄 Replacing all application icons...');
+    cyberOutput.info('Replacing all application icons...');
 
     await this.replacePublicAssets();
     await this.replaceUIAssets();
@@ -241,7 +241,7 @@ export class IconReplacer {
   }
 
   private async replacePublicAssets(): Promise<void> {
-    console.log('  🌐 Updating public assets...');
+    cyberOutput.info('Updating public assets...');
 
     // Replace system-tray.svg (used by system tray)
     await this.fileService.copyFile(this.inputSvg, 'public/system-tray.svg');
@@ -252,11 +252,11 @@ export class IconReplacer {
     this.changes.push('Replaced public/app-favicon.svg (favicon)');
 
     // Keep electron-vite.animate.svg as-is since it's animated
-    console.log('    ℹ️  Kept public/electron-vite.animate.svg (animated)');
+    cyberOutput.info('Kept public/electron-vite.animate.svg (animated)');
   }
 
   private async replaceUIAssets(): Promise<void> {
-    console.log('  🎨 Updating UI assets...');
+    cyberOutput.info('Updating UI assets...');
 
     // Replace app-logo.svg in UI assets
     await this.fileService.copyFile(this.inputSvg, 'ui/assets/app-logo.svg');
@@ -264,7 +264,7 @@ export class IconReplacer {
   }
 
   private async updateCodeReferences(): Promise<void> {
-    console.log('  📱 Updating code references...');
+    cyberOutput.info('Updating code references...');
 
     // Update SystemTrayService to ensure it references the correct file
     const wasTrayUpdated = await this.fileService.replaceInFile(
@@ -290,7 +290,7 @@ export class IconReplacer {
   }
 
   private async updateConfiguration(): Promise<void> {
-    console.log('  ⚙️  Updating configuration...');
+    cyberOutput.info('Updating configuration...');
 
     try {
       const packageData = await this.fileService.readJson('package.json') as any;
@@ -328,18 +328,18 @@ export class IconReplacer {
       await this.fileService.writeFile('package.json', JSON.stringify(packageData, null, 2) + '\n');
       this.changes.push('Updated package.json build configuration with icon paths');
     } catch (error) {
-      console.warn('    ⚠️  Failed to update package.json:', error instanceof Error ? error.message : error);
+      cyberOutput.warning('Failed to update package.json:', error instanceof Error ? error.message : String(error));
       this.changes.push('Failed to update package.json');
     }
   }
 
   async showSummary(): Promise<void> {
-    console.log('\n📋 Changes made:');
+    cyberOutput.info('Changes made:');
     this.changes.forEach((change, index) => {
-      console.log(`  ${index + 1}. ${change}`);
+      cyberOutput.logger.log(`${index + 1}. ${change}`);
     });
 
-    console.log('\n📁 Generated icon files:');
+    cyberOutput.info('Generated icon files:');
     try {
       const iconFiles = await this.fileService.findFiles(this.outputDir, {
         pattern: /\.(png|ico|icns|json)$/i,
@@ -350,26 +350,26 @@ export class IconReplacer {
         .sort()
         .map(file => `  • ${path.relative(process.cwd(), file)}`);
 
-      console.log(sortedFiles.join('\n'));
+      cyberOutput.info(sortedFiles.join('\n'));
     } catch (error) {
-      console.log('  (Could not list generated files)');
+      cyberOutput.info('(Could not list generated files)');
     }
 
-    console.log('\n🎯 What was updated:');
-    console.log('  • System tray icon (macOS menu bar)');
-    console.log('  • Browser favicon');
-    console.log('  • UI component icons');
-    console.log('  • Windows app icon (.ico)');
-    console.log('  • macOS app icon (.icns)');
-    console.log('  • Linux app icons (.png)');
-    console.log('  • Electron build configuration');
+    cyberOutput.info('What was updated:');
+    cyberOutput.info('• System tray icon (macOS menu bar)');
+    cyberOutput.info('• Browser favicon');
+    cyberOutput.info('• UI component icons');
+    cyberOutput.info('• Windows app icon (.ico)');
+    cyberOutput.info('• macOS app icon (.icns)');
+    cyberOutput.info('• Linux app icons (.png)');
+    cyberOutput.info('• Electron build configuration');
   }
 
   async addToGit(): Promise<void> {
-    console.log('  📝 Adding icons to Git...');
+    cyberOutput.info('Adding icons to Git...');
     try {
       if (!(await this.gitUtils.isInGitRepo())) {
-        console.warn('    ⚠️  Not in a Git repository');
+        cyberOutput.warning('Not in a Git repository');
         this.changes.push('Not in a Git repository');
         return;
       }
@@ -378,10 +378,10 @@ export class IconReplacer {
       this.changes.push(...gitChanges);
 
       gitChanges.forEach(change => {
-        console.log(`    ✓ ${change}`);
+        cyberOutput.success(`Added ${change}`);
       });
     } catch (error) {
-      console.warn('    ⚠️  Could not automatically add to Git:', error instanceof Error ? error.message : error);
+      cyberOutput.warning('Could not automatically add to Git:', error instanceof Error ? error.message : String(error));
       this.changes.push('Failed to add icons to Git automatically');
     }
   }

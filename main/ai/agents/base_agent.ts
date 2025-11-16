@@ -1,12 +1,6 @@
 import { DataSourceProvider } from '@base/db/index.js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { agentTemplates } from './templates/index.js';
 import Handlebars from 'handlebars';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 /**
  * BaseAgent - Common patterns for all AI agents
@@ -43,9 +37,9 @@ export abstract class BaseAgent {
   }
 
   /**
-   * Load and compile a Handlebars template
+   * Load and compile a Handlebars template (from imported agentTemplates)
    *
-   * @param templateName - Name of the template file (without .hbs extension)
+   * @param templateName - Name of the template (matches key in agentTemplates)
    * @returns Compiled Handlebars template
    */
   protected loadTemplate(templateName: string): HandlebarsTemplateDelegate {
@@ -55,10 +49,14 @@ export abstract class BaseAgent {
     }
 
     try {
-      // Templates are always copied to dist-electron/templates during build
-      // In both development and production, __dirname points to dist-electron
-      const templatePath = join(__dirname, 'templates', `${templateName}.hbs`);
-      const templateContent = readFileSync(templatePath, 'utf-8');
+      // Get template from imported agentTemplates
+      const templateData = agentTemplates[templateName];
+      if (!templateData) {
+        throw new Error(`Template "${templateName}" not found in agentTemplates`);
+      }
+
+      // Join the content array into a single string and compile with Handlebars
+      const templateContent = templateData.content.join('\n');
       const template = Handlebars.compile(templateContent);
 
       // Cache the compiled template

@@ -17,6 +17,8 @@ import { User } from '@main/base/db/User.js';
 import type { GraphQLContext } from '@shared/types';
 import JobQueue from '@main/services/JobQueue.js';
 import { BaseResolver } from '@main/base/index.js';
+import { BaseInput } from '@main/base/graphql/BaseInput.js';
+import { MinLength, MaxLength, validate, IsString } from 'class-validator';
 
 @InputType()
 export class LoginInput {
@@ -33,8 +35,15 @@ export class CreateUserInput extends LoginInput {
   name!: string;
 }
 
+class NameValidationInput {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  name!: string;
+}
+
 @InputType()
-export class UpdateUserInput {
+export class UpdateUserInput extends BaseInput {
 
   @Field(() => String, { nullable: true })
   name?: string;
@@ -52,6 +61,34 @@ export class UpdateUserInput {
 
 @Resolver(() => User)
 export class UserResolver extends BaseResolver {
+
+  protected async validateInput<T>(input: T): Promise<T> {
+    // For UpdateUserInput, only validate fields that are actually provided
+    const inputObj = input as any;
+
+    if (inputObj.constructor.name === 'UpdateUserInput') {
+      // Only validate if name field is provided
+      if (inputObj.name !== undefined && inputObj.name !== '') {
+        // Create a temporary object with just the name for validation
+        const tempInput = new NameValidationInput();
+        tempInput.name = inputObj.name;
+        const errors = await validate(tempInput);
+        if (errors.length > 0) {
+          const messages = errors.map(e => Object.values(e.constraints || {}).join(', ')).join('; ');
+          throw new Error(`Validation failed: ${messages}`);
+        }
+      } else if (inputObj.name === '') {
+        // Empty string should fail validation
+        throw new Error('Validation failed: name must be longer than or equal to 1 characters');
+      }
+
+      // Skip BaseInput validation for UpdateUserInput to avoid default value issues
+      return input;
+    }
+
+    // For all other inputs, use the normal BaseInput validation
+    return await super.validateInput(input);
+  }
 
   @Query(() => User, { nullable: true })
   async currentUser(@Ctx() ctx: GraphQLContext): Promise<User | null> {
@@ -120,15 +157,19 @@ export class UserResolver extends BaseResolver {
     @Ctx() ctx: GraphQLContext,
     @Arg('input', () => UpdateUserInput) input: UpdateUserInput
   ): Promise<User> {
-    const repo = this.getBaseRepository(User);
-    const user = await repo.findOneByOrFail({ username: input.username! });
-
-    if (!user) {
-      throw new Error('User not found');
+    if (!ctx.user?.id) {
+      throw new Error('Authentication required');
     }
 
-    if (user.id !== ctx.user?.id) {
-      throw new Error('Unauthorized');
+    // Validate input using BaseInput validation
+    await this.validateInput(input);
+
+    const repo = this.getBaseRepository(User);
+    const user = await repo.findOneByOrFail({ id: ctx.user.id });
+
+    // Username change is not allowed - remove it from input if present
+    if (input.username !== undefined) {
+      throw new Error('Cannot change username');
     }
 
     this.safeAssignUpdate(user, input);

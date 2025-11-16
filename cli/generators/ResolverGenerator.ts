@@ -15,6 +15,7 @@ import { ParsedEntity } from '../parsers/EntityJsonParser.js';
 import { TemplateManager } from './managers/TemplateManager.js';
 import { EntityFileGenerator } from './generators/EntityFileGenerator.js';
 import { TypeMapper } from './utils/TypeMapper.js';
+import { cyberOutput } from '../utils/output.js';
 
 export interface ResolverGeneratorOptions {
   projectRoot?: string;
@@ -54,7 +55,13 @@ export class ResolverGenerator {
   } {
     // Check if resolvers should be generated based on graphql property
     if (!this.shouldGenerateResolvers()) {
-      throw new Error(`Resolver generation skipped for entity "${this.entity.name}" because graphql: false or no operations included in graphql array`);
+      // throw new Error(`Resolver generation skipped for entity "${this.entity.name}" because graphql: false or no operations included in graphql array`);
+      cyberOutput.info(`Skipping resolver generation for entity "${this.entity.name}" due to graphql configuration.`);
+      return {
+        resolverPath: '',
+        extensionPath: undefined,
+        extensionCreated: false,
+      };
     }
 
     const className = this.entity.name;
@@ -116,7 +123,7 @@ export class ResolverGenerator {
     // Check if resolver extension template exists
     if (!this.templateManager.hasTemplate('resolver-extension')) {
       if (!this.options.dryRun) {
-        console.log(`  ⚠️  Template 'resolver-extension.hbs' not found, skipping resolver extension`);
+        cyberOutput.warning(`Template 'resolver-extension.hbs' not found, skipping resolver extension`);
       }
       const extensionPath = `${this.projectRoot}/main/graphql/resolvers/${className}Resolver.ts`;
       return { path: extensionPath, created: false };

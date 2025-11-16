@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<05008bc44a71bffc501a310ea82c95a3>>
+ * @generated SignedSource<<c0fa051cd89266049c1666e042f2755f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,7 +16,6 @@ export type SendMessageInput = {
   content: string;
   llmModelId: string;
   systemPrompt?: string | null | undefined;
-  title?: string | null | undefined;
 };
 export type useSimpleMessageInput_SendMessageMutation$variables = {
   input: SendMessageInput;

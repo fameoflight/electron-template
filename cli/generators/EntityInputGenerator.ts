@@ -14,6 +14,7 @@ import { ParsedEntity } from '../parsers/EntityJsonParser.js';
 import { TemplateManager } from './managers/TemplateManager.js';
 import { InputPreparator } from './preparators/InputPreparator.js';
 import { EntityFileGenerator } from './generators/EntityFileGenerator.js';
+import { cyberOutput } from '../utils/output.js';
 
 export interface InputGeneratorOptions {
   projectRoot?: string;
@@ -22,6 +23,7 @@ export interface InputGeneratorOptions {
   dryRun?: boolean;
 }
 
+// eslint-disable-next-line @codeblocks/class-props-limit
 export class EntityInputGenerator {
   private entity: ParsedEntity;
   private projectRoot: string;
@@ -53,11 +55,6 @@ export class EntityInputGenerator {
     extensionPath?: string;
     extensionCreated: boolean;
   } {
-    // Check if inputs should be generated based on graphql property
-    if (!this.shouldGenerateInputs()) {
-      throw new Error(`Input generation skipped for entity "${this.entity.name}" because graphql: false or inputs not included in graphql array`);
-    }
-
     const className = this.entity.name;
     const data = this.inputPreparator.prepareAllInputsData();
     const code = this.templateManager.render('inputs', data);
@@ -114,7 +111,7 @@ export class EntityInputGenerator {
     // Check if inputs extension template exists
     if (!this.templateManager.hasTemplate('inputs-extension')) {
       if (!this.options.dryRun) {
-        console.log(`  ⚠️  Template 'inputs-extension.hbs' not found, skipping inputs extension`);
+        cyberOutput.warning(`Template 'inputs-extension.hbs' not found, skipping inputs extension`);
       }
       const extensionPath = `${this.projectRoot}/main/graphql/inputs/${className}Inputs.ts`;
       return { path: extensionPath, created: false };

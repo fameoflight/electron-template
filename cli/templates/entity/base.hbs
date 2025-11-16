@@ -119,7 +119,7 @@ export abstract class {{className}}Base extends OwnedEntity {
   /**
    * Gets the polymorphic {{fieldName}} entity
    */
-  async {{methodName}}<T extends ObjectLiteral>(): Promise<T | null> {
+  async {{getterName}}<T extends ObjectLiteral>(): Promise<T | null> {
     if (!this.{{idColumn}} || !this.{{typeColumn}}) {
       return null;
     }

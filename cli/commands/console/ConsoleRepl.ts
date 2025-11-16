@@ -16,6 +16,7 @@ import { REPLServer, start as nodeReplStart } from 'repl';
 import { executeGraphQLQuery } from '../../../main/graphql/server.js';
 import { GraphQLVariables } from '../../../shared/types.js';
 import { customCompleter } from './ConsoleCompletion.js';
+import { cyberOutput } from '../../utils/output.js';
 
 /**
  * Start the Node.js REPL server with custom configuration
@@ -98,7 +99,7 @@ function disableInlineAutocomplete(replServer: REPLServer): void {
 function setupHistory(replServer: REPLServer, historyPath: string): void {
   replServer.setupHistory(historyPath, (err) => {
     if (err) {
-      console.warn('⚠️  Could not setup REPL history:', err.message);
+      cyberOutput.warning('Could not setup REPL history', err.message);
     }
   });
 }
@@ -168,15 +169,15 @@ export async function executeGraphQL(query: string, variables?: GraphQLVariables
     const result = await executeGraphQLQuery(query, variables);
 
     if (result.errors && result.errors.length > 0) {
-      console.warn('⚠️  GraphQL errors:');
+      cyberOutput.warning('GraphQL errors occurred');
       result.errors.forEach(error => {
-        console.warn(`  - ${error.message}`);
+        cyberOutput.warning(error.message);
       });
     }
 
     return result.data;
   } catch (error) {
-    console.error('❌ GraphQL execution failed:', error);
+    cyberOutput.error('GraphQL execution failed', error instanceof Error ? error : String(error));
     throw error;
   }
 }

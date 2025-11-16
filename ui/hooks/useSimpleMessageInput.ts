@@ -34,11 +34,10 @@ export function useSimpleMessageInput() {
     messageContent: string,
     llmModel: LLMModel,
     attachmentIds: string[] = [],
+    onComplete?: (chatId: string) => void,
     options?: {
       chatId?: string;
-      title?: string;
       systemPrompt?: string;
-      onComplete?: (chatId: string) => void;
     }
   ) => {
     if (!messageContent.trim() || isSending) return;
@@ -65,7 +64,6 @@ export function useSimpleMessageInput() {
         input.chatId = options.chatId;
       } else {
         // New chat mode
-        input.title = options?.title || 'New Chat';
         input.systemPrompt = options?.systemPrompt || 'You are a helpful assistant...';
       }
 
@@ -76,8 +74,8 @@ export function useSimpleMessageInput() {
       await commitSendMessage({
         variables: { input },
         onCompleted: (response) => {
-          if (response?.sendMessage?.chat?.id && options?.onComplete) {
-            options.onComplete(response.sendMessage.chat.id);
+          if (response?.sendMessage?.chat?.id && onComplete) {
+            onComplete(response.sendMessage.chat.id);
           }
         },
         onError: (error) => {

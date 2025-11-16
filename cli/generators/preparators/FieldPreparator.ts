@@ -1,14 +1,20 @@
 /**
  * FieldPreparator - Prepares field and relationship data for templates
  *
- * Handles transformation of raw field definitions into template-ready data structures
+ * Refactored to use Strategy Pattern:
+ * - Field preparation delegated to FieldPreparatorRegistry (eliminates complex if/else chains)
+ * - Relationship preparation preserved (separate concern)
+ * - Helper methods preserved (naming, filtering)
+ * - Adding new field types = register new strategy (no changes to this file)
  */
 
 import { ParsedEntity, EntityField } from '../../parsers/EntityJsonParser.js';
 import { TypeMapper } from '../utils/TypeMapper.js';
-import { ValidationHelper } from '../utils/ValidationHelper.js';
 import { DecoratorGenerator } from './DecoratorGenerator.js';
 import { GraphQLOptions } from '../utils/GraphQLOptions.js';
+import { getFieldPreparatorRegistry } from '../strategies/fields/index.js';
+import { ValidationHelper } from '../utils/ValidationHelper.js';
+import { cyberOutput } from '../../utils/output.js';
 
 export class FieldPreparator {
   private entity: ParsedEntity;
@@ -19,68 +25,44 @@ export class FieldPreparator {
 
   /**
    * Prepares regular field data for entity templates
+   * Delegates to FieldPreparatorRegistry (eliminates all if/else chains)
    */
-  prepareEntityFields(): Array<ReturnType<typeof this.prepareField>> {
+  prepareEntityFields(): Array<any> {
     // Include regular fields AND foreign key fields from relations
     const fields = this.entity.fields.filter(f => !f.relationship || this.shouldGenerateForeignKey(f));
-
-    // Add polymorphic field columns (id and type columns)
-    const polymorphicFields = this.entity.fields.filter(f => f.type === 'polymorphic');
-    const polymorphicColumns = polymorphicFields.flatMap(f => this.preparePolymorphicColumns(f));
 
     // Sort fields alphabetically by name for consistent ordering
     fields.sort((a, b) => a.name.localeCompare(b.name));
 
-    const regularFields = fields.map(f => this.prepareField(f)).filter(f => f !== null);
+    // Delegate to strategy registry
+    const registry = getFieldPreparatorRegistry();
+    const preparedFields: any[] = [];
 
-    return [...regularFields, ...polymorphicColumns];
-  }
+    for (const field of fields) {
+      const result = registry.prepareField({ entity: this.entity, field });
 
-  /**
-   * Prepares polymorphic field columns (id and type) for template rendering
-   */
-  private preparePolymorphicColumns(field: EntityField) {
-    if (field.type !== 'polymorphic') {
-      return [];
+      if (result === null) {
+        // Skip fields that shouldn't be included
+        continue;
+      }
+
+      if (Array.isArray(result)) {
+        // Multiple columns (e.g., polymorphic fields)
+        preparedFields.push(...result);
+      } else {
+        // Single column
+        preparedFields.push(result);
+      }
     }
 
-    const graphqlOptions = new GraphQLOptions(field);
-    const { idColumn, typeColumn } = TypeMapper.getPolymorphicColumns(field.name);
-    const nullability = field.required ? '!' : '?';
-
-    // Prepare ID column using DecoratorGenerator (includes proper GraphQL handling)
-    const idDecorator = DecoratorGenerator.createPolymorphicIdFieldColumn(field, this.entity.name);
-    const idDecorators = [idDecorator];
-
-    // Prepare Type column using DecoratorGenerator (includes proper GraphQL handling)
-    const typeDecorator = DecoratorGenerator.createPolymorphicTypeFieldColumn(field, this.entity.name);
-    const typeDecorators = [typeDecorator];
-
-    return [
-      {
-        name: idColumn,
-        tsType: 'string',
-        nullability,
-        decorators: idDecorators,
-        isPolymorphicId: true,
-        originalFieldName: field.name,
-      },
-      {
-        name: typeColumn,
-        tsType: 'string',
-        nullability,
-        decorators: typeDecorators,
-        isPolymorphicType: true,
-        originalFieldName: field.name,
-      }
-    ];
+    return preparedFields;
   }
 
   /**
    * Prepares relationship field data for entity templates
    */
   prepareRelationshipFields(): Array<ReturnType<typeof this.prepareRelationship>> {
-    // Handle all relationship fields (both type: 'relation' and implicit relations)
+    // Handle all relationship fields
     const relationshipFields = this.entity.fields.filter(f => {
       if (!f.relationship) return false;
       const graphqlOptions = new GraphQLOptions(f);
@@ -91,45 +73,6 @@ export class FieldPreparator {
     relationshipFields.sort((a, b) => a.name.localeCompare(b.name));
 
     return relationshipFields.map(f => this.prepareRelationship(f));
-  }
-
-
-  /**
-   * Gets the foreign key field name for a relationship field
-   */
-  private getForeignKeyFieldName(field: EntityField): string {
-    // Use explicit key if provided
-    if (field.key) {
-      return field.key;
-    }
-
-    // If field name already ends with 'Id', use it as-is (e.g., postId -> postId)
-    if (field.name.endsWith('Id')) {
-      return field.name;
-    }
-
-    // Default to {fieldName}Id (e.g., post -> postId)
-    return `${field.name}Id`;
-  }
-
-  /**
-   * Determines if a relationship field should generate a foreign key field
-   */
-  private shouldGenerateForeignKey(field: EntityField): boolean {
-    if (!field.relationship) return false;
-
-    // Check GraphQL options first - only generate foreign key if enabled
-    const graphqlOptions = new GraphQLOptions(field);
-    if (!graphqlOptions.shouldGenerateForeignKey()) return false;
-
-    // For ManyToOne and OneToOne relations, generate FK by default
-    const { type } = field.relationship;
-    if (type === 'ManyToOne' || type === 'OneToOne') {
-      return true;
-    }
-
-    // For OneToMany and ManyToMany, never generate FK
-    return false;
   }
 
   /**
@@ -245,7 +188,7 @@ export class FieldPreparator {
       };
     } catch (error) {
       // If DecoratorGenerator fails, fall back to the old approach
-      console.warn(`DecoratorGenerator failed for field ${field.name}:`, error);
+      cyberOutput.warning(`DecoratorGenerator failed for field ${field.name}:`, error instanceof Error ? error.message : String(error));
 
       const fieldOptions = ValidationHelper.getFieldOptions(field);
       const columnOptions = ValidationHelper.getColumnOptions(field);
@@ -281,6 +224,7 @@ export class FieldPreparator {
 
   /**
    * Prepares a relationship field for template rendering
+   * (Kept separate as relationships have different template structure)
    */
   private prepareRelationship(field: EntityField) {
     if (!field.relationship) {
@@ -289,44 +233,61 @@ export class FieldPreparator {
 
     const graphqlOptions = new GraphQLOptions(field);
     const targetEntity = field.relationship.targetEntity;
-    const fieldName = field.name; // Use field name directly for type: 'relation'
+    const fieldName = field.name;
     const relationType = field.relationship.type;
 
     // Use JSON description as primary, but add target entity context if missing
     const description = field.description || `${fieldName} (${targetEntity})`;
-
     const nullability = field.required ? '!' : '?';
+
+    // Determine TypeScript return type based on relation type
+    let tsType: string;
+    let isArray = false;
+
+    if (relationType === 'OneToMany' || relationType === 'ManyToMany') {
+      tsType = `${targetEntity}[]`;
+      isArray = true;
+    } else {
+      tsType = targetEntity;
+      isArray = false;
+    }
+
+    // Add Promise wrapper unless eager loading is enabled
+    const isEager = field.relationship.eager || false;
+    if (!isEager) {
+      tsType = `Promise<${tsType}>`;
+    }
 
     const decorators: string[] = [];
 
-    // @Field decorator (only if enabled)
-    if (graphqlOptions.shouldGenerateRelation()) {
-      decorators.push(
-        `@Field(() => ${targetEntity}, { description: '${description}', nullable: ${!field.required} })`
-      );
+    // Add GraphQL Field decorator only if object generation is enabled
+    if (graphqlOptions.shouldGenerateObject()) {
+      const graphqlReturnType = isArray ? `[${targetEntity}]` : targetEntity;
+      const fieldOptionsStr = field.description
+        ? `{ description: '${field.description}', nullable: ${!field.required} }`
+        : `{ nullable: ${!field.required} }`;
+
+      decorators.push(`@Field(() => ${graphqlReturnType}, ${fieldOptionsStr})`);
     }
 
-    // TypeORM relationship decorator
-    const inverseField = TypeMapper.pluralize(TypeMapper.toCamelCase(this.entity.name));
-    let relationDecorator = '';
-
-    // Build relationship options object
+    // Build TypeORM relationship decorator
     const relationOptions: string[] = [];
-    if (field.relationship?.eager) {
+    if (field.relationship.eager) {
       relationOptions.push('eager: true');
     }
-    if (field.relationship?.cascade && field.relationship.cascade.length > 0) {
+    if (field.relationship.cascade && field.relationship.cascade.length > 0) {
       relationOptions.push(`cascade: [${field.relationship.cascade.map(c => `"${c}"`).join(', ')}]`);
     }
-    if (field.relationship?.onDelete) {
+    if (field.relationship.onDelete) {
       relationOptions.push(`onDelete: "${field.relationship.onDelete}"`);
     }
-    if (field.relationship?.onUpdate) {
+    if (field.relationship.onUpdate) {
       relationOptions.push(`onUpdate: "${field.relationship.onUpdate}"`);
     }
 
     const optionsStr = relationOptions.length > 0 ? `, { ${relationOptions.join(', ')} }` : '';
 
+    let relationDecorator = '';
     switch (relationType) {
       case 'ManyToOne':
         relationDecorator = `@ManyToOne(() => ${targetEntity}${optionsStr})`;
@@ -344,10 +305,9 @@ export class FieldPreparator {
 
     decorators.push(relationDecorator);
 
-    // Add @JoinColumn for ManyToOne and OneToOne relations to explicitly specify the foreign key column name
-    // This ensures the column name matches what indexes reference (e.g., 'authorId')
+    // Add @JoinColumn for ManyToOne and OneToOne relations
     if (relationType === 'ManyToOne' || relationType === 'OneToOne') {
-      const joinColumnName = field.relationship?.joinColumn || this.getForeignKeyFieldName(field);
+      const joinColumnName = field.relationship.joinColumn || this.getForeignKeyFieldName(field);
       decorators.push(`@JoinColumn({ name: '${joinColumnName}' })`);
     }
 
@@ -357,106 +317,109 @@ export class FieldPreparator {
     }
     decorators.push('@ValidateNested()');
 
-    // Determine TypeScript type:
-    // - For eagerly loaded relations: direct type (synchronous)
-    // - For lazy loaded relations (managed by SmartLoadingSubscriber): Promise type
-    // - For single relations (ManyToOne, OneToOne): Promise<TEntity | null>
-    // - For collection relations (OneToMany, ManyToMany): Promise<TEntity[]>
-    let tsType: string;
-    const isEager = field.relationship?.eager;
-
-    if (isEager) {
-      // Eagerly loaded relations are available synchronously
-      if (relationType === 'OneToMany' || relationType === 'ManyToMany') {
-        tsType = `${targetEntity}[]`;
-      } else {
-        tsType = `${targetEntity}${nullability === '?' ? ' | null' : ''}`;
-      }
-    } else {
-      // Lazy loaded relations need to be awaited (SmartLoadingSubscriber returns promises)
-      if (relationType === 'OneToMany' || relationType === 'ManyToMany') {
-        tsType = `Promise<${targetEntity}[]>`;
-      } else {
-        const nullType = nullability === '?' ? ' | null' : '';
-        tsType = `Promise<${targetEntity}${nullType}>`;
-      }
-    }
-
     return {
       name: fieldName,
       tsType,
       nullability,
       decorators,
+      isRelationship: true,
+      relationType,
+      targetEntity,
     };
   }
 
   /**
-   * Prepares enum data for templates
+   * Determines if a relationship field should generate a foreign key field
    */
-  prepareEnums(): Array<ReturnType<typeof this.prepareEnum>> {
-    const regularFields = this.entity.fields.filter(f => !f.relationship);
-    const enumFields = regularFields.filter(f => f.type === 'enum');
-    return enumFields.map(f => this.prepareEnum(f));
+  private shouldGenerateForeignKey(field: EntityField): boolean {
+    if (!field.relationship) return false;
+
+    // Check GraphQL options first - only generate foreign key if enabled
+    const graphqlOptions = new GraphQLOptions(field);
+    if (!graphqlOptions.shouldGenerateForeignKey()) return false;
+
+    // For ManyToOne and OneToOne relations, generate FK by default
+    const { type } = field.relationship;
+    return type === 'ManyToOne' || type === 'OneToOne';
   }
 
   /**
-   * Prepares a single enum for template rendering
+   * Gets the foreign key field name for a relationship field
    */
-  private prepareEnum(field: EntityField) {
-    const fieldName = TypeMapper.singularizeFieldName(field.name);
-    const enumName = TypeMapper.getEnumName(this.entity.name, fieldName);
-    const description = field.description || `${enumName} options`;
+  private getForeignKeyFieldName(field: EntityField): string {
+    // Use explicit key if provided
+    if (field.key) {
+      return field.key;
+    }
 
-    return {
-      name: enumName,
-      description,
-      values: field.enum || [],
-      array: field.array || false,
-    };
+    // If field name already ends with 'Id', use it as-is
+    if (field.name.endsWith('Id')) {
+      return field.name;
+    }
+
+    // Default to {fieldName}Id
+    return `${field.name}Id`;
   }
 
   /**
-   * Gets all unique relationship target entities for imports
+   * Gets unique target entities from all relationships
    */
-  getRelationshipTargets(): string[] {
-    const relationshipFields = this.entity.fields.filter(f => f.relationship);
-    const relationshipEntities = relationshipFields
-      .map(f => f.relationship!.targetEntity);
-    return [...new Set(relationshipEntities)];
-  }
+  getRelationshipTargets(): Set<string> {
+    const targets = new Set<string>();
 
-  /**
-   * Gets TypeORM relationship types for imports
-   */
-  getRelationshipTypes(): string[] {
-    const relationshipFields = this.entity.fields.filter(f => f.relationship);
-    const relationTypes = new Set<string>();
-
-    relationshipFields.forEach(f => {
-      if (f.relationship) {
-        relationTypes.add(f.relationship.type);
+    for (const field of this.entity.fields) {
+      if (field.relationship) {
+        targets.add(field.relationship.targetEntity);
       }
-    });
+    }
 
-    return [...relationTypes];
+    return targets;
   }
 
   /**
-   * Gets polymorphic fields for method generation
+   * Prepares enum definitions for template rendering
    */
-  getPolymorphicFields(): Array<{ fieldName: string; methodName: string; idColumn: string; typeColumn: string; required: boolean }> {
+  prepareEnums(): Array<{ name: string; values: string[] }> {
+    const enumFields = this.entity.fields.filter(f => f.type === 'enum');
+    const enums: Array<{ name: string; values: string[] }> = [];
+
+    for (const field of enumFields) {
+      if (!field.enum || field.enum.length === 0) continue;
+
+      const singularField = TypeMapper.singularizeFieldName(field.name);
+      const enumName = `${this.entity.name}${singularField.charAt(0).toUpperCase() + singularField.slice(1)}`;
+
+      enums.push({
+        name: enumName,
+        values: field.enum,
+      });
+    }
+
+    return enums;
+  }
+
+  /**
+   * Gets polymorphic fields from the entity
+   */
+  getPolymorphicFields(): Array<{
+    fieldName: string;
+    getterName: string;
+    idColumn: string;
+    typeColumn: string;
+    required: boolean;
+  }> {
     const polymorphicFields = this.entity.fields.filter(f => f.type === 'polymorphic');
 
     return polymorphicFields.map(field => {
-      const methodName = TypeMapper.getPolymorphicGetterName(field.name);
       const { idColumn, typeColumn } = TypeMapper.getPolymorphicColumns(field.name);
+      const getterName = TypeMapper.getPolymorphicGetterName(field.name);
 
       return {
         fieldName: field.name,
-        methodName,
+        getterName,
         idColumn,
         typeColumn,
-        required: field.required ?? true
+        required: field.required || false,
       };
     });
   }

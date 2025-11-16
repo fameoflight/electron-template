@@ -53,4 +53,19 @@ export const fileDialogHandlers = {
       throw error;
     }
   }),
+  'open-file-with-default': createHandler<string, void>(async (event, filePath: string) => {
+    try {
+      // Try to open file with default application
+      await shell.openPath(filePath);
+    } catch (error) {
+      console.error('Error opening file with default application:', error);
+      // Fallback to showing in folder
+      try {
+        await shell.showItemInFolder(filePath);
+      } catch (fallbackError) {
+        console.error('Error showing file in folder:', fallbackError);
+        throw error;
+      }
+    }
+  }),
 } as const;

@@ -21,7 +21,7 @@ import { CreateUpdate{{className}}Input } from '@main/graphql/inputs/{{className
 {{/unless}}
 import { Update{{className}}Input } from '@main/graphql/inputs/{{className}}Inputs.js';
 import type { GraphQLContext } from '@shared/types';
-import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId } from '@base/graphql/index.js';
+import { connectionFromArray, RelayRepository, fromGlobalIdToLocalId, FieldMutation, CustomRepository } from '@base/graphql/index.js';
 import { createConnectionType, ConnectionArgs } from '@base/graphql/relay/Connection.js';
 import { BaseResolver } from '@base/graphql/BaseResolver.js';
 
@@ -30,9 +30,9 @@ export class {{className}}Connection extends createConnectionType('{{className}}
 
 @Resolver(() => {{className}})
 export class {{className}}ResolverBase extends BaseResolver {
-  protected getRepository(ctx: GraphQLContext): RelayRepository<{{className}}> {
+  protected getRepository(ctx: GraphQLContext): CustomRepository<{{className}}> {
     // Entity has userId field - use ownership-aware repository with context
-    return this.getRelayRepository({{className}}, ctx);
+    return this.getOwnedRepository({{className}}, ctx);
   }
 
   protected get repository(): RelayRepository<{{className}}> {
@@ -53,8 +53,7 @@ export class {{className}}ResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<{{className}} | null> {
-    const localId = fromGlobalIdToLocalId(id);
-    return await this.getRepository(ctx).findOne({ where: { id: localId } });
+    return await this.getRepository(ctx).findOne({ where: { id: id } });
   }
 {{/unless}}
 
@@ -98,18 +97,19 @@ export class {{className}}ResolverBase extends BaseResolver {
   /**
    * Create new {{className}}
    */
-  @Mutation(() => {{className}}, { description: 'Create new {{className}}' })
+  @FieldMutation(Create{{className}}Input, {{className}}, {
+    description: 'Create new {{className}}'
+  })
   async create{{className}}(
-    @Arg('input', () => Create{{className}}Input) input: Create{{className}}Input,
-    @Ctx() ctx: GraphQLContext
+    input: Create{{className}}Input,
+    ctx: GraphQLContext
   ): Promise<{{className}}> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
-    const entity = this.getRepository(ctx).create(input as any);
+    const entity = this.getRepository(ctx).create(input);
     // Auto-attach userId directly to entity (preserve constructor)
-    (entity as any).userId = ctx.user?.id;
-    return await this.getRepository(ctx).save(entity as any);
+    if (ctx.user) {
+       (entity).userId = ctx.user?.id;
+    }
+    return await this.getRepository(ctx).save(entity);
   }
 {{/unless}}
 
@@ -117,19 +117,25 @@ export class {{className}}ResolverBase extends BaseResolver {
   /**
    * Update existing {{className}}
    */
-  @Mutation(() => {{className}}, { description: 'Update existing {{className}}' })
+  @FieldMutation(Update{{className}}Input, {{className}}, {
+    description: 'Update existing {{className}}'
+  })
   async update{{className}}(
-    @Arg('input', () => Update{{className}}Input) input: Update{{className}}Input,
-    @Ctx() ctx: GraphQLContext
+    input: Update{{className}}Input,
+    ctx: GraphQLContext
   ): Promise<{{className}}> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
+    // Create update data object, excluding protected fields and undefined values
+    const updateData: any = {};
+    const excludeFields = ['id', 'userId'];
 
-    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
+    for (const [key, value] of Object.entries(input)) {
+      if (!excludeFields.includes(key) && value !== undefined) {
+        updateData[key] = value;
+      }
+    }
 
-    // Safely assign only defined, updatable fields (excludes id, userId and undefined values)
-    this.safeAssignUpdate(entity, input);
-    return await this.getRepository(ctx).save(entity as any);
+    // Use the repository's updateById method which works properly with TypeORM
+    return await this.getRepository(ctx).updateById(input.id, updateData);
   }
 {{/unless}}
 
@@ -137,28 +143,37 @@ export class {{className}}ResolverBase extends BaseResolver {
   /**
    * Create or update {{className}} (upsert)
    */
-  @Mutation(() => {{className}}, { description: 'Create or update {{className}}' })
+  @FieldMutation(CreateUpdate{{className}}Input, {{className}}, {
+    description: 'Create or update {{className}}'
+  })
   async createUpdate{{className}}(
-    @Arg('input', () => CreateUpdate{{className}}Input) input: CreateUpdate{{className}}Input,
-    @Ctx() ctx: GraphQLContext
+    input: CreateUpdate{{className}}Input,
+    ctx: GraphQLContext
   ): Promise<{{className}}> {
-    // Validate input using class-validator
-    input = await this.validateInput(input);
-
     if (input.id) {
       // Update existing
-      const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: fromGlobalIdToLocalId(input.id) } });
 
-      // Safely assign only defined, updatable fields (excludes id, userId and undefined values)
-      this.safeAssignUpdate(entity, input);
-      return await this.getRepository(ctx).save(entity as any);
+      // Create update data object, excluding protected fields and undefined values
+      const updateData: any = {};
+      const excludeFields = ['id', 'userId'];
+
+      for (const [key, value] of Object.entries(input)) {
+        if (!excludeFields.includes(key) && value !== undefined) {
+          updateData[key] = value;
+        }
+      }
+
+      // Use the repository's updateById method which works properly with TypeORM
+      return await this.getRepository(ctx).updateById(input.id, updateData);
     } else {
       // Create new
       const { id, ...createData } = input;
-      const entity = this.getRepository(ctx).create(createData as any);
+      const entity = this.getRepository(ctx).create(createData);
       // Auto-attach userId directly to entity (preserve constructor)
-      (entity as any).userId = ctx.user?.id;
-      return await this.getRepository(ctx).save(entity as any);
+      if (ctx.user) {
+        (entity).userId = ctx.user?.id;
+      }
+      return await this.getRepository(ctx).save(entity);
     }
   }
 {{/unless}}
@@ -173,8 +188,7 @@ export class {{className}}ResolverBase extends BaseResolver {
     @Ctx() ctx: GraphQLContext
   ): Promise<boolean> {
     // Use the repository's softDeleteById method which handles ownership and already-deleted entities
-    const localId = fromGlobalIdToLocalId(id);
-    await this.getRepository(ctx).softDeleteById(localId);
+    await this.getRepository(ctx).softDeleteById(id);
     return true;
   }
 {{/unless}}
@@ -188,11 +202,10 @@ export class {{className}}ResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<boolean> {
-    const localId = fromGlobalIdToLocalId(id);
-    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: localId } });
+    const entity = await this.getRepository(ctx).findOneOrFail({ where: { id: id } });
 
     
-    await this.getRepository(ctx).hardDeleteById(localId);
+    await this.getRepository(ctx).hardDeleteById(id);
     return true;
   }
 {{/unless}}
@@ -205,9 +218,8 @@ export class {{className}}ResolverBase extends BaseResolver {
     @Arg('id', () => String) id: string,
     @Ctx() ctx: GraphQLContext
   ): Promise<{{className}} | null> {
-    const localId = fromGlobalIdToLocalId(id);
     const entity = await this.getRepository(ctx).findOne({
-      where: { id: localId },
+      where: { id: id },
       withDeleted: true
     });
 
@@ -216,6 +228,6 @@ export class {{className}}ResolverBase extends BaseResolver {
     }
 
     
-    return await this.getRepository(ctx).recoverById(localId);
+    return await this.getRepository(ctx).recoverById(id);
   }
 }

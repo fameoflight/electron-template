@@ -23,7 +23,7 @@ import { NodeResolver, NodeFieldResolver } from '@base/graphql/index.js';
 import { ChatResolver } from './resolvers/ChatResolver';
 import { ConnectionResolver } from './resolvers/ConnectionResolver';
 import { EmbeddingModelResolver } from './resolvers/EmbeddingModelResolver';
-import { FileResolver } from './resolvers/FileResolver';
+import { FileEntityResolver } from './resolvers/FileEntityResolver';
 import { LLMModelResolver } from './resolvers/LLMModelResolver';
 import { MessageResolver } from './resolvers/MessageResolver';
 import { MessageVersionResolver } from './resolvers/MessageVersionResolver';
@@ -41,7 +41,7 @@ export const resolverClasses = {
   ChatResolver,
   ConnectionResolver,
   EmbeddingModelResolver,
-  FileResolver,
+  FileEntityResolver,
   LLMModelResolver,
   MessageResolver,
   MessageVersionResolver,

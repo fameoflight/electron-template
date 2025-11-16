@@ -143,14 +143,14 @@ function LLMModelForm(props: ILLMModelFormProps) {
       onFinish={onFinish}
       name="LLMModelForm"
       onValuesChange={onFormValuesChange}
+      className="space-y-6"
     >
-
       <Form.Item name="id" hidden>
         <Input />
       </Form.Item>
 
       <Form.Item
-        label="Connection"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Connection</span>}
         name="connectionId"
         rules={[
           {
@@ -164,11 +164,13 @@ function LLMModelForm(props: ILLMModelFormProps) {
           placeholder="Select a connection"
           allowClear
           options={connectionOptions}
+          className="input"
+          size="large"
         />
       </Form.Item>
 
       <Form.Item
-        label="Model"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Model</span>}
         name="modelIdentifier"
         rules={[
           {
@@ -186,19 +188,25 @@ function LLMModelForm(props: ILLMModelFormProps) {
             option?.label?.toString().toLowerCase().includes(input.toLowerCase()) || false
           }
           options={modelOptions}
+          className="input"
+          size="large"
         />
       </Form.Item>
 
       <Form.Item
-        label="Name"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Name</span>}
         name="name"
         tooltip="Optional display name for the model"
       >
-        <Input placeholder="e.g., GPT-4 Turbo" />
+        <Input
+          placeholder="e.g., GPT-4 Turbo"
+          className="input"
+          size="large"
+        />
       </Form.Item>
 
       <Form.Item
-        label="Temperature"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Temperature</span>}
         name="temperature"
         rules={[
           {
@@ -206,6 +214,7 @@ function LLMModelForm(props: ILLMModelFormProps) {
             message: "Please input temperature!",
           },
         ]}
+        extra={<span className="text-xs text-[var(--color-text-tertiary)]">Controls randomness: 0 = focused, 2 = creative</span>}
       >
         <SliderInput
           min={0}
@@ -224,7 +233,7 @@ function LLMModelForm(props: ILLMModelFormProps) {
       </Form.Item>
 
       <Form.Item
-        label="Context Length"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Context Length</span>}
         name="contextLength"
         rules={[
           {
@@ -238,6 +247,7 @@ function LLMModelForm(props: ILLMModelFormProps) {
             message: 'Context length must be between 4096 and 128000',
           },
         ]}
+        extra={<span className="text-xs text-[var(--color-text-tertiary)]">Maximum tokens the model can process</span>}
       >
         <SliderInput
           min={4096}
@@ -276,14 +286,14 @@ function LLMModelForm(props: ILLMModelFormProps) {
       </Form.Item>
 
       <Form.Item
-        label="System Prompt"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">System Prompt</span>}
         name="systemPrompt"
         tooltip="Default system prompt for the model"
       >
         <Input.TextArea
           placeholder="You are a helpful assistant..."
           autoSize={{ minRows: 3, maxRows: 6 }}
-          className="resize-none"
+          className="resize-none rounded-lg border-[var(--color-border-default)] focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-100)] transition-all"
         />
       </Form.Item>
     </Form>

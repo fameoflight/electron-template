@@ -89,8 +89,8 @@ export enum ConnectionKind {
 export interface ConnectionModelType {
   id: string;
   name: string;
-  version: string;
-  provider: string;
+  version?: string;
+  provider?: string;
 }
 
 
@@ -101,8 +101,8 @@ export interface ConnectionModelType {
 const ConnectionModelTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
-  version: z.string(),
-  provider: z.string(),
+  version: z.string().optional(),
+  provider: z.string().optional(),
 }).describe('ConnectionModelType: Generated schema');
 
 const ConnectionModelsSchema = z.array(ConnectionModelTypeSchema).describe('ConnectionModelsSchema: Array of ConnectionModelType');
@@ -116,13 +116,13 @@ export abstract class ConnectionBase extends OwnedEntity {
   @FieldColumn(String, { required: true, description: 'Base URL for the connection' })
   baseUrl!: string;
 
-  @FieldColumnJSON(z.any(), { description: 'Custom headers for the connection', nullable: true })
+  @FieldColumnJSON(z.any(), { description: 'Custom headers for the connection', required: false })
   customHeaders?: Record<string, any>;
 
   @FieldColumnEnum(ConnectionKind, { description: 'Connection kind', defaultValue: ConnectionKind.OPENAI })
   kind!: ConnectionKind;
 
-  @FieldColumnJSON(ConnectionModelsSchema, { description: 'AI models used in creating or analyzing this post', nullable: true })
+  @FieldColumnJSON(ConnectionModelsSchema, { description: 'AI models used in creating or analyzing this post', required: false })
   models?: ConnectionModelType[];
 
   @FieldColumn(String, { required: true, description: 'Name of the connection' })

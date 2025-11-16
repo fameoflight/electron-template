@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e6d2ecdb215f39493c0f8377c80321f4>>
+ * @generated SignedSource<<f447adf75c1fc85c30cc3f3d16d8293c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,6 +9,7 @@
 // @ts-nocheck
 
 import { ReaderFragment } from 'relay-runtime';
+export type MessageVersionBaseStatus = "cancelled" | "completed" | "failed" | "pending" | "streaming" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type MessageVersionView_record$data = {
   readonly content: string;
@@ -17,6 +18,7 @@ export type MessageVersionView_record$data = {
     readonly id: string;
   }>;
   readonly id: string;
+  readonly status: MessageVersionBaseStatus;
   readonly " $fragmentType": "MessageVersionView_record";
 };
 export type MessageVersionView_record$key = {
@@ -49,7 +51,14 @@ return {
     {
       "alias": null,
       "args": null,
-      "concreteType": "File",
+      "kind": "ScalarField",
+      "name": "status",
+      "storageKey": null
+    },
+    {
+      "alias": null,
+      "args": null,
+      "concreteType": "FileEntity",
       "kind": "LinkedField",
       "name": "files",
       "plural": true,
@@ -71,6 +80,6 @@ return {
 };
 })();
 
-(node as any).hash = "7ba94e5351971ed923ff17bc7bfa159b";
+(node as any).hash = "e83893402cc92bdc80b7cad51e7f15a6";
 
 export default node;

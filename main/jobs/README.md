@@ -374,7 +374,7 @@ export class BatchProcessJob extends BaseJob {
 ### Real-World Examples
 
 - **Email sending:** /main/jobs/EmailJob.ts
-- **Testing:** /**tests**/jobs/job-queue.test.ts
+- **Testing:** /__tests__/jobs/job-queue.test.ts
 
 ### External References
 

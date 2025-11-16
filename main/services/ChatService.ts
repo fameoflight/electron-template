@@ -1,8 +1,8 @@
 import { BaseService } from "./BaseService.js";
 import { MessageRole } from "@main/db/entities/__generated__/MessageBase.js";
 import { Chat } from "@main/db/entities/Chat.js";
-import { File } from "@main/db/entities/File.js";
-import { LLMModel, LLMModelConfig } from "@main/db/entities/LLMModel.js";
+import { FileEntity } from "@db/entities/FileEntity.js";
+import { LLMModel, LLMModelConfig } from "@db/entities/LLMModel.js";
 import { Message } from "@main/db/entities/Message.js";
 import { MessageVersion } from "@main/db/entities/MessageVersion.js";
 import { AssistantModelMessage, ModelMessage, SystemModelMessage, UserModelMessage } from "ai";
@@ -42,7 +42,7 @@ interface ChatServiceOptions {
 class ChatService extends BaseService {
   private chat: Chat | null = null;
   private opts: ChatServiceOptions;
-  private messageVersionFileIds: Map<string, File[]> = new Map();
+  private messageVersionFileIds: Map<string, FileEntity[]> = new Map();
 
   constructor(opts: ChatServiceOptions) {
     super();
@@ -80,7 +80,7 @@ class ChatService extends BaseService {
     }
 
     // Find files using polymorphic relationship
-    const files = await this.dataSource.getRepository(File).find({
+    const files = await this.dataSource.getRepository(FileEntity).find({
       where: {
         ownerId: In(messageVersionIds),
         ownerType: 'MessageVersion'

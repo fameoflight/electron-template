@@ -2,7 +2,7 @@ import React from 'react';
 
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import { ErrorsType, MessageList } from './Errors';
+import { ErrorsType, ErrorMessageList } from './Errors';
 
 interface IWarningsProps {
   children?: React.ReactNode;
@@ -24,7 +24,7 @@ function Warnings(props: IWarningsProps) {
         <div className="ml-3">
           <h3 className="text-sm font-medium text-yellow-800">{props.title}</h3>
           <div className="mt-2">
-            <MessageList
+            <ErrorMessageList
               messages={props.errors}
               className="text-sm text-yellow-700"
             />

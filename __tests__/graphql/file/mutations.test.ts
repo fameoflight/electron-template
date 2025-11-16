@@ -5,15 +5,21 @@
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { initializeGraphQLSchema, executeGraphQLQuery } from '@main/graphql/server';
-import { fromGlobalIdToLocalId } from '@base/graphql/index';
 import {
   createTestDatabase,
   cleanupTestDatabase,
 } from '../../base/testDatabase';
 import { createUser } from '@factories/index';
 import { DataSourceProvider } from '@base/db/index';
-import { FileStatus, FileFileType } from '@main/db/entities/__generated__/FileBase';
 import { setupPolly, PollyContext } from '@tests/polly/helpers';
+import { createTempFile } from '@tests/factories/fileFactory';
+
+// Mock ProcessFileJob to prevent setTimeout callback from running after database cleanup
+vi.mock('@main/jobs/ProcessFileJob.js', () => ({
+  ProcessFileJob: {
+    performLater: vi.fn().mockResolvedValue({ id: 'mock-job-id', success: true })
+  }
+}));
 
 describe('File GraphQL Mutations', () => {
   let dataSource: any;
@@ -48,8 +54,8 @@ describe('File GraphQL Mutations', () => {
   describe('createFile mutation', () => {
     it('should create file with minimal required fields', async () => {
       const mutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
             extension
@@ -59,6 +65,8 @@ describe('File GraphQL Mutations', () => {
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/minimal.txt', content: 'Minimal file content' });
 
       const variables = {
         input: {
@@ -72,9 +80,9 @@ describe('File GraphQL Mutations', () => {
       const result = await executeGraphQLQuery<any>(mutation, variables, context);
 
       expect(result.errors).toStrictEqual([]);
-      expect(result.data.createFile.filename).toBe('minimal.txt');
-      expect(result.data.createFile.extension).toBe('txt');
-      expect(result.data.createFile.status).toBe('pending');
+      expect(result.data.createFileEntity.filename).toBe('minimal.txt');
+      expect(result.data.createFileEntity.extension).toBe('txt');
+      expect(result.data.createFileEntity.status).toBe('pending');
 
       // TODO: verify job is enqueued
 
@@ -83,13 +91,14 @@ describe('File GraphQL Mutations', () => {
 
     it('should return error for unauthenticated user', async () => {
       const mutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
           }
         }
       `;
+      await createTempFile({ fullPath: '/tmp/unauthorized.txt', content: 'Unauthorized file content' });
 
       const variables = {
         input: {
@@ -103,18 +112,20 @@ describe('File GraphQL Mutations', () => {
 
       expect(result.errors).toBeDefined();
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.data?.createFile).toBeUndefined();
+      expect(result.data?.createFileEntity).toBeUndefined();
     });
 
     it('should validate required fields', async () => {
       const mutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/incomplete.txt', content: 'Incomplete file content' });
 
       // Missing required fields
       const variables = {
@@ -133,8 +144,8 @@ describe('File GraphQL Mutations', () => {
 
     it('should handle file with polymorphic relations', async () => {
       const mutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
             ownerId
@@ -142,6 +153,8 @@ describe('File GraphQL Mutations', () => {
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/chat-attachment.txt', content: 'Chat attachment content' });
 
       const variables = {
         input: {
@@ -157,8 +170,8 @@ describe('File GraphQL Mutations', () => {
       const result = await executeGraphQLQuery<any>(mutation, variables, context);
 
       expect(result.errors).toStrictEqual([]);
-      expect(result.data.createFile.ownerId).toBe('chat-123');
-      expect(result.data.createFile.ownerType).toBe('Chat');
+      expect(result.data.createFileEntity.ownerId).toBe('chat-123');
+      expect(result.data.createFileEntity.ownerType).toBe('Chat');
     });
   });
 
@@ -168,13 +181,15 @@ describe('File GraphQL Mutations', () => {
     beforeEach(async () => {
       // Create a file to delete
       const createMutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/file-to-delete.txt', content: 'File to be deleted' });
 
       const variables = {
         input: {
@@ -186,13 +201,13 @@ describe('File GraphQL Mutations', () => {
 
       const context = createAuthContext(testData);
       const result = await executeGraphQLQuery<any>(createMutation, variables, context);
-      existingFile = result.data.createFile;
+      existingFile = result.data.createFileEntity;
     });
 
     it('should soft delete file', async () => {
       const mutation = `
         mutation DestroyFile($id: String!) {
-          destroyFile(id: $id)
+          destroyFileEntity(id: $id)
         }
       `;
 
@@ -202,12 +217,12 @@ describe('File GraphQL Mutations', () => {
 
       expect(result.errors).toStrictEqual([]);
       expect(result.data).toBeDefined();
-      expect(result.data.destroyFile).toBe(true);
+      expect(result.data.destroyFileEntity).toBe(true);
 
       // Verify file is soft deleted by querying with kind="all"
       const query = `
-        query FilesIncludingDeleted {
-          filesArray(kind: "all") {
+        query FileEntitiesIncludingDeleted {
+          fileEntitiesArray(kind: "all") {
             id
             filename
             deletedAt
@@ -218,7 +233,7 @@ describe('File GraphQL Mutations', () => {
       const verifyResult = await executeGraphQLQuery<any>(query, {}, context);
       expect(verifyResult.errors).toStrictEqual([]);
 
-      const deletedFile = verifyResult.data.filesArray.find(
+      const deletedFile = verifyResult.data.fileEntitiesArray.find(
         (f: any) => f.id === existingFile.id
       );
       expect(deletedFile).toBeDefined();
@@ -228,7 +243,7 @@ describe('File GraphQL Mutations', () => {
     it('should return true when destroying already deleted file', async () => {
       const mutation = `
         mutation DestroyFile($id: String!) {
-          destroyFile(id: $id)
+          destroyFileEntity(id: $id)
         }
       `;
 
@@ -236,17 +251,17 @@ describe('File GraphQL Mutations', () => {
 
       // Delete once
       const firstDelete = await executeGraphQLQuery<any>(mutation, { id: existingFile.id }, context);
-      expect(firstDelete.data.destroyFile).toBe(true);
+      expect(firstDelete.data.destroyFileEntity).toBe(true);
 
       // Delete again
       const secondDelete = await executeGraphQLQuery<any>(mutation, { id: existingFile.id }, context);
-      expect(secondDelete.data.destroyFile).toBe(true);
+      expect(secondDelete.data.destroyFileEntity).toBe(true);
     });
 
     it('should return error for non-existent file', async () => {
       const mutation = `
         mutation DestroyFile($id: String!) {
-          destroyFile(id: $id)
+          destroyFileEntity(id: $id)
         }
       `;
 
@@ -261,7 +276,7 @@ describe('File GraphQL Mutations', () => {
     it('should return error for unauthenticated user', async () => {
       const mutation = `
         mutation DestroyFile($id: String!) {
-          destroyFile(id: $id)
+          destroyFileEntity(id: $id)
         }
       `;
 
@@ -272,19 +287,21 @@ describe('File GraphQL Mutations', () => {
     });
   });
 
-  describe('deleteFile mutation (hard delete)', () => {
+  describe('deleteFileEntity mutation (hard delete)', () => {
     let existingFile: any;
 
     beforeEach(async () => {
       // Create a file to hard delete
       const createMutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/file-to-hard-delete.txt', content: 'File to be hard deleted' });
 
       const variables = {
         input: {
@@ -296,13 +313,13 @@ describe('File GraphQL Mutations', () => {
 
       const context = createAuthContext(testData);
       const result = await executeGraphQLQuery<any>(createMutation, variables, context);
-      existingFile = result.data.createFile;
+      existingFile = result.data.createFileEntity;
     });
 
-    it('should hard delete file permanently', async () => {
+    it('should hard delete fileEntity permanently', async () => {
       const mutation = `
         mutation DeleteFile($id: String!) {
-          deleteFile(id: $id)
+          deleteFileEntity(id: $id)
         }
       `;
 
@@ -312,12 +329,12 @@ describe('File GraphQL Mutations', () => {
 
       expect(result.errors).toStrictEqual([]);
       expect(result.data).toBeDefined();
-      expect(result.data.deleteFile).toBe(true);
+      expect(result.data.deleteFileEntity).toBe(true);
 
       // Verify file is completely gone (even with kind="all")
       const query = `
-        query FilesIncludingDeleted {
-          filesArray(kind: "all") {
+        query FileEntitiesIncludingDeleted {
+          fileEntitiesArray(kind: "all") {
             id
             filename
             deletedAt
@@ -328,7 +345,7 @@ describe('File GraphQL Mutations', () => {
       const verifyResult = await executeGraphQLQuery<any>(query, {}, context);
       expect(verifyResult.errors).toStrictEqual([]);
 
-      const deletedFile = verifyResult.data.filesArray.find(
+      const deletedFile = verifyResult.data.fileEntitiesArray.find(
         (f: any) => f.id === existingFile.id
       );
       expect(deletedFile).toBeUndefined();
@@ -337,7 +354,7 @@ describe('File GraphQL Mutations', () => {
     it('should return error for unauthenticated user', async () => {
       const mutation = `
         mutation DeleteFile($id: String!) {
-          deleteFile(id: $id)
+          deleteFileEntity(id: $id)
         }
       `;
 
@@ -352,13 +369,15 @@ describe('File GraphQL Mutations', () => {
     it('should prevent user from accessing another user\'s files', async () => {
       // Create file for first user
       const user1FileMutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/user1-file.txt', content: 'User 1 file content' });
 
       const user1Variables = {
         input: {
@@ -370,7 +389,7 @@ describe('File GraphQL Mutations', () => {
 
       const user1Context = createAuthContext(testData);
       const user1Result = await executeGraphQLQuery<any>(user1FileMutation, user1Variables, user1Context);
-      const user1FileId = user1Result.data.createFile.id;
+      const user1FileId = user1Result.data.createFileEntity.id;
 
       // Create second user
       const user2 = await createUser(dataSource, {
@@ -403,13 +422,15 @@ describe('File GraphQL Mutations', () => {
     it('should prevent user from deleting another user\'s files', async () => {
       // Create file for first user
       const user1FileMutation = `
-        mutation CreateFile($input: CreateFileInput!) {
-          createFile(input: $input) {
+        mutation CreateFile($input: CreateFileEntityInput!) {
+          createFileEntity(input: $input) {
             id
             filename
           }
         }
       `;
+
+      await createTempFile({ fullPath: '/tmp/user1-protected-file.txt', content: 'User 1 protected file content' });
 
       const user1Variables = {
         input: {
@@ -421,7 +442,7 @@ describe('File GraphQL Mutations', () => {
 
       const user1Context = createAuthContext(testData);
       const user1Result = await executeGraphQLQuery<any>(user1FileMutation, user1Variables, user1Context);
-      const user1FileId = user1Result.data.createFile.id;
+      const user1FileId = user1Result.data.createFileEntity.id;
 
       // Create second user
       const user2 = await createUser(dataSource, {
@@ -432,7 +453,7 @@ describe('File GraphQL Mutations', () => {
       // Try to delete first user's file as second user
       const deleteMutation = `
         mutation DestroyFile($id: String!) {
-          destroyFile(id: $id)
+          destroyFileEntity(id: $id)
         }
       `;
 

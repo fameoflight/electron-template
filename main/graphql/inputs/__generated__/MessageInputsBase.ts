@@ -82,10 +82,10 @@ export class UpdateMessageInputBase extends BaseInput {
   @Field(() => String, { description: 'ID of Message to update' })
   id!: string;
 
-  @FieldInput(String, { inputType: 'update', description: 'Input: Parent chat ID (ID of Chat)', required: true })
+  @FieldInput(String, { inputType: 'update', description: 'Input: Parent chat ID (ID of Chat)', required: false })
   chatId?: string;
 
-  @FieldInput(String, { inputType: 'update', description: 'Input: Current version of the message (ID of MessageVersion)', required: true })
+  @FieldInput(String, { inputType: 'update', description: 'Input: Current version of the message (ID of MessageVersion)', required: false })
   currentVersionId?: string;
 
   @FieldInput(String, { inputType: 'update', description: 'Input: LLM model ID used for this message (for user messages) (ID of LLMModel)', required: false })
@@ -109,10 +109,10 @@ export class CreateUpdateMessageInputBase extends BaseInput {
   @IsOptional()
   id?: string;
 
-  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Parent chat ID (ID of Chat)', required: true })
+  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Parent chat ID (ID of Chat)', required: false })
   chatId?: string;
 
-  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Current version of the message (ID of MessageVersion)', required: true })
+  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Current version of the message (ID of MessageVersion)', required: false })
   currentVersionId?: string;
 
   @FieldInput(String, { inputType: 'createUpdate', description: 'Input: LLM model ID used for this message (for user messages) (ID of LLMModel)', required: false })

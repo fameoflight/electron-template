@@ -22,7 +22,6 @@ function parseMarkdownWithCodeBlocks(markdown: string): ParsedElement[] {
   const elements: ParsedElement[] = [];
   let elementId = 0;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tokens.forEach((token: any) => {
     if (token.type === 'code') {
       // Render code block as React component

@@ -6,6 +6,7 @@
  */
 
 import * as readline from 'readline';
+import { cyberOutput } from './output';
 
 export interface PromptOptions {
   message: string;
@@ -29,7 +30,7 @@ export async function confirm(options: PromptOptions): Promise<boolean> {
   try {
     // Show warning if provided
     if (showWarning && warningMessage) {
-      console.log(`\n⚠️  ${warningMessage}`);
+      cyberOutput.warning(`\n${warningMessage}`);
     }
 
     const defaultText = defaultValue ? 'Y/n' : 'y/N';
@@ -46,7 +47,7 @@ export async function confirm(options: PromptOptions): Promise<boolean> {
         } else if (normalizedAnswer === 'n' || normalizedAnswer === 'no') {
           resolve(false);
         } else {
-          console.log('Please enter "y" or "n"');
+          cyberOutput.warning('Please enter "y" or "n"');
           resolve(defaultValue);
         }
       });

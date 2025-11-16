@@ -4,7 +4,7 @@ import { CustomDataSource } from '@main/base/CustomDataSource.js';
 import DataSourceProvider from '@main/base/db/DataSourceProvider';
 import { Job } from '@main/db/entities/Job';
 import JobQueue from '@main/services/JobQueue';
-import { File } from '@main/db/entities/File';
+import { FileEntity } from '@main/db/entities/FileEntity';
 
 type CreateDataSourceOpts = {
   database: string;
@@ -147,14 +147,22 @@ export async function createMessageWithVersion({
 export const optimizeAfterStreaming = async (): Promise<void> => {
   console.log('🧹 Performing post-streaming cleanup...');
 
+  // do it after a short delay to allow any pending operations to complete
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
   try {
     const dataSource = DataSourceProvider.get();
 
-    // Checkpoint WAL file to flush to main database
-    await dataSource.query('PRAGMA wal_checkpoint(TRUNCATE)');
-    console.log('  ✅ WAL checkpoint completed');
+    // Recommended: Use WAL mode for concurrent reads/writes, but checkpoint less aggressively
+    // Avoid TRUNCATE checkpoint during streaming (can block writers/readers)
+    // Instead, use PASSIVE or RESTART, or skip checkpointing entirely during heavy streaming
 
-    // Clean up memory
+    // Optionally checkpoint WAL (non-blocking)
+    await dataSource.query('PRAGMA wal_checkpoint(PASSIVE)');
+    console.log('  ✅ WAL checkpoint (PASSIVE) completed');
+
+    // Optionally shrink memory (safe, but not always needed)
     await dataSource.query('PRAGMA shrink_memory');
     console.log('  ✅ Memory cleaned up');
 
@@ -164,9 +172,9 @@ export const optimizeAfterStreaming = async (): Promise<void> => {
   }
 };
 
-export async function getFiles(opt: { ownerId: string; ownerType: string }): Promise<File[]> {
+export async function getFiles(opt: { ownerId: string; ownerType: string }): Promise<FileEntity[]> {
   const dataSource = DataSourceProvider.get();
-  const fileRepository = dataSource.getRepository(File);
+  const fileRepository = dataSource.getRepository(FileEntity);
 
   return await fileRepository.find({
     where: {

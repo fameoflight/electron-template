@@ -4,6 +4,7 @@
 import { watch, FSWatcher } from 'fs';
 import * as path from 'path';
 import { FileSystemService } from './FileSystemService.js';
+import { cyberOutput } from './output.js';
 
 export interface WatcherOptions {
   debounce?: number;
@@ -208,9 +209,9 @@ export class FileWatcher {
    */
   setupCleanup(): void {
     const cleanup = () => {
-      console.log('\n🛑 Stopping file watchers...');
+      cyberOutput.info('Stopping file watchers...');
       this.stop();
-      console.log('✅ File watchers stopped.');
+      cyberOutput.success('File watchers stopped.');
     };
 
     process.on('SIGINT', cleanup);

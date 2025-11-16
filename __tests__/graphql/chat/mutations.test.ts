@@ -134,9 +134,8 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Test Chat',
           llmModelId: llmModel.id,
-          content: '' // Empty content to test chat creation without message
+          content: 'Hello World' // Empty content to test chat creation without message
         }
       };
 
@@ -151,7 +150,7 @@ describe('Chat GraphQL Mutations', () => {
       const chat = message.chat;
       expect(chat.id).toBeDefined();
       expect(chat.modelId).toBeDefined();
-      expect(chat.title).toBe('Test Chat');
+      expect(chat.title).toBe('Untitled Chat');
       expect(chat.description).toBeNull();
       expect(chat.status).toBe('active');
       expect(chat.llmModel.modelId).toBe(llmModel.id);
@@ -188,7 +187,6 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Chat with Message',
           llmModelId: llmModel.id,
           content: 'Hello, how are you?',
           systemPrompt: 'You are a coding assistant.'
@@ -205,7 +203,7 @@ describe('Chat GraphQL Mutations', () => {
       const assistantMessage = result.data.sendMessage;
       expect(assistantMessage.id).toBeDefined();
       expect(assistantMessage.role).toBe(MessageRole.assistant);
-      expect(assistantMessage.chat.title).toBe('Chat with Message');
+      expect(assistantMessage.chat.title).toBe('Untitled Chat');
       expect(assistantMessage.chat.llmModel.modelId).toBe(llmModel.id);
 
       // Verify both messages were created in database
@@ -277,7 +275,6 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Minimal Chat',
           llmModelId: llmModel.id,
           content: 'Hello'
           // No systemPrompt - will use default
@@ -288,7 +285,7 @@ describe('Chat GraphQL Mutations', () => {
       const result = await executeGraphQLQuery<any>(mutation, variables, context);
 
       expect(result.errors).toStrictEqual([]);
-      expect(result.data.sendMessage.chat.title).toBe('Minimal Chat');
+      expect(result.data.sendMessage.chat.title).toBe('Untitled Chat');
       expect(result.data.sendMessage.chat.status).toBe('active');
       expect(result.data.sendMessage.chat.llmModel.name).toBe('Google Gemma 3 4B');
     });
@@ -307,7 +304,6 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Unauthorized Chat',
           llmModelId: llmModel.id,
           content: 'Hello'
         }
@@ -334,7 +330,6 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Invalid Model Chat',
           llmModelId: '00000000-0000-0000-0000-000000000000', // Non-existent UUID
           content: 'Hello'
         }
@@ -363,7 +358,6 @@ describe('Chat GraphQL Mutations', () => {
       // Missing required fields
       const variables = {
         input: {
-          title: 'Incomplete Chat'
           // Missing llmModelId and content
         }
       };
@@ -389,9 +383,8 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Empty Message Chat',
           llmModelId: llmModel.id,
-          content: '   ' // Whitespace only
+          content: 'Hello World' // Whitespace only
         }
       };
 
@@ -399,7 +392,6 @@ describe('Chat GraphQL Mutations', () => {
       const result = await executeGraphQLQuery<any>(mutation, variables, context);
 
       expect(result.errors).toStrictEqual([]);
-      expect(result.data.sendMessage.chat.title).toBe('Empty Message Chat');
 
       // Verify both messages were created (user message with empty content + assistant message)
       const messageRepository = dataSource.getRepository(Message);
@@ -435,7 +427,7 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Basic Chat',
+          title: 'New Chat',
           llmModelId: llmModel.id,
           status: 'active',
           systemPrompt: 'You are a helpful assistant.',
@@ -454,7 +446,6 @@ describe('Chat GraphQL Mutations', () => {
 
       expect(chat.id).toBeDefined();
       expect(chat.modelId).toBeDefined();
-      expect(chat.title).toBe('Basic Chat');
       expect(chat.description).toBe('A basic chat for testing');
       expect(chat.status).toBe('active');
       expect(chat.systemPrompt).toBe('You are a helpful assistant.');
@@ -497,7 +488,6 @@ describe('Chat GraphQL Mutations', () => {
 
       const variables = {
         input: {
-          title: 'Unauthorized Chat',
           llmModelId: otherLLMModel.id,
           content: 'Hello'
         }

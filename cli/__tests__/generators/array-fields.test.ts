@@ -58,7 +58,7 @@ describe('Entity Generator - Array Fields', () => {
       const generatedContent = fs.readFileSync(result.basePath, 'utf8');
 
       // Check for string array field generation
-      expect(generatedContent).toContain('@FieldColumnJSON(TagTagsSchema, { nullable: true })');
+      expect(generatedContent).toContain('@FieldColumnJSON(TagTagsSchema, { required: false })');
       expect(generatedContent).toContain('tags?: string[]');
     });
 
@@ -116,7 +116,7 @@ describe('Entity Generator - Array Fields', () => {
       const generatedContent = fs.readFileSync(result.basePath, 'utf8');
 
       // Check for number array field generation
-      expect(generatedContent).toContain('@FieldColumnJSON(MetricsScoresSchema, { nullable: true })');
+      expect(generatedContent).toContain('@FieldColumnJSON(MetricsScoresSchema, { required: false })');
       expect(generatedContent).toContain('scores?: number[]');
     });
   });
@@ -144,7 +144,7 @@ describe('Entity Generator - Array Fields', () => {
       const generatedContent = fs.readFileSync(result.basePath, 'utf8');
 
       // Check for boolean array field generation
-      expect(generatedContent).toContain('@FieldColumnJSON(FeatureFlagsSchema, { nullable: true })');
+      expect(generatedContent).toContain('@FieldColumnJSON(FeatureFlagsSchema, { required: false })');
       expect(generatedContent).toContain('flags?: boolean[]');
     });
   });
@@ -204,7 +204,7 @@ describe('Entity Generator - Array Fields', () => {
       const generatedContent = fs.readFileSync(result.basePath, 'utf8');
 
       // Check for enum array field generation
-      expect(generatedContent).toContain('@FieldColumnEnum(TaskPriority, { nullable: true, array: true })');
+      expect(generatedContent).toContain('@FieldColumnEnum(TaskPriority, { required: false, array: true })');
       expect(generatedContent).toContain('export enum TaskPriority');
       expect(generatedContent).toContain('low = \'low\'');
       expect(generatedContent).toContain('medium = \'medium\'');

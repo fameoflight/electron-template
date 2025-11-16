@@ -3,6 +3,7 @@
  * Tests for chat title generation functionality using the job system with real AI API integration
  */
 
+// eslint-disable-next-line @codeblocks/file-size-limit
 import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest';
 import { ChatTitleJob } from '@main/jobs/ChatTitleJob';
 import { DataSourceProvider } from '@base/db/index';
@@ -116,7 +117,7 @@ describe('ChatTitleJob', () => {
       // Create chat with "New Chat" prefix that needs title generation
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -240,7 +241,7 @@ describe('ChatTitleJob', () => {
     it('should fail gracefully when no user messages exist', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -268,7 +269,7 @@ describe('ChatTitleJob', () => {
     it('should handle cancellation via abort signal before LLM call', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -300,7 +301,7 @@ describe('ChatTitleJob', () => {
     it('should build conversation content correctly from multiple user messages', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -352,7 +353,7 @@ describe('ChatTitleJob', () => {
     it('should handle empty and whitespace-only user messages correctly', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -396,7 +397,7 @@ describe('ChatTitleJob', () => {
     it('should validate chat ownership', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -455,7 +456,7 @@ describe('ChatTitleJob', () => {
 
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: coolModel.id
       });
 
@@ -485,7 +486,7 @@ describe('ChatTitleJob', () => {
     it('should work with job queue system', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -519,7 +520,7 @@ describe('ChatTitleJob', () => {
     it('should schedule job for later execution', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -541,7 +542,7 @@ describe('ChatTitleJob', () => {
     it('should support job deduplication', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -578,13 +579,14 @@ describe('ChatTitleJob', () => {
   describe('Title generation conditions', () => {
     it('should generate titles only for chats starting with "New Chat"', async () => {
       const testCases = [
-        { title: 'New Chat', shouldGenerate: true },
+        { title: 'Hello Chat', shouldGenerate: true },
         { title: 'new chat', shouldGenerate: true },
         { title: 'New Chat - 1', shouldGenerate: true },
         { title: 'Chat about programming', shouldGenerate: false },
         { title: 'Discussion', shouldGenerate: false },
-        { title: '', shouldGenerate: false },
-        { title: 'New Chatbot', shouldGenerate: false }
+        { title: '', shouldGenerate: true },
+        { title: 'New Chat', shouldGenerate: true },
+        { title: 'Untitled Chat', shouldGenerate: true }
       ];
 
       for (const testCase of testCases) {
@@ -622,7 +624,7 @@ describe('ChatTitleJob', () => {
     it('should handle very long user messages gracefully', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -654,7 +656,7 @@ describe('ChatTitleJob', () => {
     it('should handle AI service errors gracefully', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 
@@ -684,7 +686,7 @@ describe('ChatTitleJob', () => {
     it('should handle database errors during chat update', async () => {
       chat = await createChat(dataSource, {
         userId: testData.id,
-        title: 'New Chat',
+        title: 'Untitled Chat',
         llmModelId: llmModel.id
       });
 

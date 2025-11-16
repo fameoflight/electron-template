@@ -9,7 +9,7 @@
 import { Entity, Index, BeforeInsert, OneToMany, In } from 'typeorm';
 import { ObjectType, Field } from 'type-graphql';
 import { MessageVersionBase } from './__generated__/MessageVersionBase.js';
-import { File } from './File.js';
+import { FileEntity } from './FileEntity.js';
 import { getFiles } from '@main/db/utils/index.js';
 import { DataSourceProvider } from '@base/db/index.js';
 
@@ -22,8 +22,8 @@ import { DataSourceProvider } from '@base/db/index.js';
 @Entity('message_versions')
 export class MessageVersion extends MessageVersionBase {
   // Add custom relations
-  @Field(() => [File], { description: 'Files attached to this message version' })
-  async files(): Promise<File[]> {
+  @Field(() => [FileEntity], { description: 'Files attached to this message version' })
+  async files(): Promise<FileEntity[]> {
     return getFiles({ ownerId: this.id, ownerType: 'MessageVersion' });
   }
 
@@ -34,7 +34,7 @@ export class MessageVersion extends MessageVersionBase {
    */
   async attachFiles(fileIds: string[]): Promise<void> {
     const dataSource = DataSourceProvider.get();
-    const fileRepository = dataSource.getRepository(File);
+    const fileRepository = dataSource.getRepository(FileEntity);
 
     // Update all files to be owned by this message version
     await fileRepository.update(

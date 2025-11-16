@@ -18,6 +18,7 @@
  * }
  */
 import Handlebars from 'handlebars';
+import { cyberOutput } from '../utils/output.js';
 import * as path from 'path';
 import {
   toPascalCase,
@@ -55,6 +56,7 @@ export interface GeneratorResult {
 /**
  * Abstract base class for all generators
  */
+// eslint-disable-next-line @codeblocks/class-props-limit
 export abstract class BaseGenerator {
   protected name: string;
   protected options: GeneratorOptions;
@@ -187,8 +189,9 @@ export abstract class BaseGenerator {
    * Print results to console (can be overridden for custom output)
    */
   protected printResults(): void {
-    console.log('\nGenerator Results:');
-    console.log('─'.repeat(50));
+    cyberOutput.newLine();
+    cyberOutput.info('Generator Results:');
+    cyberOutput.separator('─', 50);
 
     for (const file of this.results.files) {
       const icon = {
@@ -198,15 +201,15 @@ export abstract class BaseGenerator {
         error: '❌',
       }[file.action];
 
-      console.log(`${icon} ${file.action.toUpperCase()}: ${file.message}`);
+      cyberOutput.logger.log(`${icon} ${file.action.toUpperCase()}: ${file.message}`);
     }
 
-    console.log('─'.repeat(50));
-    console.log(
-      this.results.success
-        ? '✅ Generation completed successfully!'
-        : '❌ Generation completed with errors.'
-    );
+    cyberOutput.separator('─', 50);
+    if (this.results.success) {
+      cyberOutput.success('Generation completed successfully!');
+    } else {
+      cyberOutput.error('Generation completed with errors.');
+    }
   }
 
   /**
@@ -218,7 +221,7 @@ export abstract class BaseGenerator {
       this.printResults();
       return result;
     } catch (error) {
-      console.error('❌ Generator failed:', error);
+      cyberOutput.error('Generator failed:', error instanceof Error ? error.message : String(error));
       this.results.success = false;
       this.results.files.push({
         path: '',

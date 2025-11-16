@@ -4,6 +4,7 @@
 import { FileSystemService, writeFile } from './FileSystemService';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { cyberOutput } from './output';
 
 // Optional dependencies will be imported dynamically when needed
 
@@ -208,9 +209,9 @@ export class IconUtils {
         return icnsPath;
       } catch (iconutilError) {
         // iconutil not available, but PNGs are generated
-        console.warn('iconutil not available. ICNS generation requires macOS with Xcode.');
-        console.warn(`PNG files are available in: ${iconsetDir}`);
-        console.warn('Use iconutil on macOS or online converters to create the ICNS file.');
+        cyberOutput.warning('iconutil not available. ICNS generation requires macOS with Xcode.');
+        cyberOutput.warning(`PNG files are available in: ${iconsetDir}`);
+        cyberOutput.warning('Use iconutil on macOS or online converters to create the ICNS file.');
 
         // Don't clean up temp files so user can use them
         return path.join(outputDir, 'icon.iconset');

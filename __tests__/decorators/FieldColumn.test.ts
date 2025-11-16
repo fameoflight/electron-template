@@ -16,7 +16,7 @@ describe('FieldColumn Decorator', () => {
       @FieldColumn(Number, { columnType: 'integer', required: true })
       age!: number;
 
-      @FieldColumn(Boolean, { required: false, nullable: true })
+      @FieldColumn(Boolean, { required: false })
       isActive?: boolean;
     }
 
@@ -341,8 +341,7 @@ describe('FieldColumn Decorator', () => {
       @FieldColumn(String, {
         description: 'Legacy field',
         deprecationReason: 'Use fullName instead',
-        required: false,
-        nullable: true
+        required: false
       })
       oldName?: string;
     }
@@ -394,7 +393,7 @@ describe('FieldColumn Decorator', () => {
       datetimeField!: Date;
 
       // JSON type
-      @FieldColumn(String, { columnType: 'json', required: false, nullable: true })
+      @FieldColumn(String, { columnType: 'json', required: false })
       jsonField?: any;
     }
 

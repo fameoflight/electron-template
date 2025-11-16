@@ -5,6 +5,7 @@
  */
 
 import { initializeDatabase } from '../../main/db/dataSource';
+import { output } from '../utils/output.js';
 
 /**
  * DB Stats - Show database statistics
@@ -13,7 +14,7 @@ import { initializeDatabase } from '../../main/db/dataSource';
 
 export async function dbStatsCommand() {
   try {
-    console.log('📊 Loading database statistics...\n');
+    output.info('📊 Loading database statistics...\n');
 
     const dataSource = await initializeDatabase();
 
@@ -22,19 +23,20 @@ export async function dbStatsCommand() {
       table: meta.tableName
     }));
 
-    console.log(`Found ${tables.length} entities:\n`);
+    output.success(`Found ${tables.length} entities:\n`);
 
     for (const { entity, table } of tables) {
       const repo = dataSource.getRepository(entity);
       const count = await repo.count();
-      console.log(`  ${entity.padEnd(20)} ${count.toString().padStart(6)} records`);
+      output.info(`  ${entity.padEnd(20)} ${count.toString().padStart(6)} records`);
     }
 
-    console.log('');
+    output.info('');
     await dataSource.destroy();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Failed to get database stats:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    output.error('❌ Failed to get database stats', errorMsg);
     process.exit(1);
   }
 }
@@ -47,14 +49,14 @@ export async function dbInspectCommand(entityName?: string) {
     const dataSource = await initializeDatabase();
 
     if (!entityName) {
-      console.log('\n📋 Available Entities:\n');
+      output.info('\n📋 Available Entities:\n');
       dataSource.entityMetadatas.forEach((meta: any) => {
-        console.log(`  ${meta.name.padEnd(20)} → ${meta.tableName}`);
+        output.info(`  ${meta.name.padEnd(20)} → ${meta.tableName}`);
       });
-      console.log('\n💡 Usage: yarn db:inspect User');
+      output.info('\n💡 Usage: yarn db:inspect User');
     } else {
       const metadata = dataSource.getMetadata(entityName);
-      console.log(`\n📊 Schema for ${entityName} (table: ${metadata.tableName})\n`);
+      output.success(`\n📊 Schema for ${entityName} (table: ${metadata.tableName})\n`);
 
       const columns = metadata.columns.map((col: any) => ({
         column: col.propertyName,
@@ -64,21 +66,38 @@ export async function dbInspectCommand(entityName?: string) {
         primary: col.isPrimary ? 'yes' : 'no'
       }));
 
-      console.table(columns);
+      // Display columns as formatted table since output doesn't have table support
+      const maxColumnLength = Math.max(...columns.map((c: any) => c.column.length));
+      const maxTypeLength = Math.max(...columns.map((c: any) => c.type.length));
+
+      output.info(`\n${'Column'.padEnd(maxColumnLength)}  ${'Type'.padEnd(maxTypeLength)}  Nullable  Unique  Primary`);
+      output.info('─'.repeat(maxColumnLength) + '  ' + '─'.repeat(maxTypeLength) + '  ' + '─'.repeat(8) + '  ' + '─'.repeat(6) + '  ' + '─'.repeat(7));
+
+      columns.forEach((col: any) => {
+        const column = col.column.padEnd(maxColumnLength);
+        const type = col.type.padEnd(maxTypeLength);
+        const nullable = col.nullable.padEnd(8);
+        const unique = col.unique.padEnd(6);
+        const primary = col.primary.padEnd(7);
+
+        output.info(`${column}  ${type}  ${nullable}  ${unique}  ${primary}`);
+      });
+      output.info('');
 
       if (metadata.indices && metadata.indices.length > 0) {
-        console.log('\nIndexes:');
+        output.info('\nIndexes:');
         metadata.indices.forEach((idx: any) => {
-          console.log(`  ${idx.name}: [${idx.columns.map((c: any) => c.propertyName).join(', ')}]`);
+          output.info(`  ${idx.name}: [${idx.columns.map((c: any) => c.propertyName).join(', ')}]`);
         });
       }
     }
 
-    console.log('');
+    output.info('');
     await dataSource.destroy();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Failed to inspect database:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    output.error('❌ Failed to inspect database', errorMsg);
     process.exit(1);
   }
 }
@@ -93,7 +112,7 @@ export async function dbSnapshotCommand(options: { name?: string }) {
 
     const dbPath = path.join(process.cwd(), '.data');
     if (!fs.existsSync(dbPath)) {
-      console.log('⚠️  No database found at .data/');
+      output.warning('⚠️  No database found at .data/');
       process.exit(1);
     }
 
@@ -105,12 +124,13 @@ export async function dbSnapshotCommand(options: { name?: string }) {
     await fs.promises.cp(dbPath, snapshotPath, { recursive: true });
 
     const size = await getDirectorySize(dbPath);
-    console.log(`✅ Database snapshot created: .data.${snapshotName}`);
-    console.log(`   Size: ${(size / 1024 / 1024).toFixed(2)} MB`);
+    output.success(`✅ Database snapshot created: .data.${snapshotName}`);
+    output.info(`   Size: ${(size / 1024 / 1024).toFixed(2)} MB`);
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Failed to create snapshot:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    output.error('❌ Failed to create snapshot', errorMsg);
     process.exit(1);
   }
 }
@@ -133,7 +153,7 @@ export async function dbRestoreSnapshotCommand(options: { name?: string }) {
       .reverse();
 
     if (snapshots.length === 0) {
-      console.log('⚠️  No snapshots found. Create one with: yarn db:snapshot');
+      output.warning('⚠️  No snapshots found. Create one with: yarn db:snapshot');
       process.exit(1);
     }
 
@@ -149,12 +169,13 @@ export async function dbRestoreSnapshotCommand(options: { name?: string }) {
     // Restore snapshot
     await fs.promises.cp(snapshotPath, dbPath, { recursive: true });
 
-    console.log(`✅ Database restored from: ${snapshotToRestore}`);
-    console.log(`   Available snapshots: ${snapshots.length}`);
+    output.success(`✅ Database restored from: ${snapshotToRestore}`);
+    output.info(`   Available snapshots: ${snapshots.length}`);
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Failed to restore snapshot:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    output.error('❌ Failed to restore snapshot', errorMsg);
     process.exit(1);
   }
 }

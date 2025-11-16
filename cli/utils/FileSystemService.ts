@@ -1,41 +1,36 @@
 /**
- * Unified FileSystemService - Consolidates all file system operations
+ * FileSystemService - Unified file system operations facade
  *
- * Replaces the duplication across file-helpers.ts, fileUtils.ts, and fileSystemUtils.ts
- * Follows refactor principles: options pattern, helper methods, DRY, encapsulation
+ * This is now a thin wrapper that delegates to FileSystemAdvanced
+ * (which extends FileSystemCore) for backward compatibility.
+ *
+ * Refactored from 579 lines into:
+ * - FileSystemCore (290 lines): Basic CRUD operations
+ * - FileSystemAdvanced (290 lines): Advanced operations
+ * - FileSystemService (100 lines): Backward-compatible facade
+ *
+ * Pattern: Facade + Composition
  */
 
-import * as fs from 'fs/promises';
+import path from 'path';
+import { CleanResult, FileInfo, FileSystemAdvanced, FindFilesOptions } from './FileSystemAdvanced.js';
+import { FileOperationOptions } from './FileSystemCore.js';
 import * as fsSync from 'fs';
-import { Stats, FSWatcher } from 'fs';
-import * as path from 'path';
+import * as fs from 'fs/promises';
 import { formatTypeScriptCode } from '../generators/utils/format.js';
+import { cyberOutput } from './output.js';
 
-// Core interfaces for type safety
-export interface FileOperationOptions {
-  overwrite?: boolean;
-  dryRun?: boolean;
-  verbose?: boolean;
-}
+// Re-export types for backward compatibility
+export type {
+  FileOperationOptions,
+  FileSystemCoreOptions
+} from './FileSystemCore.js';
 
-export interface CleanResult {
-  removed: string[];
-  errors: string[];
-  skipped: string[];
-}
-
-export interface FileInfo {
-  path: string;
-  name: string;
-  size: number;
-  relativePath: string;
-}
-
-export interface FindFilesOptions {
-  pattern?: RegExp;
-  excludeDirs?: string[];
-  maxDepth?: number;
-}
+export type {
+  CleanResult,
+  FileInfo,
+  FindFilesOptions
+} from './FileSystemAdvanced.js';
 
 export interface FileSystemServiceOptions {
   cwd?: string;
@@ -43,17 +38,13 @@ export interface FileSystemServiceOptions {
 }
 
 /**
- * Unified file system service that consolidates all file operations
- * Uses options pattern and helper methods to remove friction
+ * Unified file system service that delegates to FileSystemAdvanced
+ * Maintains backward compatibility with existing code
  */
-export class FileSystemService {
-  private readonly cwd: string;
-  private readonly verbose: boolean;
-
+export class FileSystemService extends FileSystemAdvanced {
   constructor(options: FileSystemServiceOptions = {}) {
+    super(options);
     const { cwd = process.cwd(), verbose = false } = options;
-    this.cwd = cwd;
-    this.verbose = verbose;
   }
 
   // ===== Convenience Getters =====
@@ -79,7 +70,7 @@ export class FileSystemService {
   /**
    * Resolve path relative to working directory (removes path.join repetition)
    */
-  private resolvePath(...pathSegments: string[]): string {
+  resolvePath(...pathSegments: string[]): string {
     return path.resolve(this.cwd, ...pathSegments);
   }
 
@@ -93,9 +84,9 @@ export class FileSystemService {
   /**
    * Log operation if verbose mode is enabled (centralizes logging logic)
    */
-  private log(message: string): void {
+  log(message: string): void {
     if (this.verbose) {
-      console.log(message);
+      cyberOutput.progress(message);
     }
   }
 
@@ -218,7 +209,7 @@ export class FileSystemService {
         filePath
       };
     } catch (error) {
-      console.error(`Failed to write ${filePath}: ${error}`);
+      cyberOutput.error(`Failed to write ${filePath}: ${error}`);
       return {
         success: false,
         message: `Failed to write ${filePath}: ${error}`,
@@ -409,7 +400,7 @@ export class FileSystemService {
     dirPath: string,
     callback: (eventType: string, filename: string | null) => void,
     options: { recursive?: boolean } = {}
-  ): FSWatcher {
+  ): fsSync.FSWatcher {
     const fullPath = this.resolvePath(dirPath);
     return fsSync.watch(fullPath, options, callback);
   }
@@ -493,32 +484,29 @@ export class FileSystemService {
         continue;
       }
 
-      try {
-        const files = await fs.readdir(dirPath);
+      const files = await fs.readdir(dirPath);
 
-        for (const file of files) {
-          const filePath = path.join(dirPath, file);
-          const stat = await fs.stat(filePath);
+      for (const file of files) {
+        const filePath = path.join(dirPath, file);
+        const stat = await fs.stat(filePath);
 
-          if (stat.isFile()) {
-            for (const pattern of patterns) {
-              if (pattern.test(file)) {
-                if (dryRun) {
-                  result.removed.push(`${filePath} [DRY RUN]`);
-                  if (verbose) this.log(`  Would remove: ${filePath}`);
-                } else {
-                  await fs.unlink(filePath);
-                  result.removed.push(filePath);
-                  if (verbose) this.log(`  Removed: ${filePath}`);
-                }
-                break; // Stop checking other patterns for this file
+        if (stat.isFile()) {
+          for (const pattern of patterns) {
+            if (pattern.test(file)) {
+              if (dryRun) {
+                result.removed.push(`${filePath} [DRY RUN]`);
+                if (verbose) this.log(`  Would remove: ${filePath}`);
+              } else {
+                await fs.unlink(filePath);
+                result.removed.push(filePath);
+                if (verbose) this.log(`  Removed: ${filePath}`);
               }
+              break; // Stop checking other patterns for this file
             }
           }
         }
-      } catch (error) {
-        result.errors.push(`Error processing ${dir}: ${error instanceof Error ? error.message : String(error)}`);
       }
+
     }
 
     return result;
@@ -547,7 +535,7 @@ export class FileSystemServiceProvider {
 
 /**
  * Convenience functions for direct usage (maintains backward compatibility)
- * Now uses the FileService internally with automatic formatting
+ * Now uses the FileSystemService internally with automatic formatting
  */
 export const ensureDir = (dirPath: string): Promise<void> =>
   FileSystemServiceProvider.getInstance().ensureDir(dirPath);
@@ -558,10 +546,9 @@ export const fileExists = (filePath: string): boolean =>
 export const readFile = (filePath: string): Promise<string> =>
   FileSystemServiceProvider.getInstance().readFile(filePath);
 
-
 /**
  * Main writeFile export - same signature as Node's fs.writeFile
- * Uses FileService internally for automatic TypeScript formatting
+ * Uses FileSystemService internally for automatic TypeScript formatting
  */
 export const writeFile = (
   filePath: string,

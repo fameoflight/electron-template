@@ -1,6 +1,5 @@
 --
 -- Database Schema
--- Generated on: 2025-11-14T08:36:13.100Z
 -- Database: SQLite
 --
 
@@ -58,87 +57,6 @@ CREATE TABLE "connections" (
 CREATE INDEX "IDX_connection_userId" ON "connections" ("userId");
 
 
--- Table: embedding_content_chunks
-CREATE TABLE "embedding_content_chunks" (
-  "id" VARCHAR NOT NULL PRIMARY KEY,
-  "createdAt" DATETIME NOT NULL DEFAULT (datetime('now')),
-  "updatedAt" DATETIME NOT NULL DEFAULT (datetime('now')),
-  "deletedAt" DATETIME,
-  "userId" VARCHAR NOT NULL,
-  "chunkHash" TEXT NOT NULL,
-  "chunkId" TEXT NOT NULL,
-  "chunkIndex" INTEGER NOT NULL,
-  "embeddedAt" DATETIME,
-  "embeddingContentId" VARCHAR NOT NULL,
-  "error" TEXT,
-  "lanceDbId" TEXT NOT NULL,
-  "status" TEXT NOT NULL,
-  FOREIGN KEY ("userId") REFERENCES "users" ("id"),
-  FOREIGN KEY ("embeddingContentId") REFERENCES "embedding_contents" ("id")
-);
-
--- Index: IDX_embeddingcontentchunk_embeddingContentId_status
-CREATE INDEX "IDX_embeddingcontentchunk_embeddingContentId_status" ON "embedding_content_chunks" ("embeddingContentId", "status");
-
--- Index: IDX_embeddingcontentchunk_embeddingContentId_chunkIndex
-CREATE INDEX "IDX_embeddingcontentchunk_embeddingContentId_chunkIndex" ON "embedding_content_chunks" ("embeddingContentId", "chunkIndex");
-
--- Index: IDX_embeddingcontentchunk_chunkIndex
-CREATE INDEX "IDX_embeddingcontentchunk_chunkIndex" ON "embedding_content_chunks" ("chunkIndex");
-
--- Index: IDX_embeddingcontentchunk_status
-CREATE INDEX "IDX_embeddingcontentchunk_status" ON "embedding_content_chunks" ("status");
-
--- Index: IDX_embeddingcontentchunk_embeddingContentId
-CREATE INDEX "IDX_embeddingcontentchunk_embeddingContentId" ON "embedding_content_chunks" ("embeddingContentId");
-
--- Index: IDX_embeddingcontentchunk_chunkId
-CREATE INDEX "IDX_embeddingcontentchunk_chunkId" ON "embedding_content_chunks" ("chunkId");
-
--- Index: IDX_embeddingcontentchunk_userId
-CREATE INDEX "IDX_embeddingcontentchunk_userId" ON "embedding_content_chunks" ("userId");
-
-
--- Table: embedding_contents
-CREATE TABLE "embedding_contents" (
-  "id" VARCHAR NOT NULL PRIMARY KEY,
-  "createdAt" DATETIME NOT NULL DEFAULT (datetime('now')),
-  "updatedAt" DATETIME NOT NULL DEFAULT (datetime('now')),
-  "deletedAt" DATETIME,
-  "userId" VARCHAR NOT NULL,
-  "contentHash" TEXT NOT NULL,
-  "contentId" TEXT NOT NULL,
-  "contentType" TEXT NOT NULL,
-  "embeddingModelId" VARCHAR NOT NULL,
-  "error" TEXT,
-  "metadata" JSON,
-  "name" TEXT DEFAULT 'Untitled Content',
-  "status" TEXT NOT NULL,
-  "fileId" VARCHAR,
-  FOREIGN KEY ("userId") REFERENCES "users" ("id"),
-  FOREIGN KEY ("embeddingModelId") REFERENCES "embedding_models" ("id"),
-  FOREIGN KEY ("fileId") REFERENCES "files" ("id")
-);
-
--- Index: IDX_embeddingcontent_userId_status
-CREATE INDEX "IDX_embeddingcontent_userId_status" ON "embedding_contents" ("userId", "status");
-
--- Index: IDX_embeddingcontent_contentId_contentType
-CREATE INDEX "IDX_embeddingcontent_contentId_contentType" ON "embedding_contents" ("contentId", "contentType");
-
--- Index: IDX_embeddingcontent_status
-CREATE INDEX "IDX_embeddingcontent_status" ON "embedding_contents" ("status");
-
--- Index: IDX_embeddingcontent_contentType
-CREATE INDEX "IDX_embeddingcontent_contentType" ON "embedding_contents" ("contentType");
-
--- Index: IDX_embeddingcontent_contentId
-CREATE INDEX "IDX_embeddingcontent_contentId" ON "embedding_contents" ("contentId");
-
--- Index: IDX_embeddingcontent_userId
-CREATE INDEX "IDX_embeddingcontent_userId" ON "embedding_contents" ("userId");
-
-
 -- Table: embedding_models
 CREATE TABLE "embedding_models" (
   "id" VARCHAR NOT NULL PRIMARY KEY,
@@ -165,8 +83,8 @@ CREATE INDEX "IDX_embeddingmodel_connectionId" ON "embedding_models" ("connectio
 CREATE INDEX "IDX_embeddingmodel_userId" ON "embedding_models" ("userId");
 
 
--- Table: files
-CREATE TABLE "files" (
+-- Table: file_entities
+CREATE TABLE "file_entities" (
   "id" VARCHAR NOT NULL PRIMARY KEY,
   "createdAt" DATETIME NOT NULL DEFAULT (datetime('now')),
   "updatedAt" DATETIME NOT NULL DEFAULT (datetime('now')),
@@ -180,21 +98,21 @@ CREATE TABLE "files" (
   "fullPath" TEXT NOT NULL,
   "metadata" JSON,
   "mimeType" TEXT DEFAULT 'application/octet-stream',
-  "status" TEXT DEFAULT 'pending',
+  "mkTime" INTEGER DEFAULT 0,
   "ownerId" TEXT,
   "ownerType" TEXT,
-  "mkTime" INTEGER DEFAULT 0,
+  "status" TEXT DEFAULT 'pending',
   FOREIGN KEY ("userId") REFERENCES "users" ("id")
 );
 
--- Index: IDX_file_fileType_createdAt
-CREATE INDEX "IDX_file_fileType_createdAt" ON "files" ("fileType", "createdAt");
+-- Index: IDX_fileentity_fileType_createdAt
+CREATE INDEX "IDX_fileentity_fileType_createdAt" ON "file_entities" ("fileType", "createdAt");
 
--- Index: IDX_file_fileType
-CREATE INDEX "IDX_file_fileType" ON "files" ("fileType");
+-- Index: IDX_fileentity_fileType
+CREATE INDEX "IDX_fileentity_fileType" ON "file_entities" ("fileType");
 
--- Index: IDX_file_fileHash
-CREATE INDEX "IDX_file_fileHash" ON "files" ("fileHash");
+-- Index: IDX_fileentity_fileHash
+CREATE INDEX "IDX_fileentity_fileHash" ON "file_entities" ("fileHash");
 
 
 -- Table: jobs

@@ -31,6 +31,7 @@ export class Message extends BaseEntity {
 ```
 
 **Code generation that actually works:**
+
 - `yarn g entity Post title:string content:text` → Full CRUD in seconds
 - `yarn graphql` → Schema + Relay compiler + type safety
 - Migrations, resolvers, services - all generated with proper patterns
@@ -50,6 +51,7 @@ export class Message extends BaseEntity {
 ```
 
 **Benefits:**
+
 - **Forces separation** - UI can't directly touch database (good!)
 - **Type-safe boundaries** - IPC handlers automatically typed
 - **Process isolation** - Renderer crash doesn't kill your data
@@ -62,25 +64,29 @@ If you know **React + GraphQL**, you already know 90% of this:
 
 ```typescript
 // Familiar GraphQL queries with Relay
-const data = useLazyLoadQuery(graphql`
-  query ChatQuery($chatId: ID!) {
-    chat(id: $chatId) {
-      title
-      messages {
-        content
-        role
+const data = useLazyLoadQuery(
+  graphql`
+    query ChatQuery($chatId: ID!) {
+      chat(id: $chatId) {
+        title
+        messages {
+          content
+          role
+        }
       }
     }
-  }
-`, { chatId });
+  `,
+  { chatId }
+);
 
 // IPC is just another API endpoint
-const result = await window.electron['chat:create']({
-  title: 'New Chat'
+const result = await window.electron["chat:create"]({
+  title: "New Chat",
 });
 ```
 
 **No Electron expertise required:**
+
 - Standard React patterns (hooks, components, Suspense)
 - Standard GraphQL patterns (fragments, connections, mutations)
 - Standard database patterns (TypeORM entities, migrations)
@@ -88,6 +94,7 @@ const result = await window.electron['chat:create']({
 ### ⚡️ Real Features, Not Toy Examples
 
 **LLM Chat Implementation:**
+
 - Streaming responses with job queue
 - Message versioning and regeneration
 - File attachments
@@ -95,6 +102,7 @@ const result = await window.electron['chat:create']({
 - Background jobs for AI processing
 
 **Production Infrastructure:**
+
 - Smart relationship loading (transparent N+1 prevention)
 - Soft deletes with recovery
 - Database migrations
@@ -105,6 +113,7 @@ const result = await window.electron['chat:create']({
 ## Stack
 
 **Core:**
+
 - Electron 39 - Desktop app framework
 - React 18 - UI with hooks & Suspense
 - TypeScript 5.9 - Full type safety
@@ -112,16 +121,19 @@ const result = await window.electron['chat:create']({
 - SQLite + TypeORM - Local database
 
 **GraphQL:**
+
 - Type-GraphQL 2.0 - Schema from TypeScript classes
 - Apollo Server 5 - GraphQL server in main process
 - Relay 20 - Powerful GraphQL client with fragments
 
 **UI & Styling:**
+
 - Tailwind CSS v4 - Utility-first styling
 - Ant Design 5 - Rich component library
 - Framer Motion 12 - Smooth animations
 
 **Testing:**
+
 - Vitest 4 - Fast unit tests
 - Testing Library 16 - Component tests
 - Polly.js 6 - HTTP request/response recording
@@ -160,18 +172,22 @@ yarn g entity BlogPost title:string content:text authorId:uuid published:boolean
 ```
 
 **Generates:**
+
 1. **Entity** (`main/db/entities/BlogPost.ts`)
+
    - TypeORM decorators
    - GraphQL field decorators
    - Validation rules
    - Relationships
 
 2. **GraphQL Inputs** (`main/graphql/inputs/BlogPostInputs.ts`)
+
    - CreateBlogPostInput (required fields)
    - UpdateBlogPostInput (optional fields)
    - Validation decorators
 
 3. **Resolvers** (`main/graphql/resolvers/BlogPostResolver.ts`)
+
    - CRUD operations (create, read, update, delete)
    - Relay connections
    - Ownership checks
@@ -185,16 +201,17 @@ yarn g entity BlogPost title:string content:text authorId:uuid published:boolean
 ### Decorator System: Eliminate Repetition
 
 **Before (Traditional):**
+
 ```typescript
 @ObjectType()
-@Entity('posts')
+@Entity("posts")
 export class Post {
   @Field(() => ID)
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id!: string;
 
   @Field(() => String)
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   @IsString()
   @MinLength(1)
   @MaxLength(255)
@@ -203,12 +220,13 @@ export class Post {
 ```
 
 **After (Our Decorators):**
+
 ```typescript
-@EntityObjectType('posts')
+@EntityObjectType("posts")
 export class Post extends BaseEntity {
   @FieldColumn(String, {
     required: true,
-    maxLength: 255
+    maxLength: 255,
   })
   title!: string;
 }
@@ -227,11 +245,11 @@ export class Post extends BaseEntity {
 const message = await messageRepo.findOne({ where: { id } });
 
 // Relations load transparently when accessed
-const chat = await message.chat;        // Loads on-demand
+const chat = await message.chat; // Loads on-demand
 const versions = await message.versions; // Loads on-demand
 
 // Subsequent access is synchronous (cached)
-console.log(message.chat);     // No DB query!
+console.log(message.chat); // No DB query!
 console.log(message.versions); // Already loaded!
 ```
 
@@ -243,10 +261,10 @@ console.log(message.versions); // Already loaded!
 
 ```typescript
 @Job({
-  name: 'ProcessChatJob',
+  name: "ProcessChatJob",
   schema: ChatSchema,
   maxRetries: 3,
-  backoff: 'exponential'
+  backoff: "exponential",
 })
 export class ProcessChatJob extends BaseJob<ChatProps> {
   async perform(props: ChatProps): Promise<any> {
@@ -269,13 +287,13 @@ await ProcessChatJob.performAt(tomorrow, userId, chatId, { prompt });
 ```typescript
 // main/handlers/chatHandlers.ts
 export const chatHandlers = {
-  'chat:create': async (args: { title: string }) => {
+  "chat:create": async (args: { title: string }) => {
     return await chatRepo.save({ title: args.title });
-  }
+  },
 };
 
 // ui/Pages/ChatPage.tsx - Automatically typed!
-const chat = await window.electron['chat:create']({ title: 'New Chat' });
+const chat = await window.electron["chat:create"]({ title: "New Chat" });
 //                                                   ^^^^^ TypeScript knows this!
 ```
 
@@ -372,6 +390,7 @@ export class MessageService {
 ```
 
 **Principles:**
+
 1. **Small files** (100-200 lines, max 300)
 2. **Max 5 parameters** per function/constructor
 3. **Max 5 exports** per file
@@ -503,6 +522,7 @@ yarn test:record         # Record new HTTP fixtures with Polly.js
 ```
 
 **Test patterns included:**
+
 - GraphQL query/mutation testing
 - Job system testing with mocks
 - HTTP recording/replay with Polly.js
@@ -514,6 +534,7 @@ yarn test:record         # Record new HTTP fixtures with Polly.js
 This is a template - fork it and make it yours!
 
 **When adding features:**
+
 1. Keep files under 300 lines
 2. Max 5 parameters per function
 3. Use decorators to eliminate boilerplate
@@ -533,6 +554,7 @@ This template exists because **I love meta-programming.**
 TypeScript decorators + code generation = shipping faster by writing less.
 
 When you combine:
+
 - **Decorators** that merge 5-7 decorators into one
 - **Code generators** that create full CRUD stacks
 - **Smart loading** via TypeORM subscribers

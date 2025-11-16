@@ -32,9 +32,7 @@ function CodeBlock({ language, themeMode, children, className }: ICodeBlock) {
       `}>
           {language || 'plaintext'}
         </span>
-        <CopyButton
-          text={children}
-        />
+        <CopyButton text={children} />
       </div>
 
       {/* Code content */}

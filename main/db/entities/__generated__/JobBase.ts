@@ -32,7 +32,7 @@
  * @property number retryCount - Number of retry attempts - default: 0
  * @property Date | null scheduledAt - When job is scheduled to run
  * @property Date | null startedAt - When job started execution
- * @property JobStatus status - Job execution status - default: PENDING, enum: [PENDING, RUNNING, COMPLETED, POSTPONED, FAILED]
+ * @property JobStatus status - Job execution status - default: PENDING, enum: [PENDING, RUNNING, COMPLETED, POSTPONED, RETRY, FAILED]
  * @property string targetId - Target entity ID
  * @property number timeoutMS - Job timeout in milliseconds - default: 300000
  * @property string type - Job handler type
@@ -95,6 +95,7 @@ export enum JobStatus {
   RUNNING = 'RUNNING',
   COMPLETED = 'COMPLETED',
   POSTPONED = 'POSTPONED',
+  RETRY = 'RETRY',
   FAILED = 'FAILED'
 }
 
@@ -124,7 +125,7 @@ export abstract class JobBase extends OwnedEntity {
   @FieldColumn(Date, { required: false, description: 'When job was queued' })
   queuedAt?: Date;
 
-  @FieldColumnJSON(z.any(), { description: 'Job execution result', nullable: true })
+  @FieldColumnJSON(z.any(), { description: 'Job execution result', required: false })
   result?: Record<string, any>;
 
   @FieldColumn(Number, { required: true, description: 'Number of retry attempts', defaultValue: 0 })

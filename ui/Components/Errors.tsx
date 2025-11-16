@@ -14,7 +14,7 @@ interface IErrorsProps {
   onClose?: () => void;
 }
 
-export function MessageList({
+export function ErrorMessageList({
   messages,
   className,
 }: {
@@ -61,7 +61,7 @@ function Errors({ errors, onClose, className }: IErrorsProps) {
             <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
           </div>
           <div className="ml-3">
-            <MessageList messages={errors} className="text-sm text-red-700" />
+            <ErrorMessageList messages={errors} className="text-sm text-red-700" />
           </div>
           {onClose && (
             <div className="ml-auto pl-3">

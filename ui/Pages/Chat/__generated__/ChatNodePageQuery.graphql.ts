@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<137b1c28270b77e1d6aada9b331be51a>>
+ * @generated SignedSource<<32ef153829367f81b533d36abaafe875>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -33,15 +33,15 @@ export type ChatNodePageQuery$data = {
   } | null | undefined;
   readonly chatMessages: ReadonlyArray<{
     readonly createdAt: any;
-    readonly currentVersion: {
-      readonly content: string;
-      readonly id: string;
-      readonly status: MessageVersionBaseStatus;
-    } | null | undefined;
     readonly currentVersionId: string;
     readonly id: string;
     readonly role: MessageBaseRole;
     readonly updatedAt: any;
+    readonly versions: ReadonlyArray<{
+      readonly id: string;
+      readonly modelId: string;
+      readonly status: MessageVersionBaseStatus;
+    }>;
     readonly " $fragmentSpreads": FragmentRefs<"MessageList_messages">;
   }>;
 };
@@ -179,21 +179,7 @@ v9 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "content",
-  "storageKey": null
-},
-v10 = {
-  "alias": null,
-  "args": null,
-  "concreteType": "MessageVersion",
-  "kind": "LinkedField",
-  "name": "currentVersion",
-  "plural": false,
-  "selections": [
-    (v1/*: any*/),
-    (v2/*: any*/),
-    (v9/*: any*/)
-  ],
+  "name": "modelId",
   "storageKey": null
 };
 return {
@@ -215,9 +201,22 @@ return {
           (v1/*: any*/),
           (v7/*: any*/),
           (v8/*: any*/),
-          (v10/*: any*/),
           (v3/*: any*/),
           (v4/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "MessageVersion",
+            "kind": "LinkedField",
+            "name": "versions",
+            "plural": true,
+            "selections": [
+              (v1/*: any*/),
+              (v2/*: any*/),
+              (v9/*: any*/)
+            ],
+            "storageKey": null
+          },
           {
             "args": null,
             "kind": "FragmentSpread",
@@ -248,7 +247,6 @@ return {
           (v1/*: any*/),
           (v7/*: any*/),
           (v8/*: any*/),
-          (v10/*: any*/),
           (v3/*: any*/),
           (v4/*: any*/),
           {
@@ -260,12 +258,21 @@ return {
             "plural": true,
             "selections": [
               (v1/*: any*/),
+              (v2/*: any*/),
               (v9/*: any*/),
-              (v3/*: any*/),
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "File",
+                "kind": "ScalarField",
+                "name": "content",
+                "storageKey": null
+              },
+              (v3/*: any*/),
+              (v4/*: any*/),
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "FileEntity",
                 "kind": "LinkedField",
                 "name": "files",
                 "plural": true,
@@ -290,16 +297,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "76b3840d5b730c19862a39534bfa59d2",
+    "cacheID": "88f4cbe4aa6a8f1bd7a000164d65028c",
     "id": null,
     "metadata": {},
     "name": "ChatNodePageQuery",
     "operationKind": "query",
-    "text": "query ChatNodePageQuery(\n  $id: String!\n) {\n  chat(id: $id) {\n    id\n    title\n    description\n    tags\n    status\n    createdAt\n    updatedAt\n    llmModel {\n      id\n      name\n      modelIdentifier\n    }\n  }\n  chatMessages(chatId: $id) {\n    id\n    role\n    currentVersionId\n    currentVersion {\n      id\n      status\n      content\n    }\n    createdAt\n    updatedAt\n    ...MessageList_messages\n  }\n}\n\nfragment MessageList_messages on Message {\n  id\n  role\n  createdAt\n  updatedAt\n  currentVersionId\n  versions {\n    id\n    content\n    createdAt\n    ...MessageVersionView_record\n  }\n}\n\nfragment MessageVersionView_record on MessageVersion {\n  id\n  content\n  files {\n    id\n    filename\n  }\n}\n"
+    "text": "query ChatNodePageQuery(\n  $id: String!\n) {\n  chat(id: $id) {\n    id\n    title\n    description\n    tags\n    status\n    createdAt\n    updatedAt\n    llmModel {\n      id\n      name\n      modelIdentifier\n    }\n  }\n  chatMessages(chatId: $id) {\n    id\n    role\n    currentVersionId\n    createdAt\n    updatedAt\n    versions {\n      id\n      status\n      modelId\n    }\n    ...MessageList_messages\n  }\n}\n\nfragment MessageList_messages on Message {\n  id\n  role\n  createdAt\n  updatedAt\n  currentVersionId\n  versions {\n    id\n    modelId\n    content\n    status\n    createdAt\n    updatedAt\n    ...MessageVersionView_record\n  }\n}\n\nfragment MessageVersionView_record on MessageVersion {\n  id\n  content\n  status\n  files {\n    id\n    filename\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "f607db4ed1fa5c8a4dc44482392a0ee9";
+(node as any).hash = "249edbb6ae028f5a9506ff3f65b7bcec";
 
 export default node;

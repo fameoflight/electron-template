@@ -11,7 +11,7 @@ import { DataSourceProvider } from '@base/db/index';
 import { EntityClasses, getEntity, loadEntities } from '@main/db/entityMap';
 import { createTestUser } from '@factories/index';
 import { createFileWithContent, createFilesWithContent } from '@factories/fileFactory';
-import { FileStatus, FileFileType } from '@main/db/entities/__generated__/FileBase';
+import { FileEntityStatus, FileEntityFileType } from '@main/db/entities/__generated__/FileEntityBase';
 import { cleanupTestDatabase, createTestDatabase } from '@tests/base/testDatabase';
 import { DataSource } from 'typeorm';
 import JobQueue from '@main/services/JobQueue';
@@ -23,7 +23,7 @@ describe('ProcessFileJob', () => {
   let testUser: any;
   let Job: EntityClasses['Job'];
   let jobQueue: JobQueue;
-  let File: any;
+  let FileEntity: any;
 
   beforeEach(async () => {
     dataSource = await createTestDatabase();
@@ -32,7 +32,7 @@ describe('ProcessFileJob', () => {
 
     // Load entities
     const entities = await loadEntities();
-    File = entities.File;
+    FileEntity = entities.FileEntity;
 
     // Set up JobQueue for job integration tests
     jobQueue = new JobQueue();
@@ -65,12 +65,12 @@ Created at: ${new Date().toISOString()}`;
         filename: 'test-document.txt',
         extension: '.txt',
         content: fileContent,
-        fileType: FileFileType.other // Initially set to other, job should detect document
+        fileType: FileEntityFileType.other // Initially set to other, job should detect document
       });
 
       // Verify file starts with pending status
-      expect(file.status).toBe(FileStatus.pending);
-      expect(file.fileType).toBe(FileFileType.other);
+      expect(file.status).toBe(FileEntityStatus.pending);
+      expect(file.fileType).toBe(FileEntityFileType.other);
 
       // Execute the job
       const result = await ProcessFileJob.performNow(testUser.id, file.id, {});
@@ -79,17 +79,17 @@ Created at: ${new Date().toISOString()}`;
       expect(result.success).toBe(true);
 
       // Verify the file was processed
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
       expect(updatedFile).toBeDefined();
-      expect(updatedFile!.status).toBe(FileStatus.completed);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
       expect(updatedFile!.filename).toBe('test-document.txt');
       expect(updatedFile!.extension).toBe('txt');
       expect(updatedFile!.fileSize).toBe(fileContent.length);
       expect(updatedFile!.mimeType).toBe('text/plain');
-      expect(updatedFile!.fileType).toBe(FileFileType.document);
+      expect(updatedFile!.fileType).toBe(FileEntityFileType.document);
       expect(updatedFile!.fileHash).toMatch(/^[a-f0-9]{64}$/); // SHA-256 hash
 
       // Verify the actual file still exists on disk
@@ -127,13 +127,13 @@ function test() {
 
       expect(result.success).toBe(true);
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
-      expect(updatedFile!.status).toBe(FileStatus.completed);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
       expect(updatedFile!.mimeType).toBe('text/markdown');
-      expect(updatedFile!.fileType).toBe(FileFileType.document);
+      expect(updatedFile!.fileType).toBe(FileEntityFileType.document);
       expect(updatedFile!.extension).toBe('md');
     });
 
@@ -142,12 +142,13 @@ function test() {
       const files = await createFilesWithContent(dataSource, 3, {
         userId: testUser.id,
         extension: '.txt',
-        fileType: FileFileType.other
+        fileType: FileEntityFileType.other,
+        content: 'Base test content for batch processing'
       });
 
       // Verify all files start as pending
       for (const file of files) {
-        expect(file.status).toBe(FileStatus.pending);
+        expect(file.status).toBe(FileEntityStatus.pending);
       }
 
       // Execute the job - it should process ALL pending files
@@ -157,11 +158,11 @@ function test() {
 
       // Verify all files were processed
       for (const file of files) {
-        const updatedFile = await dataSource.getRepository('File').findOne({
+        const updatedFile = await dataSource.getRepository(FileEntity).findOne({
           where: { id: file.id }
         });
-        expect(updatedFile!.status).toBe(FileStatus.completed);
-        expect(updatedFile!.fileType).toBe(FileFileType.document);
+        expect(updatedFile!.status).toBe(FileEntityStatus.completed);
+        expect(updatedFile!.fileType).toBe(FileEntityFileType.document);
       }
     });
 
@@ -189,14 +190,14 @@ function test() {
       await fs.writeFile(imagePath, pngData);
 
       // Create file record pointing to the image
-      const fileRepository = dataSource.getRepository('File');
+      const fileRepository = dataSource.getRepository(FileEntity);
       const file = await fileRepository.save({
         userId: testUser.id,
         filename: 'test-image.png',
         extension: '.png',
         fullPath: imagePath,
-        status: FileStatus.pending,
-        fileType: FileFileType.other,
+        status: FileEntityStatus.pending,
+        fileType: FileEntityFileType.other,
         mimeType: 'application/octet-stream',
         fileSize: pngData.length,
         fileHash: '<empty>'
@@ -206,13 +207,13 @@ function test() {
 
       expect(result.success).toBe(true);
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
-      expect(updatedFile!.status).toBe(FileStatus.completed);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
       expect(updatedFile!.mimeType).toBe('image/png');
-      expect(updatedFile!.fileType).toBe(FileFileType.image);
+      expect(updatedFile!.fileType).toBe(FileEntityFileType.image);
       expect(updatedFile!.extension).toBe('png');
       expect(updatedFile!.fileSize).toBe(pngData.length);
     });
@@ -238,11 +239,11 @@ function test() {
 
         expect(result.success).toBe(true);
 
-        const updatedFile = await dataSource.getRepository('File').findOne({
+        const updatedFile = await dataSource.getRepository(FileEntity).findOne({
           where: { id: file.id }
         });
 
-        expect(updatedFile!.status).toBe(FileStatus.completed);
+        expect(updatedFile!.status).toBe(FileEntityStatus.completed);
         expect(updatedFile!.extension).toBe(testCase.extension.slice(1)); // Without dot
         expect(updatedFile!.filename).toBe(testCase.filename);
       }
@@ -260,26 +261,26 @@ function test() {
 
       expect(result.success).toBe(true);
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
-      expect(updatedFile!.status).toBe(FileStatus.completed);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
       expect(updatedFile!.extension).toBe('');
       expect(updatedFile!.mimeType).toBe('application/octet-stream');
-      expect(updatedFile!.fileType).toBe(FileFileType.other);
+      expect(updatedFile!.fileType).toBe(FileEntityFileType.other);
     });
 
     it('should handle file processing errors gracefully', async () => {
       // Create file with non-existent path
-      const fileRepository = dataSource.getRepository('File');
+      const fileRepository = dataSource.getRepository(FileEntity);
       const file = await fileRepository.save({
         userId: testUser.id,
         filename: 'non-existent.txt',
         extension: '.txt',
         fullPath: '/path/that/does/not/exist.txt',
-        status: FileStatus.pending,
-        fileType: FileFileType.other,
+        status: FileEntityStatus.pending,
+        fileType: FileEntityFileType.other,
         mimeType: 'application/octet-stream',
         fileSize: 0,
         fileHash: '<empty>'
@@ -289,12 +290,12 @@ function test() {
 
       expect(result.success).toBe(true); // Job succeeds even if individual files fail
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
       // File should be marked as error due to missing file
-      expect(updatedFile!.status).toBe(FileStatus.error);
+      expect(updatedFile!.status).toBe(FileEntityStatus.error);
     });
 
     it('should generate correct SHA-256 hash for file content', async () => {
@@ -312,7 +313,7 @@ function test() {
 
       expect(result.success).toBe(true);
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
@@ -331,11 +332,11 @@ function test() {
 
       expect(result.success).toBe(true);
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
-      expect(updatedFile!.status).toBe(FileStatus.completed);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
       expect(updatedFile!.fileSize).toBe(0);
       expect(updatedFile!.fileHash).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'); // SHA-256 of empty string
     });
@@ -350,9 +351,9 @@ function test() {
       });
 
       // Manually update file to completed status
-      await dataSource.getRepository('File').update(file.id, {
-        status: FileStatus.completed,
-        fileType: FileFileType.document,
+      await dataSource.getRepository(FileEntity).update(file.id, {
+        status: FileEntityStatus.completed,
+        fileType: FileEntityFileType.document,
         mimeType: 'text/plain'
       });
 
@@ -361,12 +362,12 @@ function test() {
       expect(result.success).toBe(true);
 
       // File should remain completed and unchanged
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
-      expect(updatedFile!.status).toBe(FileStatus.completed);
-      expect(updatedFile!.fileType).toBe(FileFileType.document);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
+      expect(updatedFile!.fileType).toBe(FileEntityFileType.document);
     });
 
     it('should process very large files efficiently', async () => {
@@ -387,11 +388,11 @@ function test() {
       expect(result.success).toBe(true);
       expect(processingTime).toBeLessThan(10000); // Should complete within 10 seconds
 
-      const updatedFile = await dataSource.getRepository('File').findOne({
+      const updatedFile = await dataSource.getRepository(FileEntity).findOne({
         where: { id: file.id }
       });
 
-      expect(updatedFile!.status).toBe(FileStatus.completed);
+      expect(updatedFile!.status).toBe(FileEntityStatus.completed);
       expect(updatedFile!.fileSize).toBe(largeContent.length);
       expect(updatedFile!.fileHash).toMatch(/^[a-f0-9]{64}$/);
     });
@@ -464,15 +465,15 @@ function test() {
   describe('Helper Methods', () => {
     it('should detect file types correctly based on MIME types', async () => {
       const testCases = [
-        { mimeType: 'image/png', expectedType: FileFileType.image },
-        { mimeType: 'video/mp4', expectedType: FileFileType.video },
-        { mimeType: 'audio/mp3', expectedType: FileFileType.audio },
-        { mimeType: 'application/pdf', expectedType: FileFileType.document },
-        { mimeType: 'text/plain', expectedType: FileFileType.document },
-        { mimeType: 'application/json', expectedType: FileFileType.document },
-        { mimeType: 'application/xml', expectedType: FileFileType.document },
-        { mimeType: 'application/octet-stream', expectedType: FileFileType.other },
-        { mimeType: 'application/zip', expectedType: FileFileType.other }
+        { mimeType: 'image/png', expectedType: FileEntityFileType.image },
+        { mimeType: 'video/mp4', expectedType: FileEntityFileType.video },
+        { mimeType: 'audio/mp3', expectedType: FileEntityFileType.audio },
+        { mimeType: 'application/pdf', expectedType: FileEntityFileType.document },
+        { mimeType: 'text/plain', expectedType: FileEntityFileType.document },
+        { mimeType: 'application/json', expectedType: FileEntityFileType.document },
+        { mimeType: 'application/xml', expectedType: FileEntityFileType.document },
+        { mimeType: 'application/octet-stream', expectedType: FileEntityFileType.other },
+        { mimeType: 'application/zip', expectedType: FileEntityFileType.other }
       ];
 
       for (const testCase of testCases) {
@@ -492,14 +493,14 @@ function test() {
           userId: testUser.id,
           filename: `test-${testCase.mimeType.replace('/', '-')}${extension}`,
           extension: extension,
-          content: 'Test content'
+          content: `Test content for ${testCase.mimeType} with extension ${extension}`
         });
 
         const result = await ProcessFileJob.performNow(testUser.id, file.id, {});
 
         expect(result.success).toBe(true);
 
-        const updatedFile = await dataSource.getRepository('File').findOne({
+        const updatedFile = await dataSource.getRepository(FileEntity).findOne({
           where: { id: file.id }
         });
 

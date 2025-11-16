@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e56ec4b8d7817d80f13dd36a8bae575d>>
+ * @generated SignedSource<<c53484c5b2ff37c461d34e696792568c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,6 +10,7 @@
 
 import { ReaderFragment } from 'relay-runtime';
 export type MessageBaseRole = "assistant" | "system" | "user" | "%future added value";
+export type MessageVersionBaseStatus = "cancelled" | "completed" | "failed" | "pending" | "streaming" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type MessageList_messages$data = ReadonlyArray<{
   readonly createdAt: any;
@@ -21,6 +22,9 @@ export type MessageList_messages$data = ReadonlyArray<{
     readonly content: string;
     readonly createdAt: any;
     readonly id: string;
+    readonly modelId: string;
+    readonly status: MessageVersionBaseStatus;
+    readonly updatedAt: any;
     readonly " $fragmentSpreads": FragmentRefs<"MessageVersionView_record">;
   }>;
   readonly " $fragmentType": "MessageList_messages";
@@ -44,6 +48,13 @@ v1 = {
   "kind": "ScalarField",
   "name": "createdAt",
   "storageKey": null
+},
+v2 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "updatedAt",
+  "storageKey": null
 };
 return {
   "argumentDefinitions": [],
@@ -62,13 +73,7 @@ return {
       "storageKey": null
     },
     (v1/*: any*/),
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "updatedAt",
-      "storageKey": null
-    },
+    (v2/*: any*/),
     {
       "alias": null,
       "args": null,
@@ -89,10 +94,25 @@ return {
           "alias": null,
           "args": null,
           "kind": "ScalarField",
+          "name": "modelId",
+          "storageKey": null
+        },
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
           "name": "content",
           "storageKey": null
         },
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "status",
+          "storageKey": null
+        },
         (v1/*: any*/),
+        (v2/*: any*/),
         {
           "args": null,
           "kind": "FragmentSpread",
@@ -107,6 +127,6 @@ return {
 };
 })();
 
-(node as any).hash = "64ce756f9e9b02567d7fdc146041e77c";
+(node as any).hash = "43598bc9ba6f791dd26e833cedfa81e5";
 
 export default node;

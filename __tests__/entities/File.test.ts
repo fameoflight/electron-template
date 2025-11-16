@@ -7,8 +7,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DataSource, MoreThanOrEqual } from 'typeorm';
-import { File } from '@main/db/entities/File';
-import { FileStatus, FileFileType } from '@main/db/entities/__generated__/FileBase';
+import { FileEntity } from '@main/db/entities/FileEntity';
+import { FileEntityStatus, FileEntityFileType } from '@main/db/entities/__generated__/FileEntityBase';
 import { cleanupTestDatabase, createTestDatabase } from '../base/testDatabase';
 import { createTestUser } from '@factories/index';
 
@@ -20,7 +20,7 @@ describe('File Entity Defaults', () => {
   beforeEach(async () => {
     dataSource = await createTestDatabase();
     testUser = await createTestUser(dataSource);
-    fileRepository = dataSource.getRepository(File);
+    fileRepository = dataSource.getRepository(FileEntity);
   });
 
   afterEach(async () => {
@@ -30,7 +30,7 @@ describe('File Entity Defaults', () => {
   describe('Schema Default Values', () => {
     it('should set correct default values when creating file with minimal required fields', async () => {
       // Only provide required fields, let defaults handle the rest
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'test-file.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/test-file.txt';
@@ -48,10 +48,10 @@ describe('File Entity Defaults', () => {
       expect(savedFile.fullPath).toBe('/tmp/test-file.txt');
 
       // Default values from schema
-      expect(savedFile.status).toBe(FileStatus.pending); // default: "pending"
+      expect(savedFile.status).toBe(FileEntityStatus.pending); // default: "pending"
       expect(savedFile.fileSize).toBe(0); // default: 0
       expect(savedFile.mimeType).toBe('application/octet-stream'); // default: "application/octet-stream"
-      expect(savedFile.fileType).toBe(FileFileType.other); // default: "other"
+      expect(savedFile.fileType).toBe(FileEntityFileType.other); // default: "other"
       expect(savedFile.fileHash).toBe('<empty>'); // default: "<empty>"
 
       // Optional fields should be null/undefined
@@ -66,7 +66,7 @@ describe('File Entity Defaults', () => {
     });
 
     it('should handle status enum default correctly', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'status-test.pdf';
       file.extension = 'pdf';
       file.fullPath = '/tmp/status-test.pdf';
@@ -75,14 +75,14 @@ describe('File Entity Defaults', () => {
       // Don't set status - should default to pending
       const savedFile = await fileRepository.save(file);
 
-      expect(savedFile.status).toBe(FileStatus.pending);
+      expect(savedFile.status).toBe(FileEntityStatus.pending);
 
       // Verify it's a valid enum value
-      expect(Object.values(FileStatus)).toContain(savedFile.status);
+      expect(Object.values(FileEntityStatus)).toContain(savedFile.status);
     });
 
     it('should handle fileType enum default correctly', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'type-test.jpg';
       file.extension = 'jpg';
       file.fullPath = '/tmp/type-test.jpg';
@@ -91,40 +91,40 @@ describe('File Entity Defaults', () => {
       // Don't set fileType - should default to other
       const savedFile = await fileRepository.save(file);
 
-      expect(savedFile.fileType).toBe(FileFileType.other);
+      expect(savedFile.fileType).toBe(FileEntityFileType.other);
 
       // Verify it's a valid enum value
-      expect(Object.values(FileFileType)).toContain(savedFile.fileType);
+      expect(Object.values(FileEntityFileType)).toContain(savedFile.fileType);
     });
 
     it('should use provided values instead of defaults when explicitly set', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'custom-defaults.doc';
       file.extension = 'doc';
       file.fullPath = '/tmp/custom-defaults.doc';
       file.userId = testUser.id;
 
       // Explicitly set values that have defaults
-      file.status = FileStatus.completed;
+      file.status = FileEntityStatus.completed;
       file.fileSize = 1024;
       file.mimeType = 'application/msword';
-      file.fileType = FileFileType.document;
+      file.fileType = FileEntityFileType.document;
       file.fileHash = 'custom-hash-123';
       file.metadata = { author: 'Test User', created: new Date() };
 
       const savedFile = await fileRepository.save(file);
 
       // Should use provided values, not defaults
-      expect(savedFile.status).toBe(FileStatus.completed);
+      expect(savedFile.status).toBe(FileEntityStatus.completed);
       expect(savedFile.fileSize).toBe(1024);
       expect(savedFile.mimeType).toBe('application/msword');
-      expect(savedFile.fileType).toBe(FileFileType.document);
+      expect(savedFile.fileType).toBe(FileEntityFileType.document);
       expect(savedFile.fileHash).toBe('custom-hash-123');
       expect(savedFile.metadata).toEqual({ author: 'Test User', created: expect.any(String) });
     });
 
     it('should handle polymorphic owner defaults correctly', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'owned-file.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/owned-file.txt';
@@ -137,7 +137,7 @@ describe('File Entity Defaults', () => {
       expect(savedFile.ownerType).toBeNull();
 
       // Test with owner fields set
-      const fileWithOwner = new File();
+      const fileWithOwner = new FileEntity();
       fileWithOwner.filename = 'chat-attachment.pdf';
       fileWithOwner.extension = 'pdf';
       fileWithOwner.fullPath = '/tmp/chat-attachment.pdf';
@@ -154,19 +154,19 @@ describe('File Entity Defaults', () => {
 
   describe('Field Validation and Constraints', () => {
     it('should enforce required fields', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.userId = testUser.id;
       // Missing required fields: filename, extension, fullPath
 
       await expect(fileRepository.save(file)).rejects.toThrow();
     });
 
-  
+
     it('should accept valid enum values', async () => {
       // Test all valid status values
-      const statusValues = Object.values(FileStatus);
+      const statusValues = Object.values(FileEntityStatus);
       for (const status of statusValues) {
-        const file = new File();
+        const file = new FileEntity();
         file.filename = `test-${status}.txt`;
         file.extension = 'txt';
         file.fullPath = `/tmp/test-${status}.txt`;
@@ -178,9 +178,9 @@ describe('File Entity Defaults', () => {
       }
 
       // Test all valid fileType values
-      const fileTypeValues = Object.values(FileFileType);
+      const fileTypeValues = Object.values(FileEntityFileType);
       for (const fileType of fileTypeValues) {
-        const file = new File();
+        const file = new FileEntity();
         file.filename = `test-${fileType}.txt`;
         file.extension = 'txt';
         file.fullPath = `/tmp/test-${fileType}.txt`;
@@ -211,7 +211,7 @@ describe('File Entity Defaults', () => {
         versions: ['original', 'thumbnail', 'preview']
       };
 
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'complex-metadata.jpg';
       file.extension = 'jpg';
       file.fullPath = '/tmp/complex-metadata.jpg';
@@ -233,7 +233,7 @@ describe('File Entity Defaults', () => {
 
       // Create multiple files
       for (let i = 0; i < 5; i++) {
-        const file = new File();
+        const file = new FileEntity();
         file.filename = `test-${i}.txt`;
         file.extension = 'txt';
         file.fullPath = `/tmp/test-${i}.txt`;
@@ -258,14 +258,14 @@ describe('File Entity Defaults', () => {
       const hashValue = 'a1b2c3d4e5f6789012345678901234567890abcd1234567890abcdef1234567890';
 
       // Create multiple files with same hash
-      const file1 = new File();
+      const file1 = new FileEntity();
       file1.filename = 'duplicate1.txt';
       file1.extension = 'txt';
       file1.fullPath = '/tmp/duplicate1.txt';
       file1.userId = testUser.id;
       file1.fileHash = hashValue;
 
-      const file2 = new File();
+      const file2 = new FileEntity();
       file2.filename = 'duplicate2.txt';
       file2.extension = 'txt';
       file2.fullPath = '/tmp/duplicate2.txt';
@@ -292,12 +292,12 @@ describe('File Entity Defaults', () => {
 
       // Create files with different types and times
       for (let i = 0; i < 10; i++) {
-        const file = new File();
+        const file = new FileEntity();
         file.filename = `index-test-${i}.txt`;
         file.extension = 'txt';
         file.fullPath = `/tmp/index-test-${i}.txt`;
         file.userId = testUser.id;
-        file.fileType = i % 2 === 0 ? FileFileType.document : FileFileType.image;
+        file.fileType = i % 2 === 0 ? FileEntityFileType.document : FileEntityFileType.image;
         file.createdAt = new Date(baseTime.getTime() + i * 60000); // 1 minute apart
 
         const savedFile = await fileRepository.save(file);
@@ -306,27 +306,27 @@ describe('File Entity Defaults', () => {
 
       // Query by fileType (should use index)
       const documentFiles = await fileRepository.find({
-        where: { fileType: FileFileType.document },
+        where: { fileType: FileEntityFileType.document },
         order: { createdAt: 'ASC' }
       });
 
       expect(documentFiles).toHaveLength(5);
-      documentFiles.forEach((file: File) => {
-        expect(file.fileType).toBe(FileFileType.document);
+      documentFiles.forEach((file: FileEntity) => {
+        expect(file.fileType).toBe(FileEntityFileType.document);
       });
 
       // Query by fileType and date range (should use composite index)
       const recentDocuments = await fileRepository.find({
         where: {
-          fileType: FileFileType.document,
+          fileType: FileEntityFileType.document,
           createdAt: MoreThanOrEqual(new Date(baseTime.getTime() + 4 * 60000))
         },
         order: { createdAt: 'ASC' }
       });
 
       expect(recentDocuments.length).toBeGreaterThan(0);
-      recentDocuments.forEach((file: File) => {
-        expect(file.fileType).toBe(FileFileType.document);
+      recentDocuments.forEach((file: FileEntity) => {
+        expect(file.fileType).toBe(FileEntityFileType.document);
         expect(file.createdAt.getTime()).toBeGreaterThanOrEqual(baseTime.getTime() + 4 * 60000);
       });
     });
@@ -336,7 +336,7 @@ describe('File Entity Defaults', () => {
     it('should set createdAt and updatedAt timestamps automatically', async () => {
       const beforeCreation = new Date();
 
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'timestamp-test.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/timestamp-test.txt';
@@ -353,7 +353,7 @@ describe('File Entity Defaults', () => {
     });
 
     it('should update updatedAt timestamp on modification', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'update-test.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/update-test.txt';
@@ -374,7 +374,7 @@ describe('File Entity Defaults', () => {
     });
 
     it('should support soft delete functionality', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'soft-delete-test.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/soft-delete-test.txt';
@@ -413,7 +413,7 @@ describe('File Entity Defaults', () => {
 
   describe('Entity Relationships', () => {
     it('should associate with user correctly', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'user-relationship-test.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/user-relationship-test.txt';
@@ -433,7 +433,7 @@ describe('File Entity Defaults', () => {
     });
 
     it('should handle polymorphic owner relationship', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'polymorphic-test.pdf';
       file.extension = 'pdf';
       file.fullPath = '/tmp/polymorphic-test.pdf';
@@ -458,7 +458,7 @@ describe('File Entity Defaults', () => {
 
   describe('Edge Cases and Error Conditions', () => {
     it('should handle empty string values correctly', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'empty-test.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/empty-test.txt';
@@ -471,7 +471,7 @@ describe('File Entity Defaults', () => {
     });
 
     it('should handle zero values correctly', async () => {
-      const file = new File();
+      const file = new FileEntity();
       file.filename = 'zero-test.txt';
       file.extension = 'txt';
       file.fullPath = '/tmp/zero-test.txt';
@@ -485,7 +485,7 @@ describe('File Entity Defaults', () => {
 
     it('should handle special characters in filename', async () => {
       const specialFilename = 'test file (1) [important].txt';
-      const file = new File();
+      const file = new FileEntity();
       file.filename = specialFilename;
       file.extension = 'txt';
       file.fullPath = '/tmp/' + specialFilename;

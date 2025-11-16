@@ -7,8 +7,10 @@ import { LLMModelCapability } from '../../main/db/entities/__generated__/LLMMode
 import { Connection } from '../../main/db/entities/Connection.js';
 import type { LLMModel } from '../../main/db/entities/LLMModel.js';
 import { User } from '../../main/base/db/User.js';
+import { fetchModels } from '../../shared/utils.js';
 import fs from 'fs/promises';
 import { getDatabasePath } from '../../main/base/utils/common/paths.js';
+import { EmbeddingModel } from '../../main/db/entities/EmbeddingModel.js';
 
 interface SeedOptions {
   synchronize: boolean;
@@ -112,7 +114,7 @@ export class SeedCommand extends BaseCommand {
       });
 
       if (user) {
-        this.info('Test user already exists:', user.username, `(${user.username})`);
+        this.info(`Test user already exists: ${user.username} (${user.username})`);
         result.credentials = {
           username: user.username,
           password: 'test'
@@ -170,6 +172,25 @@ export class SeedCommand extends BaseCommand {
         this.info('Gemma 3 4B model already exists:', llmModel.name);
       }
 
+      const EmbeddingModelEntity = getEntity('EmbeddingModel');
+      let embeddingModel = await dataSource?.manager.findOne(EmbeddingModelEntity, {
+        where: {
+          userId: user.id,
+          connectionId: savedConnection.id,
+          name: 'Nomic Embedding Text v1.5',
+          modelIdentifier: 'text-embedding-nomic-embed-text-v1.5'
+        }
+      });
+
+      if (!embeddingModel) {
+        // Create Embedding model for the connection
+        const newEmbeddingModel = await this.createEmbeddingModel(dataSource!, user.id, savedConnection.id);
+        this.success(`Created Embedding model: ${newEmbeddingModel.name}`);
+        embeddingModel = newEmbeddingModel;
+      } else {
+        this.info('Nomic Embedding Text v1.5 model already exists:', embeddingModel.name);
+      }
+
       this.success('🎉 Database seeding completed successfully!');
 
       return {
@@ -179,11 +200,12 @@ export class SeedCommand extends BaseCommand {
       };
 
     } catch (error) {
-      this.error('🔴 Seeding failed:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.error('🔴 Seeding failed', errorMessage);
 
       return {
         success: false,
-        message: `Seeding failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Seeding failed: ${errorMessage}`,
         data: result
       };
     } finally {
@@ -192,7 +214,8 @@ export class SeedCommand extends BaseCommand {
           await dataSource.destroy();
           this.info('Database connection closed');
         } catch (error) {
-          this.warning('Failed to close database connection:', error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.warning('Failed to close database connection', errorMessage);
         }
       }
     }
@@ -226,6 +249,13 @@ export class SeedCommand extends BaseCommand {
     connection.customHeaders = {
       'Content-Type': 'application/json'
     };
+    const models = await fetchModels(
+      connection.baseUrl,
+      connection.apiKey,
+      connection.kind,
+      connection.customHeaders
+    );
+    connection.models = models;
     return await dataSource.manager.save(connection) as Connection;
   }
 
@@ -246,28 +276,41 @@ export class SeedCommand extends BaseCommand {
     return await dataSource.manager.save(llmModel) as LLMModel;
   }
 
+  private async createEmbeddingModel(dataSource: DataSource, userId: string, connectionId: string): Promise<EmbeddingModel> {
+    const EmbeddingModelEntity = getEntity('EmbeddingModel');
+    const embeddingModel = new EmbeddingModelEntity();
+    embeddingModel.name = 'Nomic Embedding Text v1.5';
+    embeddingModel.modelIdentifier = 'text-embedding-nomic-embed-text-v1.5';
+    embeddingModel.contextLength = 4096;
+    embeddingModel.dimension = 768;
+    Object.assign(embeddingModel, { userId });
+    embeddingModel.connectionId = connectionId;
+    embeddingModel.default = false;
+    return await dataSource.manager.save(embeddingModel);
+  }
+
   /**
    * Print additional seed result information
    */
   protected printData(data: SeedResult): void {
     super.printData(data);
 
-    console.log('\n📊 Seed Data Summary:');
-    console.log('─'.repeat(40));
+    this.info('Seed Data Summary:');
+    this.info('─'.repeat(40));
 
     if (data.alreadyExisted) {
-      console.log('   🟢 Seed data already exists - no changes made');
+      this.info('Seed data already exists - no changes made');
     } else {
-      console.log(`   - Users created: ${data.usersCreated}`);
-      console.log(`   - Connections created: ${data.connectionsCreated}`);
-      console.log(`   - LLM Models created: ${data.llmModelsCreated}`);
+      this.info(`- Users created: ${data.usersCreated}`);
+      this.info(`- Connections created: ${data.connectionsCreated}`);
+      this.info(`- LLM Models created: ${data.llmModelsCreated}`);
     }
 
     if (data.credentials) {
-      console.log('\n🔑 Login Credentials:');
-      console.log(`   Username: ${data.credentials.username}`);
-      console.log(`   Password: ${data.credentials.password}`);
+      this.info('Login Credentials:');
+      this.info(`Username: ${data.credentials.username}`);
+      this.info(`Password: ${data.credentials.password}`);
     }
-    console.log('─'.repeat(40));
+    this.info('─'.repeat(40));
   }
 }

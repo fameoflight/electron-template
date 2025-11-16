@@ -14,10 +14,11 @@ import {
 } from '../base/testDatabase';
 import { createUser } from '@factories/index';
 import { DataSourceProvider } from '@base/db/index';
+import { User } from '@main/base/db/User';
 
 describe('User GraphQL Operations', () => {
   let dataSource: any;
-  let testUser: any;
+  let testUser: User;
 
   beforeAll(async () => {
     await initializeGraphQLSchema();
@@ -33,7 +34,7 @@ describe('User GraphQL Operations', () => {
     await cleanupTestDatabase(dataSource);
   });
 
-  function createAuthContext(sessionKey: string) {
+  function createAuthContext(sessionKey?: string) {
     return { sessionKey };
   }
 
@@ -493,7 +494,6 @@ describe('User GraphQL Operations', () => {
       const variables = {
         input: {
           name: testUser.name, // Use existing name
-          username: testUser.username, // Use existing username
           password: 'testpass'
         }
       };
@@ -505,7 +505,7 @@ describe('User GraphQL Operations', () => {
       expect(result.data.updateUser).toBeDefined();
       expect(result.data.updateUser.modelId).toBeDefined();
       expect(result.data.updateUser.name).toBe(testUser.name);
-      expect(result.data.updateUser.username).toBe(testUser.username);
+      expect(result.data.updateUser.username).toBe(testUser.username); // Username should remain unchanged
       expect(result.data.updateUser.updatedAt).toBeDefined();
     });
 
@@ -524,7 +524,6 @@ describe('User GraphQL Operations', () => {
       const variables = {
         input: {
           name: testUser.name, // Use existing data
-          username: testUser.username,
           password: 'testpass'
         }
       };
@@ -562,7 +561,7 @@ describe('User GraphQL Operations', () => {
 
       expect(result.errors).toBeDefined();
       expect(result?.errors?.length).toBeGreaterThan(0);
-      expect(result?.errors?.[0].message).toContain('Unauthorized');
+      expect(result?.errors?.[0].message).toContain('Authentication required');
     });
 
     it('should validate update constraints', async () => {
@@ -692,8 +691,6 @@ describe('User GraphQL Operations', () => {
       const updateVariables = {
         input: {
           name: 'Updated Lifecycle User',
-          // Use the created user's username since updateUser finds by username
-          username: createVariables.input.username,
           password: 'lifecyclepass'
         }
       };

@@ -1,8 +1,8 @@
 import { buildSchema } from 'type-graphql';
 import { getResolverClasses } from './resolverPaths.js';
+import { RelayIdMiddleware } from '../base/graphql/middleware/RelayIdMiddleware';
 
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 async function nonEntityResolvers(): Promise<Function[]> {
   return [
     // Add any non-entity resolvers here if needed in the future
@@ -10,7 +10,6 @@ async function nonEntityResolvers(): Promise<Function[]> {
 }
 
 export async function createGraphQLSchema() {
-
   const resolverClasses = [await getResolverClasses(), ...(await nonEntityResolvers())].flat();
 
   // Ensure we have at least one resolver (TypeGraphQL requirement)
@@ -19,11 +18,13 @@ export async function createGraphQLSchema() {
   }
 
   return await buildSchema({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // @ts-ignore - Type assert required to satisfy NonEmptyArray<Function> requirement
     resolvers: resolverClasses as any, // Type assert to satisfy NonEmptyArray<Function> requirement
     emitSchemaFile: false,
     validate: true, // Enable automatic input validation using class-validator
     // Enable orphaned types to ensure Node interface is included
     orphanedTypes: [],
+    // Global middleware for automatic Relay ID → local ID conversion
+    globalMiddlewares: [RelayIdMiddleware],
   });
 }

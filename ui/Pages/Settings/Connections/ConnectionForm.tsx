@@ -72,14 +72,15 @@ function ConnectionForm(props: IConnectionFormProps) {
       layout="vertical"
       onFinish={onFinish}
       name="ConnectionForm"
-      onValuesChange={handleFormValuesChange}>
-
+      onValuesChange={handleFormValuesChange}
+      className="space-y-6"
+    >
       <Form.Item name="id" hidden>
         <Input />
       </Form.Item>
 
       <Form.Item
-        label="Provider"
+        label={<span className="text-sm font-medium text-primary">Provider</span>}
         name="provider"
         rules={[
           {
@@ -92,6 +93,8 @@ function ConnectionForm(props: IConnectionFormProps) {
           disabled={isEditing}
           placeholder="Select a provider"
           allowClear
+          className="input"
+          size="large"
         >
           {Object.entries(PROVIDER_PRESETS).map(([key, provider]) => (
             <Select.Option key={key} value={key}>
@@ -101,9 +104,25 @@ function ConnectionForm(props: IConnectionFormProps) {
         </Select>
       </Form.Item>
 
+      <Form.Item
+        label={<span className="text-sm font-medium text-primary">Name</span>}
+        name="name"
+        rules={[
+          {
+            required: true,
+            message: "Please input name!",
+          },
+        ]}
+      >
+        <Input
+          placeholder="My OpenAI Connection"
+          className="input"
+          size="large"
+        />
+      </Form.Item>
 
       <Form.Item
-        label="Base URL"
+        label={<span className="text-sm font-medium text-primary">Base URL</span>}
         name="baseUrl"
         rules={[
           {
@@ -114,12 +133,14 @@ function ConnectionForm(props: IConnectionFormProps) {
       >
         <Input
           disabled={isEditing}
+          placeholder="https://api.openai.com/v1"
+          className="input"
+          size="large"
         />
       </Form.Item>
 
-
       <Form.Item
-        label="API Key"
+        label={<span className="text-sm font-medium text-primary">API Key</span>}
         name="apiKey"
         rules={[
           {
@@ -127,25 +148,17 @@ function ConnectionForm(props: IConnectionFormProps) {
             message: "Please input API Key!",
           },
         ]}
+        extra={<span className="text-xs text-tertiary">Your API key will be stored securely</span>}
       >
-        <Input.Password />
+        <Input.Password
+          placeholder="sk-..."
+          className="input"
+          size="large"
+        />
       </Form.Item>
 
       <Form.Item
-        label="Name"
-        name="name"
-        rules={[
-          {
-            required: true,
-            message: "Please input name!",
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Custom Headers"
+        label={<span className="text-sm font-medium text-primary">Custom Headers</span>}
         name="customHeaders"
         tooltip="Add custom HTTP headers that will be sent with each request"
       >

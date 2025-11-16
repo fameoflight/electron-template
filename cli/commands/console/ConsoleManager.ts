@@ -15,6 +15,7 @@ import 'reflect-metadata';
 import { initializeDatabase } from '../../../main/db/dataSource.js';
 import { initializeGraphQLSchema } from '../../../main/graphql/server.js';
 import { GraphQLVariables } from '../../../shared/types.js';
+import { cyberOutput } from '../../utils/output.js';
 import { buildContext } from './ConsoleContext.js';
 import { startReplServer, executeGraphQL } from './ConsoleRepl.js';
 import { showHelp, showWelcomeMessage } from './ConsoleMessages.js';
@@ -27,7 +28,7 @@ export class ConsoleManager {
 
   constructor() {
     this.historyPath = path.join(os.homedir(), '.app_console_history');
-    console.log('🚀 Initializing Electron Template Console...\n');
+    cyberOutput.info('Initializing Electron Template Console...\n');
   }
 
   /**
@@ -36,19 +37,19 @@ export class ConsoleManager {
   async start(): Promise<void> {
     try {
       // Initialize database connection
-      console.log('📊 Initializing database connection...');
+      cyberOutput.info('Initializing database connection...');
       this.dataSource = await initializeDatabase();
-      console.log('✅ Database connected');
+      cyberOutput.success('Database connected');
 
       // Initialize GraphQL schema
-      console.log('🔷 Initializing GraphQL schema...');
+      cyberOutput.info('Initializing GraphQL schema...');
       await initializeGraphQLSchema();
-      console.log('✅ GraphQL schema ready');
+      cyberOutput.success('GraphQL schema ready');
 
       // Initialize services
-      console.log('⚙️  Loading application services...');
+      cyberOutput.info('Loading application services...');
       const services = await this.initializeServices();
-      console.log('✅ Services loaded');
+      cyberOutput.success('Services loaded');
 
       // Build REPL context
       this.context = await buildContext(
@@ -62,7 +63,7 @@ export class ConsoleManager {
       this.context.help = () => showHelp(this.context);
 
       // Show welcome message BEFORE starting REPL to avoid prompt issues
-      console.log('\n🎉 Console ready!');
+      cyberOutput.success('\nConsole ready!');
       showWelcomeMessage();
 
       // Start REPL server (must be last to avoid prompt display issues)
@@ -78,7 +79,7 @@ export class ConsoleManager {
       );
 
     } catch (error) {
-      console.error('\n❌ Failed to initialize console:', error);
+      cyberOutput.error('Failed to initialize console:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   }
@@ -99,7 +100,7 @@ export class ConsoleManager {
    * Reload modules and context
    */
   private async reload(): Promise<void> {
-    console.log('🔄 Reloading modules...');
+    cyberOutput.info('Reloading modules...');
 
     try {
       // Clear require cache to force reload
@@ -124,9 +125,9 @@ export class ConsoleManager {
       // Update global context
       Object.assign(global, this.context);
 
-      console.log('✅ Reload complete');
+      cyberOutput.success('Reload complete');
     } catch (error) {
-      console.error('❌ Reload failed:', error);
+      cyberOutput.error('Reload failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -150,7 +151,7 @@ export const consoleCommand = new Command('console')
       const consoleManager = new ConsoleManager();
       await consoleManager.start();
     } catch (error) {
-      console.error('❌ Console failed to start:', error);
+      cyberOutput.error('Console failed to start:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   });

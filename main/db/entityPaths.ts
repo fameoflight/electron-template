@@ -21,7 +21,7 @@ import { User } from '@main/base/db/User.js';
 import { Chat } from './entities/Chat.js';
 import { Connection } from './entities/Connection.js';
 import { EmbeddingModel } from './entities/EmbeddingModel.js';
-import { File } from './entities/File.js';
+import { FileEntity } from './entities/FileEntity.js';
 import { Job } from './entities/Job.js';
 import { LLMModel } from './entities/LLMModel.js';
 import { Message } from './entities/Message.js';
@@ -38,7 +38,7 @@ export const entityClasses = {
   Chat,
   Connection,
   EmbeddingModel,
-  File,
+  FileEntity,
   Job,
   LLMModel,
   Message,

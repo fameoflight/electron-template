@@ -331,10 +331,17 @@
           "not": {
             "properties": {
               "default": {
-                "type": ["string", "number", "boolean", "array"]
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "array"
+                ]
               }
             },
-            "required": ["default"]
+            "required": [
+              "default"
+            ]
           }
         },
         "then": {

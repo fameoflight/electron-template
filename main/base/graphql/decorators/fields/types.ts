@@ -6,7 +6,6 @@ import { ValueTransformer } from 'typeorm';
 export interface FieldColumnOptions {
   // GraphQL Field options
   graphql?: boolean; // Set to false to exclude from GraphQL schema
-  nullable?: boolean;
   description?: string;
   deprecationReason?: string;
   defaultValue?: any;

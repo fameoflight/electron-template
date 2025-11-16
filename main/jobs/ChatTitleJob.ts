@@ -171,13 +171,20 @@ export class ChatTitleJob extends BaseJob<ChatTitleJobProps> {
     this.log(`🔍 Checking if title generation needed for chat: ${chat.id}`);
     this.log(`📋 Current title: "${chat.title}"`);
 
+    const commonPatterns = [
+      'hello chat',
+      'untitled chat',
+      'no title',
+      'chat without title',
+      'new conversation',
+      'new chat'
+    ]
+
     // Check if title starts with "New Chat" - but not "New Chatbot" or other variants
     const titleLower = chat.title.toLowerCase().trim();
-    const shouldGenerate = titleLower === 'new chat' ||
-      titleLower.startsWith('new chat ') ||
-      titleLower.startsWith('new chat -') ||
-      /^new chat\s*\d*$/.test(titleLower);
-    this.log(`🎯 Title starts with "New Chat": ${shouldGenerate}`);
+
+    const shouldGenerate = commonPatterns.some(pattern => titleLower.startsWith(pattern)) || titleLower === '';
+    this.log(`🎯 Title matches common pattern: ${shouldGenerate}`);
 
     return shouldGenerate;
   }

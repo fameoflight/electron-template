@@ -15,6 +15,25 @@ export { FileWatcher, type WatcherOptions, createSimpleWatcher } from './watcher
 // Code generation utilities
 export { SimplifiedSchemaGenerator, type SimplifiedSchemaData } from './SimplifiedSchemaGenerator.js';
 
+// Terminal UI and Color Schemes
+export {
+  CyberpunkOutput,
+  cyberOutput,
+  createCyberOutput,
+  createCyberOutputWithColors,
+  type CyberpunkOptions,
+  type CyberpunkSpinner,
+  type CyberpunkProgress,
+} from './output';
+
+export {
+  CyberpunkColorScheme,
+  defaultColorScheme,
+  ColorSchemes,
+  type ColorScheme,
+  type ColorConfig,
+} from './ColorScheme';
+
 // Import classes for internal use
 import { GitUtils } from './gitUtils.js';
 import { IconUtils } from './iconUtils.js';

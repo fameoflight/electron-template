@@ -2,7 +2,7 @@ import React from 'react';
 
 import { CheckIcon } from '@heroicons/react/24/solid';
 
-import motion from './Motion';
+import { Shift } from '@ui/Components/Motion';
 
 export interface ITailwindSimpleStep {
   name: string;
@@ -83,9 +83,9 @@ function TailwindSimpleSteps(props: ITailwindSimpleStepsProps) {
         ))}
       </div>
       <div className="mt-8 px-4">
-        <motion.shift motionKey={current?.id} values={{ x: 0, y: 10 }}>
+        <Shift motionKey={current?.id} values={{ x: 0, y: 10 }}>
           {props.children}
-        </motion.shift>
+        </Shift>
       </div>
     </>
   );

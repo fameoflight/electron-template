@@ -1,169 +1,171 @@
 /**
  * Console Messages Module
- * 
+ *
  * Purpose: All user-facing help text, welcome screens, and documentation.
  * Single Responsibility: Display formatted console documentation.
- * 
+ *
  * This file contains ZERO logic - only text formatting and console output.
  */
+
+import { cyberOutput } from '../../utils/output';
 
 /**
  * Display comprehensive help with all available commands
  */
 export function showHelp(context: any): void {
-  console.log('\n📚 Core Commands:');
-  console.log('  help()                    - Show this help message');
-  console.log('  types()                   - Show type information helpers');
-  console.log('  reload()                  - Reload all modules and context');
-  console.log('  graphql(query, vars?)     - Execute GraphQL query');
-  console.log('  exit()                    - Exit the console');
-  console.log('  clear() / cls()           - Clear console screen');
+  cyberOutput.info('\nCore Commands:');
+  cyberOutput.info('  help()                    - Show this help message');
+  cyberOutput.info('  types()                   - Show type information helpers');
+  cyberOutput.info('  reload()                  - Reload all modules and context');
+  cyberOutput.info('  graphql(query, vars?)     - Execute GraphQL query');
+  cyberOutput.info('  exit()                    - Exit the console');
+  cyberOutput.info('  clear() / cls()           - Clear console screen');
 
-  console.log('\n🔍 Type Inspection:');
-  console.log('  typeOf(obj)               - Get type of any value');
-  console.log('  signature(fn)             - Show function signature');
-  console.log('  methods(obj)              - List object methods with signatures');
-  console.log('  props(obj)                - Show properties with types');
+  cyberOutput.info('\nType Inspection:');
+  cyberOutput.info('  typeOf(obj)               - Get type of any value');
+  cyberOutput.info('  signature(fn)             - Show function signature');
+  cyberOutput.info('  methods(obj)              - List object methods with signatures');
+  cyberOutput.info('  props(obj)                - Show properties with types');
 
-  console.log('\n🎨 Data Inspection:');
-  console.log('  inspect(obj, depth?)      - Pretty-print object with colors');
-  console.log('  table(array)              - Display array as table');
-  console.log('  pretty(obj)               - JSON pretty-print');
-  console.log('  memory()                  - Show memory usage');
-  console.log('  benchmark(fn, n?)         - Benchmark function execution');
+  cyberOutput.info('\nData Inspection:');
+  cyberOutput.info('  inspect(obj, depth?)      - Pretty-print object with colors');
+  cyberOutput.info('  table(array)              - Display array as table');
+  cyberOutput.info('  pretty(obj)               - JSON pretty-print');
+  cyberOutput.info('  memory()                  - Show memory usage');
+  cyberOutput.info('  benchmark(fn, n?)         - Benchmark function execution');
 
-  console.log('\n🗄️  Database Utilities:');
-  console.log('  Entity.[TAB]              - List all entities with ActiveRecord methods');
-  console.log('  Entity.Name.all()         - Get all records (ActiveRecord-style)');
-  console.log('  Entity.Name.find(id)      - Find record by ID');
-  console.log('  Entity.Name.where(query)  - Find records matching conditions');
-  console.log('  Entity.Name.first()       - Get first record');
-  console.log('  Entity.Name.last()        - Get last record');
-  console.log('  Entity.Name.count()       - Count records');
-  console.log('  Entity.Name.create(data)  - Create new record');
-  console.log('  Entity.Name.repository   - Access TypeORM repository');
-  console.log('  getRepository(Entity)     - Get repository for any entity (Rails-style)');
-  console.log('  tables()                  - List all database tables');
-  console.log('  schema(entityName?)       - Show entity schema/columns');
-  console.log('  count(entityName)         - Count records in entity');
-  console.log('  last(entityName, n?)      - Get last N records (default 10)');
-  console.log('  truncate(entityName)      - Clear all records from entity');
-  console.log('  query(sql, params?)       - Execute raw SQL query');
+  cyberOutput.info('\nDatabase Utilities:');
+  cyberOutput.info('  Entity.[TAB]              - List all entities with ActiveRecord methods');
+  cyberOutput.info('  Entity.Name.all()         - Get all records (ActiveRecord-style)');
+  cyberOutput.info('  Entity.Name.find(id)      - Find record by ID');
+  cyberOutput.info('  Entity.Name.where(query)  - Find records matching conditions');
+  cyberOutput.info('  Entity.Name.first()       - Get first record');
+  cyberOutput.info('  Entity.Name.last()        - Get last record');
+  cyberOutput.info('  Entity.Name.count()       - Count records');
+  cyberOutput.info('  Entity.Name.create(data)  - Create new record');
+  cyberOutput.info('  Entity.Name.repository   - Access TypeORM repository');
+  cyberOutput.info('  getRepository(Entity)     - Get repository for any entity (Rails-style)');
+  cyberOutput.info('  tables()                  - List all database tables');
+  cyberOutput.info('  schema(entityName?)       - Show entity schema/columns');
+  cyberOutput.info('  count(entityName)         - Count records in entity');
+  cyberOutput.info('  last(entityName, n?)      - Get last N records (default 10)');
+  cyberOutput.info('  truncate(entityName)      - Clear all records from entity');
+  cyberOutput.info('  query(sql, params?)       - Execute raw SQL query');
 
-  console.log('\n🏭 Data Factories:');
-  console.log('  faker                     - Faker.js instance for fake data');
-  console.log('  create.user(overrides?)   - Create test user');
-  console.log('  create.users(n, over?)    - Create N test users');
-  console.log('  create.job(overrides?)    - Create test job');
-  console.log('  factories.*               - All available factories');
+  cyberOutput.info('\nData Factories:');
+  cyberOutput.info('  faker                     - Faker.js instance for fake data');
+  cyberOutput.info('  create.user(overrides?)   - Create test user');
+  cyberOutput.info('  create.users(n, over?)    - Create N test users');
+  cyberOutput.info('  create.job(overrides?)    - Create test job');
+  cyberOutput.info('  factories.*               - All available factories');
 
-  console.log('\n⚙️  Job Queue Management:');
-  console.log('  jobs.status()             - Show queue status & running jobs');
-  console.log('  jobs.stats()              - Show job statistics');
-  console.log('  jobs.pending()            - List pending jobs');
-  console.log('  jobs.running()            - List running jobs');
-  console.log('  jobs.failed()             - List failed jobs (last 20)');
-  console.log('  jobs.completed()          - List completed jobs (last 20)');
-  console.log('  jobs.cancel(jobId)        - Cancel a running job');
-  console.log('  jobs.retry(jobId)         - Retry a failed/pending job');
+  cyberOutput.info('\nJob Queue Management:');
+  cyberOutput.info('  jobs.status()             - Show queue status & running jobs');
+  cyberOutput.info('  jobs.stats()              - Show job statistics');
+  cyberOutput.info('  jobs.pending()            - List pending jobs');
+  cyberOutput.info('  jobs.running()            - List running jobs');
+  cyberOutput.info('  jobs.failed()             - List failed jobs (last 20)');
+  cyberOutput.info('  jobs.completed()          - List completed jobs (last 20)');
+  cyberOutput.info('  jobs.cancel(jobId)        - Cancel a running job');
+  cyberOutput.info('  jobs.retry(jobId)         - Retry a failed/pending job');
 
-  console.log('\n📊 Available Repositories:');
+  cyberOutput.info('\nAvailable Repositories:');
   Object.keys(context)
     .filter(key => key.endsWith('Repository'))
-    .forEach(key => console.log(`  ${key}`));
+    .forEach(key => cyberOutput.info(`  ${key}`));
 
-  console.log('\n🔷 Available Entities (also via Entity.[TAB]):');
+  cyberOutput.info('\nAvailable Entities (also via Entity.[TAB]):');
   Object.keys(context)
     .filter(key => /^[A-Z][a-zA-Z]*$/.test(key) && !key.endsWith('Repository') && key !== 'Entity')
-    .forEach(key => console.log(`  ${key}`));
+    .forEach(key => cyberOutput.info(`  ${key}`));
 
-  console.log('\n⚙️  Available Services:');
+  cyberOutput.info('\nAvailable Services:');
   Object.keys(context)
     .filter(key => key.endsWith('Service') || key.endsWith('Queue') || key.endsWith('Manager'))
-    .forEach(key => console.log(`  ${key}`));
+    .forEach(key => cyberOutput.info(`  ${key}`));
 
-  console.log('\n💡 Quick Examples:');
-  console.log('  // Create test data');
-  console.log('  const user = await create.user({ name: "Alice" })');
-  console.log('  const users = await create.users(10)');
-  console.log('');
-  console.log('  // Query database');
-  console.log('  const users = await userRepository.find()');
-  console.log('  table(users)  // Display as table');
-  console.log('');
-  console.log('  // Dynamic repository access (Rails-style)');
-  console.log('  const repo = getRepository(User)');
-  console.log('  const allUsers = await repo.find()');
-  console.log('');
-  console.log('  // Inspect job queue');
-  console.log('  jobs.status()');
-  console.log('  const pending = await jobs.pending()');
-  console.log('');
-  console.log('  // Database utilities');
-  console.log('  await count("User")');
-  console.log('  await last("User", 5)');
-  console.log('  schema("User")');
-  console.log('');
-  console.log('  // Generate fake data');
-  console.log('  faker.person.fullName()');
-  console.log('  faker.internet.email()');
-  console.log('');
+  cyberOutput.info('\nQuick Examples:');
+  cyberOutput.info('  // Create test data');
+  cyberOutput.info('  const user = await create.user({ name: "Alice" })');
+  cyberOutput.info('  const users = await create.users(10)');
+  cyberOutput.info('');
+  cyberOutput.info('  // Query database');
+  cyberOutput.info('  const users = await userRepository.find()');
+  cyberOutput.info('  table(users)  // Display as table');
+  cyberOutput.info('');
+  cyberOutput.info('  // Dynamic repository access (Rails-style)');
+  cyberOutput.info('  const repo = getRepository(User)');
+  cyberOutput.info('  const allUsers = await repo.find()');
+  cyberOutput.info('');
+  cyberOutput.info('  // Inspect job queue');
+  cyberOutput.info('  jobs.status()');
+  cyberOutput.info('  const pending = await jobs.pending()');
+  cyberOutput.info('');
+  cyberOutput.info('  // Database utilities');
+  cyberOutput.info('  await count("User")');
+  cyberOutput.info('  await last("User", 5)');
+  cyberOutput.info('  schema("User")');
+  cyberOutput.info('');
+  cyberOutput.info('  // Generate fake data');
+  cyberOutput.info('  faker.person.fullName()');
+  cyberOutput.info('  faker.internet.email()');
+  cyberOutput.info('');
 }
 
 /**
  * Display welcome message on console startup
  */
 export function showWelcomeMessage(): void {
-  console.log('\n🎯 Welcome to the Electron Template Interactive Console!\n');
-  console.log('Enhanced REPL with powerful utilities:');
-  console.log('• 🗄️  Database entities, repositories & utilities');
-  console.log('• ⚙️  Application services & job queue management');
-  console.log('• 🏭 Test factories & Faker.js integration');
-  console.log('• 🔷 GraphQL query execution');
-  console.log('• 🎨 Data inspection & formatting tools');
-  console.log('• ⏱️  Performance benchmarking');
-  console.log('• 🔍 Type inspection & IntelliSense helpers\n');
+  cyberOutput.info('\nWelcome to the Electron Template Interactive Console!\n');
+  cyberOutput.info('Enhanced REPL with powerful utilities:');
+  cyberOutput.info('• Database entities, repositories & utilities');
+  cyberOutput.info('• Application services & job queue management');
+  cyberOutput.info('• Test factories & Faker.js integration');
+  cyberOutput.info('• GraphQL query execution');
+  cyberOutput.info('• Data inspection & formatting tools');
+  cyberOutput.info('• Performance benchmarking');
+  cyberOutput.info('• Type inspection & IntelliSense helpers\n');
 
-  console.log('💡 Pro Tips:');
-  console.log('  • Press TAB to see all available options (Rails-style completion)');
-  console.log('  • Use Entity.[TAB] to discover all available entities');
-  console.log('  • TAB completion includes your runtime variables');
-  console.log('  • Use types() to see all type inspection helpers');
-  console.log('  • Use methods(obj) to explore available object methods\n');
+  cyberOutput.info('Pro Tips:');
+  cyberOutput.info('  • Press TAB to see all available options (Rails-style completion)');
+  cyberOutput.info('  • Use Entity.[TAB] to discover all available entities');
+  cyberOutput.info('  • TAB completion includes your runtime variables');
+  cyberOutput.info('  • Use types() to see all type inspection helpers');
+  cyberOutput.info('  • Use methods(obj) to explore available object methods\n');
 
-  console.log('Quick Start:');
-  console.log('  Entity.[TAB]                                        // Discover all entities');
-  console.log('  const user = await create.user({ name: "Alice" })  // Create test data');
-  console.log('  const repo = getRepository(Entity.User)             // Get any repository');
-  console.log('  const users = await repo.find()                     // Query database');
-  console.log('  table(users)                                        // Display as table');
-  console.log('  methods(repo)                                       // See available methods');
-  console.log('  jobs.status()                                       // Check job queue\n');
+  cyberOutput.info('Quick Start:');
+  cyberOutput.info('  Entity.[TAB]                                        // Discover all entities');
+  cyberOutput.info('  const user = await create.user({ name: "Alice" })  // Create test data');
+  cyberOutput.info('  const repo = getRepository(Entity.User)             // Get any repository');
+  cyberOutput.info('  const users = await repo.find()                     // Query database');
+  cyberOutput.info('  table(users)                                        // Display as table');
+  cyberOutput.info('  methods(repo)                                       // See available methods');
+  cyberOutput.info('  jobs.status()                                       // Check job queue\n');
 
-  console.log('Type help() for full command list, types() for type helpers\n');
+  cyberOutput.info('Type help() for full command list, types() for type helpers\n');
 }
 
 /**
  * Display type inspection helpers documentation
  */
 export function showTypesHelp(): void {
-  console.log('═══════════════════════════════════════');
-  console.log('         🔍 Type Inspection Guide');
-  console.log('═══════════════════════════════════════\n');
+  cyberOutput.info('═══════════════════════════════════════');
+  cyberOutput.info('         Type Inspection Guide');
+  cyberOutput.info('═══════════════════════════════════════\n');
 
-  console.log('💡 Type Information Helpers:\n');
-  console.log('  typeOf(obj)              - Get the type of any value');
-  console.log('  signature(fn)            - Show function signature');
-  console.log('  methods(obj)             - List all methods on an object');
-  console.log('  props(obj)               - List all properties with types');
-  console.log('  types()                  - Show this reference\n');
+  cyberOutput.info('Type Information Helpers:\n');
+  cyberOutput.info('  typeOf(obj)              - Get the type of any value');
+  cyberOutput.info('  signature(fn)            - Show function signature');
+  cyberOutput.info('  methods(obj)             - List all methods on an object');
+  cyberOutput.info('  props(obj)               - List all properties with types');
+  cyberOutput.info('  types()                  - Show this reference\n');
 
-  console.log('🎯 Quick Examples:\n');
-  console.log('  typeOf(User)             // "Function" (Entity class)');
-  console.log('  typeOf(userRepository)   // "Repository"');
-  console.log('  signature(create.user)   // "async function(overrides)"');
-  console.log('  methods(userRepository)  // Lists all repository methods');
-  console.log('  props(jobs)              // Shows jobs object structure\n');
+  cyberOutput.info('Quick Examples:\n');
+  cyberOutput.info('  typeOf(User)             // "Function" (Entity class)');
+  cyberOutput.info('  typeOf(userRepository)   // "Repository"');
+  cyberOutput.info('  signature(create.user)   // "async function(overrides)"');
+  cyberOutput.info('  methods(userRepository)  // Lists all repository methods');
+  cyberOutput.info('  props(jobs)              // Shows jobs object structure\n');
 
-  console.log('═══════════════════════════════════════\n');
+  cyberOutput.info('═══════════════════════════════════════\n');
 }

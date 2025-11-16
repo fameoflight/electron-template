@@ -30,4 +30,8 @@ export {
   getInputType,
   clearInputCache
 } from './decorators/InputTypeHelpers.js';
+export {
+  FieldMutation,
+  type FieldMutationOptions
+} from './decorators/FieldMutation.js';
 

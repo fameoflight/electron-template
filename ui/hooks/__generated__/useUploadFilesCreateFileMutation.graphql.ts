@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4b43057c9421d2b3e0f986292241b957>>
+ * @generated SignedSource<<0d11acb04c2a5f96cbf6a37150ada127>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,7 +9,7 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CreateFileInput = {
+export type CreateFileEntityInput = {
   extension: string;
   filename: string;
   fullPath: string;
@@ -17,10 +17,10 @@ export type CreateFileInput = {
   ownerType?: string | null | undefined;
 };
 export type useUploadFilesCreateFileMutation$variables = {
-  input: CreateFileInput;
+  input: CreateFileEntityInput;
 };
 export type useUploadFilesCreateFileMutation$data = {
-  readonly createFile: {
+  readonly createFileEntity: {
     readonly fileSize: number;
     readonly filename: string;
     readonly fullPath: string;
@@ -51,9 +51,9 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "File",
+    "concreteType": "FileEntity",
     "kind": "LinkedField",
-    "name": "createFile",
+    "name": "createFileEntity",
     "plural": false,
     "selections": [
       {
@@ -113,16 +113,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "d5920fc49c7db7683d69955070dd999a",
+    "cacheID": "7552c9654eeaa54fb34507e6f66c5aad",
     "id": null,
     "metadata": {},
     "name": "useUploadFilesCreateFileMutation",
     "operationKind": "mutation",
-    "text": "mutation useUploadFilesCreateFileMutation(\n  $input: CreateFileInput!\n) {\n  createFile(input: $input) {\n    id\n    filename\n    fullPath\n    fileSize\n    mimeType\n  }\n}\n"
+    "text": "mutation useUploadFilesCreateFileMutation(\n  $input: CreateFileEntityInput!\n) {\n  createFileEntity(input: $input) {\n    id\n    filename\n    fullPath\n    fileSize\n    mimeType\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "4325a6b9307e1abc388a8a24d040a800";
+(node as any).hash = "91537370fa5041e605c40685f2a0d77f";
 
 export default node;

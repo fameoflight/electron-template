@@ -97,7 +97,7 @@ export class UpdateLLMModelInputBase extends BaseInput {
   @FieldInputEnum(LLMModelCapability, { inputType: 'update', description: 'Input: LLM capability types. Required field.', array: true })
   capabilities?: LLMModelCapability[];
 
-  @FieldInput(String, { inputType: 'update', description: 'Input: Connection for this LLM model (ID of Connection)', required: true })
+  @FieldInput(String, { inputType: 'update', description: 'Input: Connection for this LLM model (ID of Connection)', required: false })
   connectionId?: string;
 
   @FieldInput(Number, { inputType: 'update', description: 'Input: Context length. Required field.' })
@@ -136,7 +136,7 @@ export class CreateUpdateLLMModelInputBase extends BaseInput {
   @FieldInputEnum(LLMModelCapability, { inputType: 'createUpdate', description: 'Input: LLM capability types. Required field.', array: true })
   capabilities?: LLMModelCapability[];
 
-  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Connection for this LLM model (ID of Connection)', required: true })
+  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Connection for this LLM model (ID of Connection)', required: false })
   connectionId?: string;
 
   @FieldInput(Number, { inputType: 'createUpdate', description: 'Input: Context length. Required field.' })

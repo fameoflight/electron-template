@@ -8,6 +8,7 @@
       "DOM.Iterable",
       "ES2022"
     ],
+    "types": ["vitest/globals"],
     "module": "ESNext",
     "skipLibCheck": true,
     /* Bundler mode */

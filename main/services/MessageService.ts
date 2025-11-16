@@ -12,7 +12,7 @@ import { DataSourceProvider } from '@base/db/index.js';
 import { BaseService } from './BaseService.js';
 import { Message } from '@db/entities/Message.js';
 import { MessageVersion } from '@db/entities/MessageVersion.js';
-import { File } from '@db/entities/File.js';
+import { FileEntity } from '@db/entities/FileEntity.js';
 import { Chat } from '@db/entities/Chat.js';
 import { MessageRole } from '@db/entities/__generated__/MessageBase.js';
 import { MessageVersionStatus } from '@db/entities/__generated__/MessageVersionBase.js';
@@ -112,7 +112,7 @@ export class MessageService extends BaseService {
     const dataSource = DataSourceProvider.get();
 
     // Get repositories with proper typing
-    const fileRepo = dataSource.getRepository(File);
+    const fileRepo = dataSource.getRepository(FileEntity);
 
     this.log(`Processing ${attachmentIds.length} attachments for message version ${messageVersion.id}`);
 
@@ -419,5 +419,102 @@ export class MessageService extends BaseService {
     jobs = await cancelJobs(jobs);
 
     this.log(`✓ Cancelled ${jobs.length} jobs for message version ${messageVersionId}`, jobs.map(j => `${j.id} ${j.status}`).join(', '));
+  }
+
+  /**
+   * Regenerate an assistant message by creating a new version
+   *
+   * @param assistantMessageId The assistant message to regenerate
+   * @param llmModelId The LLM model to use
+   * @param userId The user ID
+   * @param logPrefix Logging prefix
+   * @returns The new message version and job status
+   */
+  async regenerateAssistantMessage(
+    assistantMessageId: string,
+    llmModelId: string,
+    userId: string,
+    logPrefix: string = 'MessageService'
+  ): Promise<{
+    newVersion: MessageVersion;
+    jobEnqueued: boolean;
+    error?: Error;
+  }> {
+    const { messageRepository, messageVersionRepository } = this.getRepositories();
+
+    try {
+      this.log(`${logPrefix}: Creating new version for assistant message ${assistantMessageId}`);
+
+      // 1. Find the assistant message
+      const assistantMessage = await messageRepository.findOne({
+        where: { id: assistantMessageId },
+        relations: ['versions']
+      });
+
+      if (!assistantMessage) {
+        throw new Error(`Assistant message not found: ${assistantMessageId}`);
+      }
+
+      // 2. Create new message version with pending status
+      const newVersion = await messageVersionRepository.save({
+        content: 'AI is thinking...', // Placeholder content
+        isRegenerated: true,
+        llmModelId: llmModelId,
+        status: MessageVersionStatus.pending,
+        messageId: assistantMessage.id,
+        userId
+      });
+
+      this.log(`${logPrefix}: ✓ Created new version ${newVersion.id}`);
+
+      // 3. Update message's currentVersionId to point to the new version
+      await messageRepository.update(assistantMessage.id, {
+        currentVersionId: newVersion.id
+      });
+
+      this.log(`${logPrefix}: ✓ Updated message currentVersionId to ${newVersion.id}`);
+
+      // 4. Enqueue streaming job
+      const jobEnqueued = await StreamMessageVersionJob.performLater(
+        userId,
+        newVersion.id,
+        { messageVersionId: newVersion.id },
+        {
+          priority: 80,
+          timeoutMs: 120000
+        }
+      );
+
+      if (!jobEnqueued) {
+        this.logError(`${logPrefix}: Failed to enqueue StreamMessageVersionJob`);
+
+        // Mark as failed
+        await messageVersionRepository.update(newVersion.id, {
+          status: MessageVersionStatus.failed,
+          content: 'Failed to start regeneration'
+        });
+
+        return {
+          newVersion,
+          jobEnqueued: false,
+          error: new Error('Failed to enqueue streaming job')
+        };
+      }
+
+      this.log(`${logPrefix}: ✓ Enqueued StreamMessageVersionJob for version ${newVersion.id}`);
+
+      return {
+        newVersion,
+        jobEnqueued: true
+      };
+
+    } catch (error) {
+      this.logError(`${logPrefix}: Error regenerating message:`, error);
+      return {
+        newVersion: null as any,
+        jobEnqueued: false,
+        error: error instanceof Error ? error : new Error(String(error))
+      };
+    }
   }
 }

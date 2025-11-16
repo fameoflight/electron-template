@@ -1,5 +1,26 @@
 import 'reflect-metadata';
-import { Field } from 'type-graphql';
+import { Field, Arg } from 'type-graphql';
+
+/**
+ * Parameter definition for ComputedField
+ */
+export interface ComputedFieldParameter {
+  /** GraphQL type of the parameter */
+  type: any;
+  /** Whether the parameter is required */
+  required?: boolean;
+  /** Default value for optional parameters */
+  defaultValue?: any;
+  /** Parameter description for GraphQL schema */
+  description?: string;
+  /** Validation rules */
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  /** Whether parameter is deprecated */
+  deprecationReason?: string;
+}
 
 /**
  * Options for ComputedField decorator
@@ -18,6 +39,15 @@ export interface ComputedFieldOptions {
   deprecationReason?: string;
   /** Field complexity for query cost analysis */
   complexity?: number;
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Parameter Options
+  // ──────────────────────────────────────────────────────────────────────────
+  /**
+   * Define parameters for this computed field.
+   * Parameters will be automatically converted to GraphQL @Arg decorators.
+   */
+  parameters?: Record<string, ComputedFieldParameter>;
 
   // ──────────────────────────────────────────────────────────────────────────
   // Computation Options
@@ -93,6 +123,38 @@ export interface ComputedFieldOptions {
  *   return this.fullName || this.username || null;
  * }
  *
+ * // Field with parameters
+ * @ComputedField([EmbeddingContent], {
+ *   description: 'File embeddings with optional filtering',
+ *   parameters: {
+ *     model: {
+ *       type: String,
+ *       required: false,
+ *       description: 'Filter by embedding model name'
+ *     },
+ *     limit: {
+ *       type: Number,
+ *       required: false,
+ *       defaultValue: 10,
+ *       min: 1,
+ *       max: 100,
+ *       description: 'Maximum number of embeddings to return'
+ *     },
+ *     includeDeprecated: {
+ *       type: Boolean,
+ *       required: false,
+ *       defaultValue: false,
+ *       description: 'Include deprecated embeddings'
+ *     }
+ *   }
+ * })
+ * async embeddings(model?: string, limit: number = 10, includeDeprecated: boolean = false): Promise<EmbeddingContent[]> {
+ *   let query = { contentId: this.id, contentType: 'FILE' };
+ *   if (model) query.model = model;
+ *   if (!includeDeprecated) query.deprecated = false;
+ *   return this.embeddingRepo.find({ where: query, take: limit });
+ * }
+ *
  * // Complex computation with caching
  * @ComputedField(Number, {
  *   description: 'User reputation score',
@@ -145,6 +207,7 @@ export function ComputedField(
       array = false,
       deprecationReason,
       complexity,
+      parameters = {},
       requiresRelations = false,
       cacheTTL
     } = options;
@@ -183,7 +246,31 @@ export function ComputedField(
     Field(typeFunction, fieldOptions)(target, propertyKey, descriptor!);
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 4. Store Metadata for Introspection
+    // 4. Apply Parameter Decorators
+    // ──────────────────────────────────────────────────────────────────────────
+    // Apply @Arg decorators for each parameter
+    const parameterNames = Object.keys(parameters);
+    if (parameterNames.length > 0) {
+      parameterNames.forEach((paramName, index) => {
+        const paramConfig = parameters[paramName];
+
+        // Build Arg options
+        const argOptions: any = {};
+        if (paramConfig.description) argOptions.description = paramConfig.description;
+        if (paramConfig.defaultValue !== undefined) argOptions.defaultValue = paramConfig.defaultValue;
+        if (paramConfig.deprecationReason) argOptions.deprecationReason = paramConfig.deprecationReason;
+
+        // Determine if parameter is required (default to true if no default value)
+        const isRequired = paramConfig.required !== false && paramConfig.defaultValue === undefined;
+        if (!isRequired) argOptions.nullable = true;
+
+        // Apply @Arg decorator
+        Arg(paramName, () => paramConfig.type, argOptions)(target, propertyKey, index);
+      });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 5. Store Metadata for Introspection
     // ──────────────────────────────────────────────────────────────────────────
     // Store metadata about this computed field for tooling/debugging
     Reflect.defineMetadata(
@@ -192,7 +279,8 @@ export function ComputedField(
         requiresRelations,
         cacheTTL,
         complexity,
-        nullable
+        nullable,
+        parameters
       },
       target,
       propertyKey
@@ -289,6 +377,29 @@ export function getComputedFieldMetadata(
   cacheTTL?: number;
   complexity?: number;
   nullable: boolean;
+  parameters?: Record<string, ComputedFieldParameter>;
 } | undefined {
   return Reflect.getMetadata('computed:field', target, propertyKey);
+}
+
+/**
+ * Helper to check if a computed field has parameters
+ */
+export function hasParameters(
+  target: any,
+  propertyKey: string
+): boolean {
+  const metadata = getComputedFieldMetadata(target, propertyKey);
+  return metadata ? Object.keys(metadata.parameters || {}).length > 0 : false;
+}
+
+/**
+ * Helper to get parameter definitions for a computed field
+ */
+export function getComputedFieldParameters(
+  target: any,
+  propertyKey: string
+): Record<string, ComputedFieldParameter> | undefined {
+  const metadata = getComputedFieldMetadata(target, propertyKey);
+  return metadata?.parameters;
 }

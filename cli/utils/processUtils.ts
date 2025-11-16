@@ -3,6 +3,7 @@
  */
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+import { output } from './output.js';
 
 export interface ProcessOptions {
   timeout?: number;
@@ -48,7 +49,7 @@ export class ProcessManager {
       attempt++;
 
       if (attempt > 1) {
-        console.log(`🔄 Retrying ${name} (attempt ${attempt}/${retries + 1})`);
+        output.info(`Retrying ${name} (attempt ${attempt}/${retries + 1})`);
       }
 
       try {
@@ -68,8 +69,8 @@ export class ProcessManager {
         const isTimeout = error instanceof Error && error.message.includes('timeout');
 
         if (isTimeout && fallbackCommand) {
-          console.log(`⏰ ${name} timed out after ${timeout}ms`);
-          console.log(`🔄 Trying fallback command...`);
+          output.warning(`${name} timed out after ${timeout}ms`);
+          output.info('Trying fallback command...');
 
           try {
             const fallbackResult = await this.runCommandWithTimeout(
@@ -87,17 +88,17 @@ export class ProcessManager {
               exitCode: fallbackResult.exitCode
             };
           } catch (fallbackError) {
-            console.error(`❌ Fallback command also failed:`, fallbackError);
+            output.error('Fallback command also failed', String(fallbackError));
           }
         }
 
         if (attempt <= retries) {
-          console.warn(`⚠️  ${name} failed (attempt ${attempt}/${retries + 1}):`, error);
+          output.warning(`${name} failed (attempt ${attempt}/${retries + 1})`, String(error));
           continue;
         }
 
         // All attempts failed
-        console.error(`❌ ${name} failed after ${attempt} attempts:`, error);
+        output.error(`${name} failed after ${attempt} attempts`, String(error));
         throw error;
       }
     }
@@ -156,24 +157,24 @@ export class ProcessManager {
       proc.stdout?.on('data', (data) => {
         stdout += data.toString();
         // Log important output in real-time for debugging
-        const output = data.toString().trim();
-        if (output && (output.includes('signing') || output.includes('error') || output.includes('failed'))) {
-          console.log(`   ${name}: ${output}`);
+        const stdoutLine = data.toString().trim();
+        if (stdoutLine && (stdoutLine.includes('signing') || stdoutLine.includes('error') || stdoutLine.includes('failed'))) {
+          output.info(`${name}: ${stdoutLine}`);
         }
       });
 
       proc.stderr?.on('data', (data) => {
         stderr += data.toString();
         // Log errors in real-time
-        const output = data.toString().trim();
-        if (output) {
-          console.warn(`   ${name} error: ${output}`);
+        const stderrLine = data.toString().trim();
+        if (stderrLine) {
+          output.warning(`${name} error: ${stderrLine}`);
         }
       });
 
       proc.on('error', (error) => {
         if (timeoutId) clearTimeout(timeoutId);
-        console.error(`${name} process error:`, error);
+        output.error(`${name} process error`, String(error));
         reject(error);
       });
 
@@ -228,9 +229,9 @@ export class ProcessManager {
       shell?: boolean;
     } = {}
   ): ChildProcess {
-    const { color = '\x1b[0m', cwd = this.cwd } = options;
+    const { cwd = this.cwd } = options;
 
-    console.log(`${color}▶️  Starting ${name}...\x1b[0m`);
+    output.info(`Starting ${name}...`);
 
     const proc = spawn(command, args, {
       stdio: 'inherit',
@@ -240,12 +241,12 @@ export class ProcessManager {
     });
 
     proc.on('error', (error) => {
-      console.error(`${color}❌ ${name} error:\x1b[0m`, error);
+      output.error(`${name} error`, String(error));
     });
 
     proc.on('exit', (code) => {
       if (code !== 0 && code !== null) {
-        console.warn(`${color}⚠️  ${name} exited with code ${code}\x1b[0m`);
+        output.warning(`${name} exited with code ${code}`);
       }
     });
 
@@ -260,7 +261,7 @@ export class ProcessManager {
       proc.kill(signal);
       return true;
     } catch (error) {
-      console.warn('Failed to kill process:', error);
+      output.warning('Failed to kill process', String(error));
       return false;
     }
   }

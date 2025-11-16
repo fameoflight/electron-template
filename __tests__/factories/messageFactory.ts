@@ -25,6 +25,7 @@ export async function createMessage(
   const messageVersionRepository = dataSource.getRepository(MessageVersion);
 
   const defaultOptions = {
+    chatId: options.chatId || null, // Keep chatId as is since it's required in tests
     role: MessageRole.user,
     content: 'Test message content',
     versionStatus: MessageVersionStatus.completed,
@@ -44,7 +45,7 @@ export async function createMessage(
 
   // Step 2: Create Message with the version reference
   const message = await messageRepository.save({
-    chat: defaultOptions.chatId ? { id: defaultOptions.chatId } : undefined,
+    chatId: defaultOptions.chatId,
     role: defaultOptions.role,
     content: defaultOptions.content,
     currentVersionId: messageVersion.id,

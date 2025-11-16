@@ -2,12 +2,16 @@
  * InputPreparator - Prepares input type data for GraphQL mutations
  *
  * Handles the transformation of entity fields into GraphQL input types
+ * Refactored to use Fluent Builder Pattern for decorator generation
  */
 
 import { ParsedEntity, EntityField } from '../../parsers/EntityJsonParser.js';
 import { TypeMapper } from '../utils/TypeMapper.js';
 import { ValidationHelper } from '../utils/ValidationHelper.js';
 import { GraphQLOptions } from '../utils/GraphQLOptions.js';
+import { FieldInputBuilder } from '../builders/decorators/FieldInputBuilder.js';
+import { FieldInputEnumBuilder } from '../builders/decorators/FieldInputEnumBuilder.js';
+import { FieldInputJSONBuilder } from '../builders/decorators/FieldInputJSONBuilder.js';
 
 export class InputPreparator {
   private entity: ParsedEntity;
@@ -125,7 +129,7 @@ export class InputPreparator {
     fields: EntityField[],
     type: 'create' | 'update' | 'createUpdate'
   ) {
-    let filteredFields = fields.filter(f => {
+    const filteredFields = fields.filter(f => {
       // Check if field should generate inputs
       const graphqlOptions = new GraphQLOptions(f);
       return (f.type || f.relationship) && graphqlOptions.shouldGenerateInputs();
@@ -260,6 +264,7 @@ export class InputPreparator {
 
   /**
    * Generates FieldInput decorator for polymorphic fields
+   * Uses fluent builder for clean decorator creation
    */
   private generatePolymorphicFieldInputDecorator(
     field: EntityField,
@@ -267,27 +272,14 @@ export class InputPreparator {
     inputType: 'create' | 'update' | 'createUpdate',
     description?: string
   ): string {
-    const options: string[] = [];
+    const builder = FieldInputBuilder.String()
+      .inputType(inputType);
 
-    // Add input type context
-    options.push(`inputType: '${inputType}'`);
+    if (description) builder.description(description);
+    if (field.required !== undefined) builder.required(field.required);
+    if (fieldType === 'id') builder.maxLength(36);
 
-    // Add description if provided
-    if (description) {
-      options.push(`description: '${description.replace(/'/g, "\\'")}'`);
-    }
-
-    // Add validation options - always include required setting
-    if (field.required !== undefined) {
-      options.push(`required: ${field.required}`);
-    }
-
-    // Add max length for ID fields (UUID length)
-    if (fieldType === 'id') {
-      options.push('maxLength: 36');
-    }
-
-    return `@FieldInput(String, { ${options.join(', ')} })`;
+    return builder.build();
   }
 
   /**
@@ -308,9 +300,14 @@ export class InputPreparator {
       options.push(`description: '${description.replace(/'/g, "\\'")}'`);
     }
 
-    // Handle relationship fields
+    // Handle relationship fields - respect partial update context
     if (field.relationship) {
-      options.push(`required: ${field.required || false}`);
+      // Use the inputType parameter to determine if partial update
+      const isPartialUpdate = inputType === 'update' || inputType === 'createUpdate';
+
+      // For partial updates, relationship fields should be optional even if required in entity
+      const shouldBeRequired = field.required && !isPartialUpdate;
+      options.push(`required: ${shouldBeRequired}`);
       return `@FieldInput(String, { ${options.join(', ')} })`;
     }
 
@@ -345,6 +342,7 @@ export class InputPreparator {
 
   /**
    * Generates FieldInput decorator for scalar types
+   * Uses fluent builder for clean decorator creation
    *
    * 🔹 INPUT FIELDS GENERATION 🔹
    * This is where GraphQL input field decorators are generated with:
@@ -362,132 +360,102 @@ export class InputPreparator {
     baseOptions: string[],
     additionalOptions?: string
   ): string {
-    const options = [...baseOptions];
-
-    // For Update and CreateUpdate inputs, make fields optional to support partial updates
-    const inputType = baseOptions.find(opt => opt.includes('inputType'))?.split("'")[1];
+    // Extract inputType from baseOptions to determine if partial update
+    const inputTypeOpt = baseOptions.find(opt => opt.includes('inputType'));
+    const inputType = inputTypeOpt?.split("'")[1] as 'create' | 'update' | 'createUpdate' | undefined;
     const isPartialUpdate = inputType === 'update' || inputType === 'createUpdate';
+
+    // Extract description from baseOptions
+    const descriptionOpt = baseOptions.find(opt => opt.includes('description'));
+    const description = descriptionOpt?.match(/description: '(.*)'/)?.[1];
+
+    const builder = new FieldInputBuilder(type);
+
+    if (inputType) builder.inputType(inputType);
+    if (description) builder.description(description);
 
     // Add validation options - respect partial update context
     if (field.required !== undefined && !isPartialUpdate) {
-      options.push(`required: ${field.required}`);
+      builder.required(field.required);
     }
 
-    if (field.minLength) {
-      options.push(`minLength: ${field.minLength}`);
+    if (field.minLength) builder.minLength(field.minLength);
+    if (field.maxLength) builder.maxLength(field.maxLength);
+    if (field.pattern) builder.pattern(field.pattern);
+    if (field.min !== undefined) builder.min(field.min);
+    if (field.max !== undefined) builder.max(field.max);
+    if (field.array) builder.array(true);
+    if (field.defaultValue !== undefined) builder.default(field.defaultValue);
+
+    // Handle additional options (e.g., "isUUID: true")
+    if (additionalOptions === 'isUUID: true') {
+      builder.isUUID(true);
     }
 
-    if (field.maxLength) {
-      options.push(`maxLength: ${field.maxLength}`);
-    }
-
-    if (field.pattern) {
-      options.push(`pattern: /${field.pattern}/`);
-    }
-
-    if (field.min !== undefined) {
-      options.push(`min: ${field.min}`);
-    }
-
-    if (field.max !== undefined) {
-      options.push(`max: ${field.max}`);
-    }
-
-    // Add array option for scalar arrays
-    if (field.array) {
-      options.push('array: true');
-    }
-
-    // 🎯 Add default value from JSON schema if specified
-    if (field.defaultValue !== undefined) {
-      if (typeof field.defaultValue === 'string') {
-        // Escape single quotes in string defaults (e.g., "O'Reilly" → "O\\'Reilly")
-        options.push(`default: '${field.defaultValue.replace(/'/g, "\\'")}'`);
-      } else {
-        // JSON.stringify handles numbers, booleans, objects, arrays correctly
-        options.push(`default: ${JSON.stringify(field.defaultValue)}`);
-      }
-    }
-
-    if (additionalOptions) {
-      options.push(additionalOptions);
-    }
-
-    return `@FieldInput(${type}, { ${options.join(', ')} })`;
+    return builder.build();
   }
 
   /**
    * Generates FieldInputEnum decorator for enum fields
+   * Uses fluent builder for clean decorator creation
    */
   private generateEnumFieldInput(field: EntityField, baseOptions: string[]): string {
-    const options = [...baseOptions];
-
-    // For Update and CreateUpdate inputs, make fields optional to support partial updates
-    const inputType = baseOptions.find(opt => opt.includes('inputType'))?.split("'")[1];
+    // Extract inputType and description from baseOptions
+    const inputTypeOpt = baseOptions.find(opt => opt.includes('inputType'));
+    const inputType = inputTypeOpt?.split("'")[1] as 'create' | 'update' | 'createUpdate' | undefined;
     const isPartialUpdate = inputType === 'update' || inputType === 'createUpdate';
+
+    const descriptionOpt = baseOptions.find(opt => opt.includes('description'));
+    const description = descriptionOpt?.match(/description: '(.*)'/)?.[1];
+
+    const enumName = TypeMapper.getEnumName(this.entity.name, field.name);
+    const builder = FieldInputEnumBuilder.create(enumName);
+
+    if (inputType) builder.inputType(inputType);
+    if (description) builder.description(description);
 
     // Add enum-specific options - respect partial update context
     if (field.required !== undefined && !isPartialUpdate) {
-      options.push(`required: ${field.required}`);
+      builder.required(field.required);
     }
 
-    if (field.array) {
-      options.push('array: true');
-    }
+    if (field.array) builder.array(true);
+    if (field.defaultValue !== undefined) builder.default(field.defaultValue);
 
-    // 🎯 Add default value from JSON schema if specified
-    if (field.defaultValue !== undefined) {
-      if (typeof field.defaultValue === 'string') {
-        // Escape single quotes in string defaults (e.g., "O'Reilly" → "O\\'Reilly")
-        options.push(`default: '${field.defaultValue.replace(/'/g, "\\'")}'`);
-      } else {
-        // JSON.stringify handles numbers, booleans, objects, arrays correctly
-        options.push(`default: ${JSON.stringify(field.defaultValue)}`);
-      }
-    }
-
-    const enumName = TypeMapper.getEnumName(this.entity.name, field.name);
-    return `@FieldInputEnum(${enumName}, { ${options.join(', ')} })`;
+    return builder.build();
   }
 
   /**
    * Generates FieldInputJSON decorator for JSON fields
+   * Uses fluent builder for clean decorator creation
    */
   private generateJSONFieldInput(field: EntityField, baseOptions: string[]): string {
-    const options = [...baseOptions];
-
-    // For Update and CreateUpdate inputs, make fields optional to support partial updates
-    const inputType = baseOptions.find(opt => opt.includes('inputType'))?.split("'")[1];
+    // Extract inputType and description from baseOptions
+    const inputTypeOpt = baseOptions.find(opt => opt.includes('inputType'));
+    const inputType = inputTypeOpt?.split("'")[1] as 'create' | 'update' | 'createUpdate' | undefined;
     const isPartialUpdate = inputType === 'update' || inputType === 'createUpdate';
 
-    // Add JSON-specific options - respect partial update context
-    if (field.required !== undefined && !isPartialUpdate) {
-      options.push(`required: ${field.required}`);
-    }
+    const descriptionOpt = baseOptions.find(opt => opt.includes('description'));
+    const description = descriptionOpt?.match(/description: '(.*)'/)?.[1];
 
-    if (field.array) {
-      options.push('array: true');
-    }
-
-    // 🎯 Add default value from JSON schema if specified
-    if (field.defaultValue !== undefined) {
-      if (typeof field.defaultValue === 'string') {
-        // Escape single quotes in string defaults (e.g., "O'Reilly" → "O\\'Reilly")
-        options.push(`default: '${field.defaultValue.replace(/'/g, "\\'")}'`);
-      } else {
-        // JSON.stringify handles numbers, booleans, objects, arrays correctly
-        options.push(`default: ${JSON.stringify(field.defaultValue)}`);
-      }
-    }
+    // Default values are handled by the builder pattern below
+    // See line 522: builder.default(field.defaultValue)
 
     // For JSON fields, we typically need to specify a schema
     // For array fields, use z.array(z.any()), otherwise use z.any()
     const schema = field.array ? 'z.array(z.any())' : 'z.any()';
-    // Don't add array: true option since the schema already handles it
-    const finalOptions = field.array
-      ? options.filter(opt => opt !== 'array: true').join(', ')
-      : options.join(', ');
+    const builder = FieldInputJSONBuilder.create(schema);
 
-    return `@FieldInputJSON(${schema}, { ${finalOptions} })`;
+    if (inputType) builder.inputType(inputType);
+    if (description) builder.description(description);
+
+    // Add JSON-specific options - respect partial update context
+    if (field.required !== undefined && !isPartialUpdate) {
+      builder.required(field.required);
+    }
+
+    if (field.defaultValue !== undefined) builder.default(field.defaultValue);
+
+    return builder.build();
   }
 }

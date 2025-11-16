@@ -1,3 +1,4 @@
+ 
 /**
  * Context for description generation
  */

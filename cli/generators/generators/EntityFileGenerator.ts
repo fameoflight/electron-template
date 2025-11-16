@@ -7,6 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { writeCodeToFile } from '../utils/format.js';
+import { cyberOutput } from '../../utils/output.js';
 
 export class EntityFileGenerator {
   private projectRoot: string;
@@ -65,12 +66,12 @@ export class EntityFileGenerator {
 
     // Only create if doesn't exist, unless force=true
     if (this.fileExists(extensionPath) && !force) {
-      console.log(`  ⏭️  Skipped inputs extension (already exists): ${className}Inputs.ts`);
+      cyberOutput.info(`Skipped inputs extension (already exists): ${className}Inputs.ts`);
       return { path: extensionPath, created: false };
     }
 
     writeCodeToFile(extensionPath, content);
-    console.log(`  ✅ Created inputs extension: ${className}Inputs.ts`);
+    cyberOutput.success(`Created inputs extension: ${className}Inputs.ts`);
     return { path: extensionPath, created: true };
   }
 
@@ -91,12 +92,12 @@ export class EntityFileGenerator {
 
     // Only create if doesn't exist - NEVER overwrite user code, unless force=true
     if (this.fileExists(extensionPath) && !force) {
-      console.log(`  ⏭️  Skipped resolver extension (already exists): ${className}Resolver.ts`);
+      cyberOutput.info(`Skipped resolver extension (already exists): ${className}Resolver.ts`);
       return { path: extensionPath, created: false };
     }
 
     writeCodeToFile(extensionPath, content);
-    console.log(`  ✅ Created resolver extension: ${className}Resolver.ts`);
+    cyberOutput.success(`Created resolver extension: ${className}Resolver.ts`);
     return { path: extensionPath, created: true };
   }
 }

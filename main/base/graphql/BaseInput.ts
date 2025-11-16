@@ -6,6 +6,7 @@ import { IdConverterService } from './services/relay/IdConverterService.js';
  * Provides common validation functionality
  */
 export abstract class BaseInput {
+
   /**
    * Validate this input using class-validator decorators
    * @throws Error if validation fails with detailed error messages
@@ -39,9 +40,16 @@ export abstract class BaseInput {
 
     for (const fieldName of relationFields) {
       const value = (this as any)[fieldName];
-      if (value && typeof value === 'string') {
-        // Convert Relay global ID to local database ID
-        (this as any)[fieldName] = IdConverterService.decodeId(value);
+      if (value) {
+        if (typeof value === 'string') {
+          // Convert Relay global ID to local database ID
+          (this as any)[fieldName] = IdConverterService.decodeId(value);
+        }
+
+        if (Array.isArray(value)) {
+          // Convert array of Relay global IDs to local database IDs
+          (this as any)[fieldName] = value.map((id: string) => IdConverterService.decodeId(id));
+        }
       }
     }
   }

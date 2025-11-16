@@ -1,3 +1,4 @@
+/* eslint-disable @codeblocks/file-size-limit */
 /**
  * Migration Utilities
  *
@@ -677,12 +678,11 @@ export async function generateSchemaSql(dataSource: DataSource, outputPath?: str
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '%migrations%' ORDER BY name"
     ).then((rows: any[]) => rows.map((r: any) => r.name));
 
-    let schemaLines: string[] = [];
+    const schemaLines: string[] = [];
 
     // Header
     schemaLines.push('--');
     schemaLines.push('-- Database Schema');
-    schemaLines.push('-- Generated on: ' + new Date().toISOString());
     schemaLines.push('-- Database: SQLite');
     schemaLines.push('--');
     schemaLines.push('');

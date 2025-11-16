@@ -1,3 +1,4 @@
+
 import { Ctx } from 'type-graphql';
 import { DataSourceProvider } from '@base/db/index.js';
 import { OwnedEntity } from '@base/db/OwnedEntity.js';
@@ -339,7 +340,6 @@ export abstract class BaseResolver {
     id: string,
     updateData: Partial<T>
   ): Promise<T> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await repository.update(id, updateData as any);
     const updated = await repository.findOne({ where: { id } as FindOptionsWhere<T> });
     if (!updated) {
@@ -555,7 +555,8 @@ export abstract class BaseResolver {
    */
   protected async validateInput<T>(input: T): Promise<T> {
     // If input extends BaseInput, use its validate method
-    if (input && typeof input === 'object' && 'validate' in input && typeof (input as any).validate === 'function') {
+    if (input && typeof input === 'object' && 'validate' in input &&
+      typeof (input as any).validate === 'function') {
       await (input as any).validate();
       return input;
     }
@@ -570,7 +571,7 @@ export abstract class BaseResolver {
     return input;
   }
 
-  
+
   // remove undefined fields from input object
   protected async filterInputs(inputs: object): Promise<object> {
     const filtered: any = {};

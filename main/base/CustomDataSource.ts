@@ -36,7 +36,7 @@ export class CustomDataSource extends DataSource {
   override getRepository<Entity extends ObjectLiteral>(target: EntityTarget<Entity>): Repository<Entity> {
     const rawRepository = super.getRepository(target);
     const typeName = typeof target === 'function' ? target.name : String(target);
-    // Cast to any to bypass type checking since we know our entities have the required properties
+    // Cast to CustomRepository but return as Repository<Entity> for type compatibility
     return new CustomRepository(rawRepository as any, typeName) as unknown as Repository<Entity>;
   }
 

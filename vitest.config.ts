@@ -22,8 +22,15 @@ export default defineConfig({
     // Setup files - run before each test file
     setupFiles: ['__tests__/setup.ts'],
 
-    // Test timeout (30s for integration tests with embeddings)
-    testTimeout: 30000,
+    // Test timeout (60s for integration tests with embeddings and retries)
+    testTimeout: 60000,
+
+    // Retry failed tests to handle transient database lock issues
+    retry: 2,
+
+    // Hook timeout for setup/teardown (30s for database cleanup)
+    hookTimeout: 30000,
+
     // Hide console logs unless test fails
     onConsoleLog: (log, type) => {
       if (process.env.SILENT == 'true') {

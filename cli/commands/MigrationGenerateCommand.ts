@@ -1,5 +1,5 @@
 /**
- * Migration Generate Command
+ * Migration Generate Command - Refactored with Service Pattern
  *
  * Generates per-table migration files by comparing two temporary databases.
  * This process is COMPLETELY INDEPENDENT of the actual database state.
@@ -63,11 +63,9 @@ import { TemplateManager } from '../generators/managers/TemplateManager.js';
 import { MigrationValidationService } from '../../main/db/migrations/MigrationValidationService.js';
 import { MigrationSQLGenerator } from '../../main/db/migrations/MigrationSQLGenerator.js';
 import { MigrationValidator } from './MigrationValidator.js';
+import { cyberOutput } from '../utils/output.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-interface GenerateOptions {
+export interface GenerateOptions {
   name?: string;
   dryRun?: boolean;
 }
@@ -93,36 +91,25 @@ interface MigrationGenerationOptions {
 }
 
 export async function migrationGenerateCommand(options: GenerateOptions = {}) {
-  console.log('🔍 Analyzing database schema for changes...\n');
+  cyberOutput.info('Analyzing database schema for changes...');
+  cyberOutput.newLine();
 
   const setup = await setupMigrationEnvironment();
   const { currentDataSource, desiredDataSource, tempDatabases } = await setupComparisonDatabases(setup);
 
-  try {
-    const changedTables = await detectSchemaChanges(currentDataSource, desiredDataSource);
-
-    if (changedTables.length === 0) {
-      console.log('✅ No schema changes detected');
-    } else {
-      console.log(`📝 Detected changes in ${changedTables.length} table(s): ${changedTables.join(', ')}`);
-      await handleSchemaChanges({
-        currentDataSource,
-        desiredDataSource,
-        migrationsDir: setup.migrationsDir,
-        changedTables,
-        dryRun: options.dryRun
-      });
-    }
-
-    await cleanupDesiredDatabase(desiredDataSource);
-
-  } catch (error) {
-    console.error('❌ Migration generation failed:', error);
-    process.exit(1);
-  } finally {
-    await cleanupTempDatabases(tempDatabases);
-    console.log('🧹 Cleaned up temporary databases');
+  const changedTables = await detectSchemaChanges(currentDataSource, desiredDataSource);
+  if (changedTables.length > 0) {
+    await handleSchemaChanges({
+      currentDataSource,
+      desiredDataSource,
+      migrationsDir: setup.migrationsDir,
+      changedTables,
+      dryRun: options.dryRun
+    });
   }
+
+  await cleanupDesiredDatabase(desiredDataSource);
+
 }
 
 // ============================================================================
@@ -151,7 +138,7 @@ async function setupComparisonDatabases(setup: DatabaseSetupOptions): Promise<Da
   const { entities, migrationsDir, timestamp } = setup;
   const tempDatabases: string[] = [];
 
-  console.log('📦 Creating temporary databases for comparison...');
+  cyberOutput.info('Creating temporary databases for comparison...');
 
   // Database paths
   const currentDbPath = path.join(process.cwd(), `.data/.temp.migrations.${timestamp}.db`);
@@ -200,7 +187,7 @@ async function createEntityDatabase(dbPath: string, entities: any[]): Promise<Da
   });
 
   await initializeDatabase(dataSource);
-  console.log('✅ Created entities database from all entity definitions');
+  cyberOutput.success('Created entities database from all entity definitions');
 
   return dataSource;
 }
@@ -223,22 +210,22 @@ async function applyExistingMigrations(dataSource: DataSource, migrationsDir: st
   const hasMigrations = migrationFiles.some(f => f.endsWith('.ts') && !f.startsWith('.'));
 
   if (!hasMigrations) {
-    console.log('✅ Created empty migrations database (no existing migrations)');
+    cyberOutput.success('Created empty migrations database (no existing migrations)');
     return;
   }
 
   try {
-    console.log(`📋 Found ${migrationFiles.length} migration file(s), loading...`);
+    cyberOutput.info(`Found ${migrationFiles.length} migration file(s), loading...`);
     const pendingMigrations = await dataSource.showMigrations();
-    console.log(`📋 Pending migrations to run: ${pendingMigrations}`);
+    cyberOutput.info(`Pending migrations to run: ${pendingMigrations}`);
 
     const executedMigrations = await dataSource.runMigrations();
-    console.log(`✅ Applied ${executedMigrations.length} migration(s) to temp database`);
+    cyberOutput.success(`Applied ${executedMigrations.length} migration(s) to temp database`);
 
     await verifyTablesCreated(dataSource);
   } catch (error) {
-    console.error('❌ Failed to apply existing migrations:', error);
-    console.log('ℹ️  Continuing with empty migration database (fresh install)');
+    cyberOutput.error('Failed to apply existing migrations:', error instanceof Error ? error.message : String(error));
+    cyberOutput.info('Continuing with empty migration database (fresh install)');
   }
 }
 
@@ -252,11 +239,11 @@ async function cleanupTempTables(dataSource: DataSource): Promise<void> {
 
   if (tempTables.length === 0) return;
 
-  console.log(`Found ${tempTables.length} temporary table(s) to clean up: ${tempTables.join(', ')}`);
+  cyberOutput.info(`Found ${tempTables.length} temporary table(s) to clean up: ${tempTables.join(', ')}`);
   for (const tempTable of tempTables) {
     await dataSource.query(`DROP TABLE "${tempTable}"`);
   }
-  console.log('✅ Cleaned up temporary tables');
+  cyberOutput.success('Cleaned up temporary tables');
 }
 
 /**
@@ -266,7 +253,7 @@ async function verifyTablesCreated(dataSource: DataSource): Promise<void> {
   const tables = await dataSource.query(
     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '%migrations%'"
   ).then((rows: any[]) => rows.map((r: any) => r.name));
-  console.log(`✅ Temp DB has ${tables.length} table(s): ${tables.join(', ')}`);
+  cyberOutput.success(`Temp DB has ${tables.length} table(s): ${tables.join(', ')}`);
 }
 
 /**
@@ -276,7 +263,8 @@ async function detectSchemaChanges(
   currentDataSource: DataSource,
   desiredDataSource: DataSource
 ): Promise<string[]> {
-  console.log('\n🔍 Comparing schemas to identify changes...');
+  cyberOutput.newLine();
+  cyberOutput.info('Comparing schemas to identify changes...');
 
   const currentTables = await getTableNames(currentDataSource);
   const desiredTables = await getTableNames(desiredDataSource);
@@ -354,13 +342,14 @@ async function showDryRunResults(
   desiredDataSource: DataSource,
   changedTables: string[]
 ): Promise<void> {
-  console.log('\n🔍 DRY RUN - Migration files that would be created:');
+  cyberOutput.newLine();
+  cyberOutput.info('DRY RUN - Migration files that would be created:');
 
   for (const tableName of changedTables) {
     const timestamp = new Date().toISOString().replace(/[:.T-]/g, '').slice(0, -3);
     const action = await determineTableAction(currentDataSource, desiredDataSource, tableName);
     const fileName = `${timestamp}_${action}${capitalize(tableName)}.ts`;
-    console.log(`   📄 ${fileName}`);
+    cyberOutput.logger.log(`   📄 ${fileName}`);
   }
 }
 
@@ -386,18 +375,19 @@ async function generateMigrationFiles(
 
       if (fileName) {
         generatedFiles.push(fileName);
-        console.log(`✅ Generated migration: ${fileName}`);
+        cyberOutput.success(`Generated migration: ${fileName}`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate migration for table ${tableName}:`, error);
+      cyberOutput.error(`Failed to generate migration for table ${tableName}:`, error instanceof Error ? error.message : String(error));
     }
   }
 
-  console.log(`\n🎉 Successfully generated ${generatedFiles.length} migration file(s)`);
-  console.log('💡 Next steps:');
-  console.log('   1. Review the generated migration files');
-  console.log('   2. Run: yarn migration:show (to preview SQL)');
-  console.log('   3. Run: yarn migration:run (to apply migrations)');
+  cyberOutput.newLine();
+  cyberOutput.success(`Successfully generated ${generatedFiles.length} migration file(s)`);
+  cyberOutput.info('Next steps:');
+  cyberOutput.logger.log('   1. Review the generated migration files');
+  cyberOutput.logger.log('   2. Run: yarn migration:show (to preview SQL)');
+  cyberOutput.logger.log('   3. Run: yarn migration:run (to apply migrations)');
 }
 
 /**
@@ -451,14 +441,16 @@ async function generateUpdateMigration(
 
   // Show validation results
   if (validation.errors.length > 0) {
-    console.error(`\n❌ Validation failed for ${tableName}:`);
-    validation.errors.forEach(err => console.error(`   • ${err}`));
+    cyberOutput.newLine();
+    cyberOutput.error(`Validation failed for ${tableName}:`);
+    validation.errors.forEach(err => cyberOutput.logger.log(`   • ${err}`));
     return null;
   }
 
   if (validation.warnings.length > 0) {
-    console.warn(`\n⚠️  Warnings for ${tableName}:`);
-    validation.warnings.forEach(warn => console.warn(`   • ${warn}`));
+    cyberOutput.newLine();
+    cyberOutput.warning(`Warnings for ${tableName}:`);
+    validation.warnings.forEach(warn => cyberOutput.logger.log(`   • ${warn}`));
   }
 
   const migrationSql = generateMigrationFromDiff(currentSchema, desiredSchema, tableName);
@@ -482,7 +474,7 @@ async function generateUpdateMigration(
     await writeFile(path.join(migrationsDir, fileName), migrationContent);
     return fileName;
   } else {
-    console.error(`❌ Migration validation failed for ${tableName}. Migration not created.`);
+    cyberOutput.error(`Migration validation failed for ${tableName}. Migration not created.`);
     return null;
   }
 }
@@ -516,7 +508,7 @@ async function generateCreateMigration(
     await writeFile(path.join(migrationsDir, fileName), migrationContent);
     return fileName;
   } else {
-    console.error(`❌ Migration validation failed for ${tableName}. Migration not created.`);
+    cyberOutput.error(`Migration validation failed for ${tableName}. Migration not created.`);
     return '';
   }
 }
@@ -550,7 +542,7 @@ async function generateDropMigration(
     await writeFile(path.join(migrationsDir, fileName), migrationContent);
     return fileName;
   } else {
-    console.error(`❌ Migration validation failed for ${tableName}. Migration not created.`);
+    cyberOutput.error(`Migration validation failed for ${tableName}. Migration not created.`);
     return '';
   }
 }
@@ -564,7 +556,7 @@ async function cleanupDesiredDatabase(desiredDataSource: DataSource): Promise<vo
   ).then((rows: any[]) => rows.map((r: any) => r.name));
 
   if (desiredTempTables.length > 0) {
-    console.log(`Cleaning up ${desiredTempTables.length} temporary table(s) from desired database`);
+    cyberOutput.info(`Cleaning up ${desiredTempTables.length} temporary table(s) from desired database`);
     for (const tempTable of desiredTempTables) {
       await desiredDataSource.query(`DROP TABLE "${tempTable}"`);
     }
@@ -580,11 +572,11 @@ async function validateMigrationBeforeWrite(
   migrationsDir: string,
   timestamp: string
 ): Promise<boolean> {
-  console.log(`🧪 Validating migration: ${fileName}`);
+  cyberOutput.info(`Validating migration: ${fileName}`);
 
   try {
     // 1. SQL Syntax Validation
-    console.log('   📝 Testing SQL syntax...');
+    cyberOutput.info('Testing SQL syntax...');
     const tempSqlTestDb = path.join(process.cwd(), `.data/.temp.sqltest.${timestamp}.db`);
     const sqlValidation = await MigrationValidator.validateSQLSyntax(
       extractSQLFromMigrationContent(migrationContent),
@@ -592,12 +584,12 @@ async function validateMigrationBeforeWrite(
     );
 
     if (!sqlValidation.success) {
-      console.error(`   ❌ SQL syntax validation failed: ${sqlValidation.error}`);
+      cyberOutput.error(`SQL syntax validation failed: ${sqlValidation.error}`);
       return false;
     }
 
     // 2. Migration Execution Validation
-    console.log('   🏗️  Testing migration execution...');
+    cyberOutput.info('Testing migration execution...');
     const executionValidation = await MigrationValidator.testMigrationExecution({
       migrationContent,
       migrationFileName: fileName,
@@ -606,15 +598,15 @@ async function validateMigrationBeforeWrite(
     });
 
     if (!executionValidation.success) {
-      console.error(`   ❌ Migration execution validation failed: ${executionValidation.error}`);
+      cyberOutput.error(`Migration execution validation failed: ${executionValidation.error}`);
       return false;
     }
 
-    console.log(`   ✅ Migration validation passed for ${fileName}`);
+    cyberOutput.success(`Migration validation passed for ${fileName}`);
     return true;
 
   } catch (error) {
-    console.error(`   ❌ Unexpected validation error: ${error instanceof Error ? error.message : String(error)}`);
+    cyberOutput.error(`Unexpected validation error: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
@@ -702,65 +694,71 @@ function generateMigrationFileContent(opts: MigrationFileOptions): string {
 
 /**
  * Revert last migration with backup safety
+ * (Kept in command file as it's a separate command concern)
  */
 export async function revertMigrationSafe(): Promise<void> {
+  const { initializeDatabase } = await import('../../main/db/dataSource.js');
+  const { backupDatabase, restoreFromBackup, cleanupOldBackups } = await import('../../main/db/utils/migrations.js');
+  const { getDatabasePath } = await import('../../main/base/utils/index.js');
+
+  // Create backup before reverting
+  let backupPath: string | null = null;
   try {
-    console.log('🔄 Reverting last migration...');
-
-    const { initializeDatabase } = await import('../../main/db/dataSource.js');
-    const { backupDatabase, restoreFromBackup, cleanupOldBackups } = await import('../../main/db/utils/migrations.js');
-
-    // Create backup before reverting
-    let backupPath: string | null = null;
-    try {
-      backupPath = await backupDatabase();
-    } catch (error) {
-      console.warn('⚠️  Warning: Could not create backup before reverting migration:', error);
-    }
-
-    const dataSource = await initializeDatabase();
-
-    try {
-      // Get migrations to see if there are any to revert
-      const executedMigrations = await dataSource.query(
-        "SELECT * FROM migrations ORDER BY id DESC LIMIT 1"
-      );
-
-      if (executedMigrations.length === 0) {
-        console.log('✅ No migrations to revert');
-        return;
-      }
-
-      const lastMigration = executedMigrations[0];
-      console.log(`📋 Reverting migration: ${lastMigration.name}`);
-
-      // Revert the last migration
-      await dataSource.undoLastMigration();
-      console.log('✅ Migration reverted successfully');
-
-      // Clean up old backups
-      await cleanupOldBackups(path.join(path.dirname(await import('@base/utils/index.js').then(m => m.getDatabasePath())), 'backups'), 5);
-
-    } catch (revertError) {
-      console.error('❌ Migration revert failed!');
-
-      // Attempt rollback if we have a backup
-      if (backupPath) {
-        try {
-          console.log('🔄 Rolling back from backup...');
-          await restoreFromBackup(backupPath);
-          console.log('✅ Successfully rolled back to pre-revert state');
-        } catch (rollbackError) {
-          console.error('❌ Failed to rollback from backup:', rollbackError);
-          console.error('💡 Manual restore required from:', backupPath);
-        }
-      }
-
-      throw revertError;
-    }
-
+    backupPath = await backupDatabase();
   } catch (error) {
-    console.error('❌ Failed to revert migration:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    cyberOutput.warning('Warning: Could not create backup before reverting migration', errorMessage);
+  }
+
+  const dataSource = await initializeDatabase();
+
+  try {
+    // Get migrations to see if there are any to revert
+    const executedMigrations = await dataSource.query(
+      "SELECT * FROM migrations ORDER BY id DESC LIMIT 1"
+    );
+
+    if (executedMigrations.length === 0) {
+      cyberOutput.success('No migrations to revert');
+      cyberOutput.cleanup();
+      return;
+    }
+
+    const lastMigration = executedMigrations[0];
+    cyberOutput.info(`Reverting migration: ${lastMigration.name}`);
+
+    // Revert the last migration
+    await dataSource.undoLastMigration();
+    cyberOutput.success('Migration reverted successfully');
+
+    // Clean up old backups
+    const dbPath = await getDatabasePath();
+    await cleanupOldBackups(path.join(path.dirname(dbPath), 'backups'), 5);
+
+  } catch (revertError) {
+    cyberOutput.error('Migration revert failed!');
+
+    // Attempt rollback if we have a backup
+    if (backupPath) {
+      try {
+        cyberOutput.info('Rolling back from backup...');
+        await restoreFromBackup(backupPath);
+        cyberOutput.success('Successfully rolled back to pre-revert state');
+      } catch (rollbackError) {
+        const rollbackMsg = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
+        cyberOutput.error('Failed to rollback from backup', rollbackMsg);
+        cyberOutput.error('Manual restore required from:', backupPath);
+      }
+    }
+
+    throw revertError;
+  }
+  try {
+    cyberOutput.cleanup();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    cyberOutput.error('Failed to revert migration', errorMessage);
     process.exit(1);
   }
 }
+

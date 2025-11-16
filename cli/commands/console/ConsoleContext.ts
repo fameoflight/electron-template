@@ -12,6 +12,7 @@ import { faker } from '@faker-js/faker';
 import { loadEntities } from '../../../main/db/entityMap.js';
 import { JobStatus } from '../../../main/db/entities/__generated__/JobBase.js';
 import { showTypesHelp } from './ConsoleMessages.js';
+import { cyberOutput } from '../../utils/output.js';
 
 /**
  * Build complete REPL context with all utilities
@@ -98,10 +99,10 @@ export async function buildContext(
     try {
       return dataSource.getRepository(entity);
     } catch (error) {
-      console.error(`❌ Could not get repository for entity:`, error);
-      console.log('\n💡 Available entities:');
+      cyberOutput.error('Could not get repository for entity', error instanceof Error ? error : String(error));
+      cyberOutput.info('Available entities:');
       dataSource.entityMetadatas.forEach((meta: any) => {
-        console.log(`  - ${meta.name}`);
+        cyberOutput.info(`  - ${meta.name}`);
       });
       return null;
     }
@@ -151,7 +152,7 @@ async function loadFactories(): Promise<any> {
     const factories = await import('../../../__tests__/factories/index.js');
     return factories;
   } catch (error) {
-    console.warn('⚠️  Could not load test factories:', error);
+    cyberOutput.warning('Could not load test factories', error instanceof Error ? error.message : String(error));
     return {};
   }
 }
@@ -188,7 +189,7 @@ function addInspectionUtilities(context: any): void {
     if (Array.isArray(data) && data.length > 0) {
       console.table(data);
     } else {
-      console.log('No data to display');
+      cyberOutput.info('No data to display');
     }
   };
 
@@ -221,10 +222,10 @@ function addDatabaseUtilities(context: any, dataSource: any): void {
       }));
       console.table(columns);
     } else {
-      console.log('Usage: schema("EntityName")');
-      console.log('\nAvailable entities:');
+      cyberOutput.info('Usage: schema("EntityName")');
+      cyberOutput.info('Available entities:');
       dataSource.entityMetadatas.forEach((meta: any) => {
-        console.log(`  - ${meta.name}`);
+        cyberOutput.info(`  - ${meta.name}`);
       });
     }
   };
@@ -232,14 +233,14 @@ function addDatabaseUtilities(context: any, dataSource: any): void {
   context.truncate = async (entityName: string) => {
     const repo = dataSource.getRepository(entityName);
     const result = await repo.clear();
-    console.log(`✅ Truncated ${entityName}`);
+    cyberOutput.success(`Truncated ${entityName}`);
     return result;
   };
 
   context.count = async (entityName: string) => {
     const repo = dataSource.getRepository(entityName);
     const count = await repo.count();
-    console.log(`${entityName}: ${count} records`);
+    cyberOutput.info(`${entityName}: ${count} records`);
     return count;
   };
 
@@ -266,15 +267,15 @@ function addJobQueueUtilities(context: any, services: any): void {
     },
     status: () => {
       const status = services.jobQueue.getStatus();
-      console.log('\n📊 Job Queue Status:\n');
-      console.log(`Running: ${status.isRunning ? '✅' : '❌'}`);
-      console.log(`Interval: ${status.intervalMs}ms`);
-      console.log(`Concurrency: ${status.concurrency.current}/${status.concurrency.max}`);
-      console.log(`\nRegistered Job Types (${status.jobTypes.length}):`);
-      status.jobTypes.forEach((type: string) => console.log(`  - ${type}`));
+      cyberOutput.info('Job Queue Status:');
+      cyberOutput.info(`Running: ${status.isRunning ? '✅' : '❌'}`);
+      cyberOutput.info(`Interval: ${status.intervalMs}ms`);
+      cyberOutput.info(`Concurrency: ${status.concurrency.current}/${status.concurrency.max}`);
+      cyberOutput.info(`Registered Job Types (${status.jobTypes.length}):`);
+      status.jobTypes.forEach((type: string) => cyberOutput.info(`  - ${type}`));
 
       if (status.runningJobs.length > 0) {
-        console.log(`\n🚀 Running Jobs (${status.runningJobs.length}):`);
+        cyberOutput.info(`Running Jobs (${status.runningJobs.length}):`);
         console.table(status.runningJobs.map((job: any) => ({
           ...job,
           duration: `${(job.duration / 1000).toFixed(1)}s`
@@ -324,18 +325,18 @@ function addJobQueueUtilities(context: any, services: any): void {
     cancel: async (jobId: string) => {
       const result = await services.jobQueue.cancelJob(jobId);
       if (result) {
-        console.log(`✅ Cancelled job ${jobId}`);
+        cyberOutput.success(`Cancelled job ${jobId}`);
       } else {
-        console.log(`❌ Could not cancel job ${jobId} (not running)`);
+        cyberOutput.error(`Could not cancel job ${jobId} (not running)`);
       }
       return result;
     },
     retry: async (jobId: string) => {
       const result = await services.jobQueue.executeJobById(jobId);
       if (result) {
-        console.log(`✅ Retrying job ${jobId}`);
+        cyberOutput.success(`Retrying job ${jobId}`);
       } else {
-        console.log(`❌ Could not retry job ${jobId}`);
+        cyberOutput.error(`Could not retry job ${jobId}`);
       }
       return result;
     }
@@ -354,10 +355,10 @@ function addPerformanceUtilities(context: any): void {
     const end = performance.now();
     const total = end - start;
     const avg = total / iterations;
-    console.log(`\n⏱️  Benchmark Results:`);
-    console.log(`Total: ${total.toFixed(2)}ms`);
-    console.log(`Iterations: ${iterations}`);
-    console.log(`Average: ${avg.toFixed(2)}ms\n`);
+    cyberOutput.info('Benchmark Results:');
+    cyberOutput.info(`Total: ${total.toFixed(2)}ms`);
+    cyberOutput.info(`Iterations: ${iterations}`);
+    cyberOutput.info(`Average: ${avg.toFixed(2)}ms`);
     return { total, iterations, average: avg };
   };
 
@@ -393,7 +394,7 @@ function addTypeInspectionHelpers(context: any): void {
 
   context.signature = (fn: Function) => {
     if (typeof fn !== 'function') {
-      console.log('❌ Not a function');
+      cyberOutput.error('Not a function');
       return;
     }
 
@@ -403,15 +404,15 @@ function addTypeInspectionHelpers(context: any): void {
     if (match) {
       const params = match[1] || match[2] || match[3] || '';
       const isAsync = fnStr.startsWith('async');
-      console.log(`${isAsync ? 'async ' : ''}function(${params})`);
+      cyberOutput.info(`${isAsync ? 'async ' : ''}function(${params})`);
     } else {
-      console.log(fnStr.substring(0, 100));
+      cyberOutput.info(fnStr.substring(0, 100));
     }
   };
 
   context.methods = (obj: any) => {
     if (!obj || typeof obj !== 'object') {
-      console.log('❌ Provide an object to inspect');
+      cyberOutput.error('Provide an object to inspect');
       return;
     }
 
@@ -424,26 +425,25 @@ function addTypeInspectionHelpers(context: any): void {
         }
       });
 
-    console.log(`\n📋 Available methods (${methods.length}):\n`);
+    cyberOutput.info(`Available methods (${methods.length}):`);
     methods.forEach(method => {
       try {
         const fn = obj[method];
         const fnStr = fn.toString();
         const match = fnStr.match(/\((.*?)\)/);
         const params = match ? match[1] : '';
-        console.log(`  ${method}(${params})`);
+        cyberOutput.info(`  ${method}(${params})`);
       } catch {
-        console.log(`  ${method}()`);
+        cyberOutput.info(`  ${method}()`);
       }
     });
-    console.log('');
 
     return methods;
   };
 
   context.props = (obj: any) => {
     if (!obj || typeof obj !== 'object') {
-      console.log('❌ Provide an object to inspect');
+      cyberOutput.error('Provide an object to inspect');
       return;
     }
 

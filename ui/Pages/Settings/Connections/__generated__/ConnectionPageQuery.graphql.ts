@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<29a81b0f3f6b794e5b91914ca2bc0398>>
+ * @generated SignedSource<<3e773dbe087fbb408eedf7cbb158da44>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,11 +10,16 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
+export type ConnectionBaseKind = "ANTHROPIC" | "OPENAI" | "%future added value";
 export type ConnectionPageQuery$variables = Record<PropertyKey, never>;
 export type ConnectionPageQuery$data = {
   readonly connectionsArray: ReadonlyArray<{
+    readonly apiKey: string;
+    readonly baseUrl: string;
     readonly id: string;
+    readonly kind: ConnectionBaseKind;
     readonly name: string;
+    readonly provider: string | null | undefined;
     readonly " $fragmentSpreads": FragmentRefs<"ConnectionForm_record" | "ConnectionList_records">;
   }>;
   readonly currentUser: {
@@ -52,6 +57,34 @@ v2 = {
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
+},
+v3 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "apiKey",
+  "storageKey": null
+},
+v4 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "baseUrl",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "provider",
+  "storageKey": null
+},
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "kind",
+  "storageKey": null
 };
 return {
   "fragment": {
@@ -71,6 +104,10 @@ return {
         "selections": [
           (v0/*: any*/),
           (v2/*: any*/),
+          (v3/*: any*/),
+          (v4/*: any*/),
+          (v5/*: any*/),
+          (v6/*: any*/),
           {
             "args": null,
             "kind": "FragmentSpread",
@@ -105,34 +142,10 @@ return {
         "selections": [
           (v0/*: any*/),
           (v2/*: any*/),
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "apiKey",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "baseUrl",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "provider",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "kind",
-            "storageKey": null
-          },
+          (v3/*: any*/),
+          (v4/*: any*/),
+          (v5/*: any*/),
+          (v6/*: any*/),
           {
             "alias": null,
             "args": null,
@@ -159,16 +172,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "b7baf9baf507fc82235a7b2a912fabed",
+    "cacheID": "d2af9fda38617dad8621681deff38d47",
     "id": null,
     "metadata": {},
     "name": "ConnectionPageQuery",
     "operationKind": "query",
-    "text": "query ConnectionPageQuery {\n  currentUser {\n    id\n  }\n  connectionsArray {\n    id\n    name\n    ...ConnectionList_records\n    ...ConnectionForm_record\n  }\n}\n\nfragment ConnectionForm_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n}\n\nfragment ConnectionList_records on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n  ...ConnectionView_record\n}\n\nfragment ConnectionView_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n  models {\n    id\n    name\n  }\n}\n"
+    "text": "query ConnectionPageQuery {\n  currentUser {\n    id\n  }\n  connectionsArray {\n    id\n    name\n    apiKey\n    baseUrl\n    provider\n    kind\n    ...ConnectionList_records\n    ...ConnectionForm_record\n  }\n}\n\nfragment ConnectionForm_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n}\n\nfragment ConnectionList_records on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  ...ConnectionView_record\n}\n\nfragment ConnectionView_record on Connection {\n  id\n  name\n  apiKey\n  baseUrl\n  provider\n  kind\n  customHeaders\n  models {\n    id\n    name\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "44e87ebddf44e191d35d164ba12a6567";
+(node as any).hash = "2f83db1400528216a5cfd83ac2571a26";
 
 export default node;

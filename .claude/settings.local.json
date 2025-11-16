@@ -35,7 +35,14 @@
       "WebSearch",
       "Bash(npm test:*)",
       "Bash(sed:*)",
-      "Bash(RECORD=true NODE_ENV=test yarn test:*)"
+      "Bash(RECORD=true NODE_ENV=test yarn test:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(wc:*)",
+      "Bash(while read file)",
+      "Bash(do if grep -E \"(useLazyLoadQuery|useNetworkLazyReloadQuery)\" $file)",
+      "Bash(yarn lint:custom:*)",
+      "Bash(npx eslint:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

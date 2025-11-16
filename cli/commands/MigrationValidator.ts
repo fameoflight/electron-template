@@ -12,6 +12,7 @@ import { createDataSource } from '../../main/db/utils';
 import {
   cleanupTempDatabases
 } from '../../main/db/utils/migrations';
+import { output } from '../utils/output.js';
 
 interface MigrationTestResult {
   success: boolean;
@@ -41,7 +42,7 @@ export class MigrationValidator {
     // Create temporary database path using existing CLI pattern
     const tempDbPath = path.join(process.cwd(), `.data/.temp.validation.${migrationTimestamp}.db`);
 
-    console.log(`🧪 Testing migration execution: ${migrationFileName}`);
+    output.info(`Testing migration execution: ${migrationFileName}`);
 
     try {
       // Create validation database with current migration state (reusing CLI pattern)
@@ -58,7 +59,7 @@ export class MigrationValidator {
       await executeSingleMigration(validationDataSource, tempMigrationPath, migrationFileName);
 
       const executionTime = Date.now() - startTime;
-      console.log(`✅ Migration validation passed: ${migrationFileName} (${executionTime}ms)`);
+      output.success(`Migration validation passed: ${migrationFileName} (${executionTime}ms)`);
 
       // Cleanup
       await validationDataSource.destroy();
@@ -74,8 +75,7 @@ export class MigrationValidator {
       const executionTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      console.error(`❌ Migration validation failed: ${migrationFileName}`);
-      console.error(`   Error: ${errorMessage}`);
+      output.error(`Migration validation failed: ${migrationFileName}`, errorMessage);
 
       // Cleanup on failure
       await cleanupTempDatabases([tempDbPath]);
@@ -96,7 +96,7 @@ export class MigrationValidator {
     const startTime = Date.now();
 
     try {
-      console.log('🔍 Validating SQL syntax...');
+      output.info('Validating SQL syntax...');
 
       // Create minimal test database
       const testDataSource = await createDataSource({
@@ -149,7 +149,7 @@ export class MigrationValidator {
       await testDataSource.destroy();
 
       const executionTime = Date.now() - startTime;
-      console.log('✅ SQL syntax validation passed');
+      output.success('SQL syntax validation passed');
 
       return {
         success: true,
@@ -197,10 +197,10 @@ async function createValidationDatabase(tempDbPath: string, migrationsDir: strin
     try {
       const executedMigrations = await dataSource.runMigrations();
       if (executedMigrations.length > 0) {
-        console.log(`📋 Applied ${executedMigrations.length} existing migrations to validation database`);
+        output.info(`Applied ${executedMigrations.length} existing migrations to validation database`);
       }
     } catch (error) {
-      console.warn('⚠️  Warning: Could not apply existing migrations for validation:', error);
+      output.warning('Could not apply existing migrations for validation', String(error));
       // Continue with empty database for new table validation
     }
   }
@@ -247,7 +247,7 @@ async function executeSingleMigration(
   migrationFileName: string
 ): Promise<void> {
   try {
-    console.log(`   Executing migration: ${migrationFileName}`);
+    output.info(`Executing migration: ${migrationFileName}`);
 
     // Dynamic import of the migration
     const migrationModule = await import(migrationPath);
@@ -266,7 +266,7 @@ async function executeSingleMigration(
 
     await migration.up(dataSource);
 
-    console.log('   ✅ Migration executed successfully');
+    output.success('Migration executed successfully');
 
   } catch (error) {
     // Clean up temp migration file

@@ -112,7 +112,7 @@ export class UpdateMessageVersionInputBase extends BaseInput {
   @FieldInput(Boolean, { inputType: 'update', description: 'Input: Whether this version is a regeneration of an original response. Required field.', default: false })
   isRegenerated?: boolean;
 
-  @FieldInput(String, { inputType: 'update', description: 'Input: LLM model used to generate this version (ID of LLMModel)', required: true })
+  @FieldInput(String, { inputType: 'update', description: 'Input: LLM model used to generate this version (ID of LLMModel)', required: false })
   llmModelId?: string;
 
   @FieldInput(String, { inputType: 'update', description: 'Input: Parent message ID (ID of Message)', required: false })
@@ -154,7 +154,7 @@ export class CreateUpdateMessageVersionInputBase extends BaseInput {
   @FieldInput(Boolean, { inputType: 'createUpdate', description: 'Input: Whether this version is a regeneration of an original response. Required field.', default: false })
   isRegenerated?: boolean;
 
-  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: LLM model used to generate this version (ID of LLMModel)', required: true })
+  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: LLM model used to generate this version (ID of LLMModel)', required: false })
   llmModelId?: string;
 
   @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Parent message ID (ID of Message)', required: false })

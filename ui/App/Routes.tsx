@@ -5,12 +5,15 @@ import AppLayout from '@ui/Components/AppLayout';
 import AuthPage from '@ui/Pages/User/AuthPage';
 import UserUpdatePage from '@ui/Pages/User/UserUpdatePage';
 import NotFoundPage from '@ui/Components/NotFoundPage';
-import SettingsPage from '@ui/Pages/Settings';
 import AddFile from '@ui/Pages/AddFile';
+
+// App Containers
+import ChatContainer from '@ui/Pages/Chat/ChatContainer';
+import SettingsContainer from '@ui/Pages/Settings/SettingsContainer';
+
+// Co-located Routes
+import ChatRoutes from '@ui/Pages/Chat/Routes';
 import SettingsRoutes from '@ui/Pages/Settings/Routes';
-import ChatListPage from '@ui/Pages/Chat/ChatListPage';
-import ChatNewPage from '@ui/Pages/Chat/ChatNewPage';
-import ChatNodePage from '@ui/Pages/Chat/ChatNodePage';
 
 
 function Routes() {
@@ -37,19 +40,12 @@ function Routes() {
         },
         {
           path: 'chat',
-          element: <ChatListPage />,
-        },
-        {
-          path: 'chat/new',
-          element: <ChatNewPage />,
-        },
-        {
-          path: 'chat/:id',
-          element: <ChatNodePage />,
+          element: <ChatContainer />,
+          children: ChatRoutes,
         },
         {
           path: 'settings',
-          element: <SettingsPage />,
+          element: <SettingsContainer />,
           children: SettingsRoutes,
         },
         {

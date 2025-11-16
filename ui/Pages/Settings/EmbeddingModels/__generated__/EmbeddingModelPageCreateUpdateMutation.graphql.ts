@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4a3c5917c2d03a05957de966760f043d>>
+ * @generated SignedSource<<7811c27e0ab10f681a724b1aa9ed8dae>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,7 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CreateUpdateEmbeddingModelInput = {
-  connectionId: string;
+  connectionId?: string | null | undefined;
   contextLength?: number | null | undefined;
   default?: boolean | null | undefined;
   dimension?: number | null | undefined;

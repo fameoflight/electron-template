@@ -5,6 +5,7 @@ import SliderInput from "@ui/Components/SliderInput";
 import { useFragment, graphql } from "react-relay/hooks";
 import { EmbeddingModelForm_record$key } from "./__generated__/EmbeddingModelForm_record.graphql";
 import { EmbeddingModelForm_connections$key } from "./__generated__/EmbeddingModelForm_connections.graphql";
+import { humanize } from "@shared/utils";
 
 const fragmentSpec = graphql`
   fragment EmbeddingModelForm_record on EmbeddingModel {
@@ -44,18 +45,18 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
   const connections = useFragment(connectionFragmentSpec, props.connections);
   const [availableModels, setAvailableModels] = useState<Array<{ id: string, name: string }>>([]);
 
-  const isEditing = record && record.id ? true : false;
+  const isEditing = useMemo(() => record && record.id ? true : false, [record]);
 
-  // Filter models for embeddings (models starting with 'embed' or containing 'embedding')
-  const filterEmbeddingModels = (models: any[] = []) => {
+  // Filter models for embeddings (models starting with 'embed' or containing 'embedding') - memoized
+  const filterEmbeddingModels = useCallback((models: any[] = []) => {
     return models.filter(model =>
       model.name.toLowerCase().includes('embed') ||
       model.id.toLowerCase().includes('embed')
     );
-  };
+  }, []);
 
-  // Handle connection change to update available models
-  const handleConnectionChange = (connectionId: string) => {
+  // Handle connection change to update available models - memoized
+  const handleConnectionChange = useCallback((connectionId: string) => {
     const selectedConnection = connections.find(c => c.id === connectionId);
     if (selectedConnection && selectedConnection.models) {
       const embeddingModels = filterEmbeddingModels([...selectedConnection.models]);
@@ -64,33 +65,69 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
       // Auto-select first model if no model is currently selected
       if (embeddingModels.length > 0 && !props.form.getFieldValue('modelIdentifier')) {
         props.form.setFieldValue('modelIdentifier', embeddingModels[0].id);
+        props.form.setFieldValue('name', humanize(embeddingModels[0].name));
       }
     } else {
       setAvailableModels([]);
       props.form.setFieldValue('modelIdentifier', undefined);
     }
-  };
+  }, [connections, props.form, filterEmbeddingModels]);
 
-  const onFinish = (values: any) => {
+  const onModelChange = useCallback((modelIdentifier: string) => {
+    const selectedModel = availableModels.find(m => m.id === modelIdentifier);
+    if (selectedModel) {
+      props.form.setFieldValue('name', humanize(selectedModel.name));
+    }
+  }, [availableModels, props.form]);
+
+  const onFinish = useCallback((values: any) => {
     props.onSubmit?.(values);
-  };
+  }, [props.onSubmit]);
+
+  // Memoize connection options
+  const connectionOptions = useMemo(() =>
+    connections.map((connection) => ({
+      key: connection.id,
+      value: connection.id,
+      label: `${connection.name} (${connection.provider} - ${connection.kind})`
+    })), [connections]);
+
+  // Memoize model options
+  const modelOptions = useMemo(() =>
+    availableModels.map((model) => ({
+      key: model.id,
+      value: model.id,
+      label: `${model.name} (${model.id})`
+    })), [availableModels]);
+
+  const onFormValuesChange = useCallback((changedValues: any) => {
+    if (changedValues.connectionId) {
+      handleConnectionChange(changedValues.connectionId);
+    }
+    if (changedValues.modelIdentifier) {
+      onModelChange(changedValues.modelIdentifier);
+    }
+  }, [handleConnectionChange, onModelChange]);
 
   return (
     <Form
-      initialValues={record || undefined}
+      initialValues={{
+        ...record,
+      }}
       form={props.form}
       preserve={false}
       layout="vertical"
       onFinish={onFinish}
       name="EmbeddingModelForm"
+      onValuesChange={onFormValuesChange}
+      className="space-y-6"
     >
-
       <Form.Item name="id" hidden>
         <Input />
       </Form.Item>
 
       <Form.Item
-        label="Connection"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Connection</span>}
         name="connectionId"
         rules={[
           {
@@ -103,18 +140,14 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
           disabled={isEditing}
           placeholder="Select a connection"
           allowClear
-          onChange={handleConnectionChange}
-        >
-          {connections.map((connection) => (
-            <Select.Option key={connection.id} value={connection.id}>
-              {connection.name} ({connection.provider} - {connection.kind})
-            </Select.Option>
-          ))}
-        </Select>
+          options={connectionOptions}
+          className="input"
+          size="large"
+        />
       </Form.Item>
 
       <Form.Item
-        label="Model"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Model</span>}
         name="modelIdentifier"
         rules={[
           {
@@ -129,27 +162,28 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
           allowClear
           showSearch
           filterOption={(input, option) =>
-            (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase()) || false
+            option?.label?.toString().toLowerCase().includes(input.toLowerCase()) || false
           }
-        >
-          {availableModels.map((model) => (
-            <Select.Option key={model.id} value={model.id}>
-              {model.name} ({model.id})
-            </Select.Option>
-          ))}
-        </Select>
+          options={modelOptions}
+          className="input"
+          size="large"
+        />
       </Form.Item>
 
       <Form.Item
-        label="Name"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Name</span>}
         name="name"
         tooltip="Optional display name for the embedding model"
       >
-        <Input placeholder="e.g., OpenAI Small Embeddings" />
+        <Input
+          placeholder="e.g., OpenAI Small Embeddings"
+          className="input"
+          size="large"
+        />
       </Form.Item>
 
       <Form.Item
-        label="Context Length"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Context Length</span>}
         name="contextLength"
         rules={[
           {
@@ -163,6 +197,7 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
             message: 'Context length must be between 1024 and 8192',
           },
         ]}
+        extra={<span className="text-xs text-[var(--color-text-tertiary)]">Maximum tokens for embeddings</span>}
       >
         <SliderInput
           min={1024}
@@ -180,7 +215,7 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
       </Form.Item>
 
       <Form.Item
-        label="Max Batch Size"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">Max Batch Size</span>}
         name="maxBatchSize"
         rules={[
           {
@@ -194,6 +229,7 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
             message: 'Max batch size must be between 4 and 64',
           },
         ]}
+        extra={<span className="text-xs text-[var(--color-text-tertiary)]">Number of texts to embed at once</span>}
       >
         <SliderInput
           min={4}
@@ -211,14 +247,14 @@ function EmbeddingModelForm(props: IEmbeddingModelFormProps) {
       </Form.Item>
 
       <Form.Item
-        label="System Prompt"
+        label={<span className="text-sm font-medium text-[var(--color-text-primary)]">System Prompt</span>}
         name="systemPrompt"
         tooltip="Optional default system prompt for the embedding model"
       >
         <Input.TextArea
           placeholder="Enter system prompt..."
           autoSize={{ minRows: 3, maxRows: 6 }}
-          className="resize-none"
+          className="resize-none rounded-lg border-[var(--color-border-default)] focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-100)] transition-all"
         />
       </Form.Item>
     </Form>

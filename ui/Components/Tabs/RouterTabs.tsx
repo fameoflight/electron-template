@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '@ui/Components/Motion';
 import _ from 'lodash';
 import Tab, { TabProps } from './Tab';
 

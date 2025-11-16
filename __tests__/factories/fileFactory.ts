@@ -7,8 +7,8 @@ import { randomUUID } from 'node:crypto';
 import fs from 'fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { File } from '@main/db/entities/File.js';
-import { FileFileType } from '@main/db/entities/__generated__/FileBase.js';
+import { FileEntity } from '@main/db/entities/FileEntity.js';
+import { FileEntityFileType } from '@main/db/entities/__generated__/FileEntityBase.js';
 
 export interface CreateFileOptions {
   userId?: string;
@@ -31,15 +31,15 @@ export interface CreateFileWithContentOptions {
   ownerType?: string;
 }
 
-export async function createFile(
+export async function createFileEntity(
   dataSource: any,
   options: CreateFileOptions = {}
 ) {
-  const fileRepository = dataSource.getRepository(File);
+  const fileRepository = dataSource.getRepository(FileEntity);
 
   const defaultOptions = {
     filename: 'test-file.txt',
-    fileType: FileFileType.document,
+    fileType: FileEntityFileType.document,
     extension: '.txt',
     fullPath: '/tmp/test-file.txt',
     fileSize: 100,
@@ -54,6 +54,75 @@ export async function createFile(
   return file;
 }
 
+
+function createContent(extension: '.txt' | '.md'): string {
+  switch (extension) {
+    case '.txt':
+      return `This is a sample text file created for testing purposes. It contains multiple lines of text to simulate a real document.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Created at: ${new Date().toISOString()}`;
+    case '.md':
+      return `# Sample Markdown File
+
+This is a sample markdown file created for testing purposes.
+
+## Features
+- **Bold text**
+- *Italic text*
+- [Link](https://example.com)
+
+### Lists
+1. First item
+2. Second item
+3. Third item
+
+> This is a blockquote.
+
+\`\`\`javascript
+// Sample code block
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+\`\`\`
+
+Created at: ${new Date().toISOString()}`;
+    default:
+      return 'This is a sample text file created for testing purposes.';
+  }
+}
+
+/**
+ * Create a temporary file on disk with specified content
+ * - Generates unique filename if not provided
+ * - Writes content to file
+ * - Returns file path
+ */
+
+export async function createTempFile(opts: { content?: string, fullPath?: string, extension?: string, filename?: string }): Promise<string> {
+  const fileDataDir = path.join(process.cwd(), '.data', 'test-files');
+
+  const extension = opts.extension || '.txt';
+  const content = opts.content || createContent(extension as '.txt' | '.md');
+
+
+  const tempDir = opts.fullPath ? path.dirname(opts.fullPath) : '/tmp';
+  await fs.mkdir(tempDir, { recursive: true });
+
+  const filePath = opts.fullPath || path.join(fileDataDir, opts.filename || `temp-file-${randomUUID().substring(0, 8)}.txt`);
+  await fs.writeFile(filePath, content, 'utf-8');
+
+  return filePath;
+}
+
+
 /**
  * Create a file with actual content on disk
  * - Generates unique filename if not provided
@@ -64,7 +133,7 @@ export async function createFileWithContent(
   dataSource: any,
   options: CreateFileWithContentOptions = {}
 ) {
-  const fileRepository = dataSource.getRepository(File);
+  const fileRepository = dataSource.getRepository(FileEntity);
 
   // Generate unique filename if not provided
   const uniqueId = randomUUID().substring(0, 8);
@@ -81,8 +150,8 @@ export async function createFileWithContent(
   // Default content based on file type (only if no content provided)
   let content = options.content !== undefined ? options.content : undefined;
   if (content === undefined) {
-    switch (options.fileType || FileFileType.document) {
-      case FileFileType.document:
+    switch (options.fileType || FileEntityFileType.document) {
+      case FileEntityFileType.document:
         if (extension === '.md') {
           content = `# Test Markdown File
 
@@ -130,7 +199,7 @@ Created at: ${new Date().toISOString()}`;
   // Create file record
   const fileOptions = {
     filename,
-    fileType: options.fileType || FileFileType.document,
+    fileType: options.fileType || FileEntityFileType.document,
     extension,
     fullPath,
     fileSize: content.length,
@@ -153,7 +222,7 @@ export async function createFiles(
 ) {
   const files = [];
   for (let i = 0; i < count; i++) {
-    const file = await createFile(dataSource, {
+    const file = await createFileEntity(dataSource, {
       ...options,
       filename: options.filename ? `${options.filename.replace('.', `-${i + 1}.`)}` : `test-file-${i + 1}.txt`,
       extension: options.extension || '.txt'

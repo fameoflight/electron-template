@@ -4,10 +4,11 @@ import ErrorBoundary from '@ui/Components/ErrorBoundary';
 
 import './index.css';
 import { MemoryRouter } from 'react-router';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from '@ui/Components/Motion';
 import { AuthRelayProvider } from '@ui/contexts/AuthRelayProvider';
 import { useMenuActions } from '@ui/hooks/useMenuActions';
 import { commonMenuActions } from '@shared/menu/index.js';
+import { MotionProvider } from '@ui/Components/Motion';
 
 // Menu actions component
 function MenuActionSetup() {
@@ -40,14 +41,16 @@ function App() {
         console.error('App-level error caught:', error, errorInfo);
       }}
     >
-      <AuthRelayProvider>
-        <MenuActionSetup />
-        <MemoryRouter>
-          <AnimatePresence>
-            <Routes />
-          </AnimatePresence>
-        </MemoryRouter>
-      </AuthRelayProvider>
+      <MotionProvider>
+        <AuthRelayProvider>
+          <MenuActionSetup />
+          <MemoryRouter>
+            <AnimatePresence>
+              <Routes />
+            </AnimatePresence>
+          </MemoryRouter>
+        </AuthRelayProvider>
+      </MotionProvider>
     </ErrorBoundary>
   );
 }

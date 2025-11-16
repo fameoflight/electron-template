@@ -1,16 +1,22 @@
 import React, { useState, useCallback } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { graphql } from 'react-relay/hooks';
-import { message, Spin, Typography } from "antd";
-import { ArrowLeftCircleIcon } from "@heroicons/react/24/outline";
+import { motion } from '@ui/Components/Motion';
+import { TagIcon } from "@heroicons/react/24/outline";
 
 import type { ChatNodePageQuery, ChatNodePageQuery$data } from "./__generated__/ChatNodePageQuery.graphql";
 import usePollQuery from "@ui/hooks/usePollQuery";
-import PageContainer from "@ui/Components/PageContainer";
 import MessageList from "@ui/Pages/Chat/MessageList";
-import UnifiedMessageInput from "@ui/Pages/Chat/UnifiedMessageInput";
+import UnifiedMessageInput from "@ui/Pages/Chat/MessageInput";
 
-const { Title } = Typography;
+type MessageType = ChatNodePageQuery$data['chatMessages'][0];
+
+// Helper function to check if a message is currently streaming
+const isMessageStreaming = (message: MessageType): boolean => {
+  const currentVersion = message.versions?.find(v => v.id == message.currentVersionId || v.modelId == message.currentVersionId);
+
+  return currentVersion?.status === 'streaming' || currentVersion?.status === 'pending';
+};
 
 const ChatNodePageQuery = graphql`
   query ChatNodePageQuery($id: String!) {
@@ -32,13 +38,13 @@ const ChatNodePageQuery = graphql`
       id
       role
       currentVersionId
-      currentVersion {
-        id
-        status
-        content
-      }
       createdAt
       updatedAt
+      versions {
+        id
+        status
+        modelId
+      }
       ...MessageList_messages
     }
   }
@@ -57,11 +63,7 @@ function ChatNodePage() {
     {
       enabled: !!id,
       deriveRefreshInterval: (data) => {
-        // Poll more frequently when there's a streaming message
-        const typedData = data as ChatNodePageQuery$data;
-        const hasStreamingMessage = typedData.chatMessages?.some(
-          (msg) => msg.currentVersion?.status === 'streaming' || msg.currentVersion?.status === 'pending'
-        );
+        const hasStreamingMessage = data.chatMessages?.some(isMessageStreaming);
         return hasStreamingMessage ? 100 : 1000;
       },
       defaultInterval: 1000,
@@ -74,103 +76,92 @@ function ChatNodePage() {
     refreshChatData(); // Immediately refresh to show the new messages
   };
 
-  const handleBackToList = () => {
-    navigate('/chat');
-  };
-
   if (!id) {
     return (
-      <PageContainer
-        title="Chat"
-        extra={{
-          title: 'Back to Chats',
-          onClick: handleBackToList,
-          icon: <ArrowLeftCircleIcon className="h-5 w-5" />
-        }}
-      >
-        <div className="text-center py-8">
-          <Title level={4}>Invalid chat ID</Title>
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-text-primary mb-2">
+            Invalid chat ID
+          </h2>
+          <p className="text-text-secondary">
+            The chat you're looking for doesn't exist.
+          </p>
         </div>
-      </PageContainer>
+      </div>
     );
   }
 
   const chat = chatData?.chat;
   const messages = chatData?.chatMessages || [];
-  const hasStreamingMessage = messages.some(
-    (msg) => msg.currentVersion?.status === 'streaming' || msg.currentVersion?.status === 'pending'
-  );
 
   if (!chat && !isAutoRefreshing) {
     return (
-      <PageContainer
-        title="Chat"
-        extra={{
-          title: 'Back to Chats',
-          onClick: handleBackToList,
-          icon: <ArrowLeftCircleIcon className="h-5 w-5" />
-        }}
-      >
-        <div className="text-center py-8">
-          <Title level={4}>Chat not found</Title>
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-text-primary mb-2">
+            Chat not found
+          </h2>
+          <p className="text-text-secondary">
+            This chat may have been deleted or you don't have access to it.
+          </p>
         </div>
-      </PageContainer>
+      </div>
     );
   }
 
   return (
-    <PageContainer
-      title={chat?.title || 'Loading...'}
-      extra={{
-        title: 'Back to Chats',
-        onClick: handleBackToList,
-        icon: <ArrowLeftCircleIcon className="h-5 w-5" />
-      }}
-    >
-      <div className="flex flex-col h-full">
-        <div className="mb-6">
-          <div className="bg-white/60 dark:bg-gray-900/50 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                {chat?.description && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed truncate">
-                    {chat.description}
-                  </p>
-                )}
+    <div className="flex flex-col h-full">
+      {/* Chat Description Card - only show if description or tags exist */}
+      {(chat?.description || (chat?.tags && chat.tags.length > 0)) && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 sm:px-6 lg:px-8 pt-4"
+        >
+          <div className="mx-auto">
+            <div className="surface-elevated p-4 rounded-xl border border-border-default">
+              {chat?.description && (
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {chat.description}
+                </p>
+              )}
 
-
-                {chat?.tags && chat.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {chat.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100/80 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {chat?.tags && chat.tags.length > 0 && (
+                <div className={`flex flex-wrap gap-2 ${chat?.description ? 'mt-3' : ''}`}>
+                  {chat.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200"
+                    >
+                      <TagIcon className="w-3 h-3" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </motion.div>
+      )}
+
+      {/* Message List */}
+      <div className="flex-1 overflow-hidden">
+        <MessageList
+          chatId={id}
+          messages={messages}
+        />
       </div>
 
-      <Spin spinning={!chat}>
-        <div className="flex flex-col">
-          <MessageList
-            messages={messages}
-          />
-
-          {/* Message Input */}
+      {/* Message Input - Fixed at bottom */}
+      <div className="px-4 sm:px-6 lg:px-8 pb-4">
+        <div className="mx-auto">
           <UnifiedMessageInput
             chatId={id}
             onComplete={handleSendMessage}
           />
         </div>
-      </Spin>
-    </PageContainer >
+      </div>
+    </div>
   );
 };
 

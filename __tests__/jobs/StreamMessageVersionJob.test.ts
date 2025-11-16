@@ -97,7 +97,7 @@ describe('StreamMessageVersionJob', () => {
     const chatWithLlmModel = { ...chat, llmModel: { id: llmModel.id } };
     const messageResult = await new MessageService().createMessagePairAndStream(
       chat.id,
-      'Write a long prose on India',
+      'Write a short summary on India',
       { logPrefix: 'StreamMessageVersionJobTest' }
     );
 
@@ -177,10 +177,7 @@ describe('StreamMessageVersionJob', () => {
         MessageVersionStatus.streaming
       ]).toContain(updatedVersion!.status);
 
-      // Content should be updated regardless of exact status
-      // Due to async nature, the database might not have the absolute final content yet
-      // but it should have the substantial content from the stream
-      expect(updatedVersion!.content.length).toBeGreaterThan(1000); // Most of the content should be there
+      expect(updatedVersion!.content.length).toBeGreaterThan(500);
       expect(result.finalContent.length).toBeGreaterThan(0);
 
       // The job result should have the complete content

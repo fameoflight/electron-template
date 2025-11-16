@@ -291,28 +291,28 @@ describe('ALTER TABLE PRIMARY KEY Preservation', () => {
 
       // Step 1: Verify tables have proper schemas
       const embeddingModelsSchema = await getTableSchema(dataSource, 'embedding_models');
-      const filesSchema = await getTableSchema(dataSource, 'files');
+      const fileEntitiesSchema = await getTableSchema(dataSource, 'file_entities');
 
       expect(embeddingModelsSchema).toBeTruthy();
-      expect(filesSchema).toBeTruthy();
+      expect(fileEntitiesSchema).toBeTruthy();
 
-      if (embeddingModelsSchema && filesSchema) {
+      if (embeddingModelsSchema && fileEntitiesSchema) {
         // Verify embedding_models has PRIMARY KEY
         const modelIdColumn = embeddingModelsSchema.columns.find(col => col.name === 'id');
         expect(modelIdColumn?.primary).toBe(true);
         console.log('✅ embedding_models PRIMARY KEY verified');
 
-        // Verify files has PRIMARY KEY
-        const fileIdColumn = filesSchema.columns.find(col => col.name === 'id');
+        // Verify file_entities has PRIMARY KEY
+        const fileIdColumn = fileEntitiesSchema.columns.find(col => col.name === 'id');
         expect(fileIdColumn?.primary).toBe(true);
-        console.log('✅ files PRIMARY KEY verified');
+        console.log('✅ file_entities PRIMARY KEY verified');
 
-        // Verify files has polymorphic owner fields (the new polymorphic relationship)
-        const ownerIdColumn = filesSchema.columns.find(col => col.name === 'ownerId');
-        const ownerTypeColumn = filesSchema.columns.find(col => col.name === 'ownerType');
+        // Verify file_entities has polymorphic owner fields (the new polymorphic relationship)
+        const ownerIdColumn = fileEntitiesSchema.columns.find(col => col.name === 'ownerId');
+        const ownerTypeColumn = fileEntitiesSchema.columns.find(col => col.name === 'ownerType');
         expect(ownerIdColumn).toBeDefined();
         expect(ownerTypeColumn).toBeDefined();
-        console.log('✅ Files table has polymorphic owner fields');
+        console.log('✅ File entities table has polymorphic owner fields');
 
         // Test that we can insert data with polymorphic relationships
         try {

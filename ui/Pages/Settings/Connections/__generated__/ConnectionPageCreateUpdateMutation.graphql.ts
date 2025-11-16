@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c9b3582762b2a2c2c95734d5cd0f6a3f>>
+ * @generated SignedSource<<69acba8b5da7ca379000c5ab784ea97c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -26,7 +26,6 @@ export type ConnectionPageCreateUpdateMutation$data = {
   readonly createUpdateConnection: {
     readonly apiKey: string;
     readonly baseUrl: string;
-    readonly customHeaders: any | null | undefined;
     readonly id: string;
     readonly kind: ConnectionBaseKind;
     readonly name: string;
@@ -102,13 +101,6 @@ v1 = [
         "kind": "ScalarField",
         "name": "kind",
         "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
-        "name": "customHeaders",
-        "storageKey": null
       }
     ],
     "storageKey": null
@@ -132,16 +124,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "935117cdd32d996a4e53454443a73afe",
+    "cacheID": "35c4332cf64b8f354560d15fd5261071",
     "id": null,
     "metadata": {},
     "name": "ConnectionPageCreateUpdateMutation",
     "operationKind": "mutation",
-    "text": "mutation ConnectionPageCreateUpdateMutation(\n  $input: CreateUpdateConnectionInput!\n) {\n  createUpdateConnection(input: $input) {\n    id\n    name\n    apiKey\n    baseUrl\n    provider\n    kind\n    customHeaders\n  }\n}\n"
+    "text": "mutation ConnectionPageCreateUpdateMutation(\n  $input: CreateUpdateConnectionInput!\n) {\n  createUpdateConnection(input: $input) {\n    id\n    name\n    apiKey\n    baseUrl\n    provider\n    kind\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "f367426280492613e254d536f7fb8ff7";
+(node as any).hash = "4bcda61a37adc0cc4bafcdd630941cc7";
 
 export default node;

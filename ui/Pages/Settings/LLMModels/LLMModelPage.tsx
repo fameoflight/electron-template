@@ -1,17 +1,18 @@
-import React from "react";
-import _ from "lodash";
+import React, { useState } from "react";
+import { Form, message } from "antd";
 import { graphql } from 'react-relay/hooks';
-import { Button, Form, message, Spin } from "antd";
+import { useCompatMutation, useNetworkLazyReloadQuery } from "@ui/hooks/relay";
+import { AnimatePresence } from "@ui/Components/Motion";
 
 import type { LLMModelPageQuery } from "./__generated__/LLMModelPageQuery.graphql";
 import type { LLMModelPageCreateUpdateMutation } from "./__generated__/LLMModelPageCreateUpdateMutation.graphql";
 import type { LLMModelPageDestroyMutation } from "./__generated__/LLMModelPageDestroyMutation.graphql";
-import { useCompatMutation, useNetworkLazyReloadQuery } from "@ui/hooks/relay";
-import useFormRecordState from "@ui/hooks/useFormRecordState";
-import PageContainer from "@ui/Components/PageContainer";
-import LLMModelList from "@ui/Pages/Settings/LLMModels/LLMModelList";
-import LLMModelForm from "@ui/Pages/Settings/LLMModels/LLMModelForm";
-import { ArrowLeftCircleIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
+
+import SettingsPageContainer from "../Shared/SettingsPageContainer";
+import SettingsPageHeader from "../Shared/SettingsPageHeader";
+import SettingsPageActions from "../Shared/SettingsPageActions";
+import LLMModelForm from "../LLMModels/LLMModelForm";
+import LLMModelList from "../LLMModels/LLMModelList";
 
 const LLMModelPageQuery = graphql`
   query LLMModelPageQuery {
@@ -37,7 +38,7 @@ const LLMModelPageQuery = graphql`
       ...LLMModelForm_record
     }
   }
-`
+`;
 
 const LLMModelPageCreateUpdateMutation = graphql`
   mutation LLMModelPageCreateUpdateMutation($input: CreateUpdateLLMModelInput!) {
@@ -51,13 +52,13 @@ const LLMModelPageCreateUpdateMutation = graphql`
       modelIdentifier
     }
   }
-`
+`;
 
-const LLMModelPageDestroyMutation = graphql`
+const LLMModelDestroyMutation = graphql`
   mutation LLMModelPageDestroyMutation($id: String!) {
     destroyLLMModel(id: $id)
   }
-`
+`;
 
 function LLMModelPage() {
   const [form] = Form.useForm();
@@ -65,38 +66,38 @@ function LLMModelPage() {
     LLMModelPageQuery,
     {}
   );
-  const llmModels = [...(data.lLMModelsArray || [])];
-  const [modeOrRecord, setMode] = useFormRecordState('list', llmModels);
+  const [modeOrRecord, setMode] = useState<'list' | 'new' | any>('list');
 
-  const [commitCreateUpdate, isInFlight] = useCompatMutation<
-    LLMModelPageCreateUpdateMutation
-  >(LLMModelPageCreateUpdateMutation);
+  const llmModels = [...(data?.lLMModelsArray || [])];
+  const connections = Array.from(data?.connectionsArray || []);
 
-  const [commitDestroy] = useCompatMutation<
-    LLMModelPageDestroyMutation
-  >(LLMModelPageDestroyMutation);
+  const [commitCreateUpdate, isInFlight] = useCompatMutation(LLMModelPageCreateUpdateMutation);
+  const [commitDestroy] = useCompatMutation<LLMModelPageDestroyMutation>(LLMModelDestroyMutation);
 
-  const onAddLLMModel = () => {
+  const onAdd = () => {
     setMode('new');
     form.resetFields();
   };
 
-  const onEditLLMModel = (recordId: string) => {
-    const record = llmModels.find(c => c.id === recordId);
+  const onEdit = (recordId: string) => {
+    const record = llmModels.find(item => item.id === recordId);
     if (record) {
       setMode(record);
       form.setFieldsValue(record);
     }
   };
 
-  const onDeleteLLMModel = (recordId: string) => {
+  const onDelete = (recordId: string) => {
     commitDestroy({
       variables: { id: recordId },
       onCompleted: (response, errors) => {
         if (!errors || errors.length === 0) {
           message.success('LLM Model deleted successfully');
         }
-        refreshData();
+        refreshData?.();
+      },
+      onError: () => {
+        message.error('Failed to delete LLM Model');
       }
     });
   };
@@ -108,12 +109,14 @@ function LLMModelPage() {
       },
       onCompleted: (response, errors) => {
         if (!errors || errors.length === 0) {
-          message.success(modeOrRecord !== 'new' && modeOrRecord !== 'list' ? 'LLM Model updated successfully' : 'LLM Model created successfully');
+          message.success(modeOrRecord === 'new' ? 'LLM Model created successfully' : 'LLM Model updated successfully');
           setMode('list');
           form.resetFields();
         }
-
-        refreshData();
+        refreshData?.();
+      },
+      onError: () => {
+        message.error('Failed to save LLM Model');
       }
     });
   };
@@ -124,40 +127,69 @@ function LLMModelPage() {
   };
 
   const isShowingForm = modeOrRecord !== 'list';
+  const isEdit = modeOrRecord !== 'new' && modeOrRecord !== 'list';
+
+  const getHeaderInfo = () => {
+    if (isShowingForm) {
+      return {
+        title: isEdit ? 'Edit LLM Model' : 'New LLM Model',
+        subtitle: isEdit ? 'Edit language model settings' : 'Configure language model settings'
+      };
+    } else {
+      return {
+        title: llmModels.length === 0 ? 'No LLM Models yet' : `LLM Models (${llmModels.length})`,
+        subtitle: 'Manage your language models'
+      };
+    }
+  };
+
+  const headerInfo = getHeaderInfo();
 
   return (
-    <PageContainer
-      title="LLM Models"
-      extra={isShowingForm ?
-        { title: 'Back', onClick: onCancelForm, icon: <ArrowLeftCircleIcon className="h-5 w-5" /> } :
-        { title: 'Add LLM Model', onClick: onAddLLMModel, icon: <PlusCircleIcon className="h-5 w-5" /> }
-      }
+    <SettingsPageContainer
+      title={headerInfo.title}
+      subtitle={headerInfo.subtitle}
+      isShowingForm={isShowingForm}
+      onBack={isShowingForm ? onCancelForm : undefined}
     >
-      <Spin spinning={isInFlight}>
+      <SettingsPageHeader
+        title={headerInfo.title}
+        subtitle={headerInfo.subtitle}
+        isShowingForm={isShowingForm}
+        isEdit={isEdit}
+        onAdd={!isShowingForm ? onAdd : undefined}
+        onBack={isShowingForm ? onCancelForm : undefined}
+        addButtonText="Add LLM Model"
+      />
+
+      <AnimatePresence mode="wait">
         {isShowingForm ? (
-          <div className="mt-2">
+          <div key="form" className="surface-elevated p-6 rounded-xl border border-border-default">
             <LLMModelForm
               form={form}
               record={modeOrRecord === 'new' ? null : modeOrRecord}
-              connections={Array.from(data.connectionsArray || [])}
+              connections={connections}
               onSubmit={onSubmitForm}
             />
 
-            <Button className="mt-4" onClick={() => form.submit()} type="primary" block>
-              {modeOrRecord === 'new' ? 'Create LLM Model' : 'Update LLM Model'}
-            </Button>
+            <SettingsPageActions
+              isLoading={isInFlight}
+              isEdit={isEdit}
+              onSave={() => form.submit()}
+              onCancel={onCancelForm}
+            />
           </div>
         ) : (
           <LLMModelList
             records={llmModels}
-            connections={Array.from(data.connectionsArray || [])}
-            onEdit={onEditLLMModel}
-            onDelete={onDeleteLLMModel}
+            connections={connections}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         )}
-      </Spin>
-    </PageContainer>
+      </AnimatePresence>
+    </SettingsPageContainer>
   );
-};
+}
 
 export default LLMModelPage;

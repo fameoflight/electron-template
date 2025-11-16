@@ -34,7 +34,7 @@ export class NodeResolver {
 
       if (entity && 'id' in entity) {
         // Set the __typename for GraphQL type resolution
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // @ts-ignore - Dynamic property assignment required for GraphQL
         (entity as any).__typename = type;
         return entity as BaseEntity;
       }

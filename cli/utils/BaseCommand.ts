@@ -2,10 +2,15 @@
  * BaseCommand - Shared infrastructure for utility commands
  *
  * Provides common patterns for:
- * - Consistent colored output and status messages
+ * - Consistent colored output using Ink components
  * - Error handling and exit codes
- * - Progress indication
+ * - Progress indication with spinners and progress bars
  * - File operations using existing file-helpers
+ *
+ * Refactored to use OutputManager with Ink for rich terminal UI:
+ * - Options object pattern (max 5 params)
+ * - Clean API hiding Ink complexity
+ * - DRY helper methods
  *
  * Usage:
  * class CleanCommand extends BaseCommand {
@@ -17,10 +22,16 @@
  * }
  */
 
+import { CyberpunkOutput, ChalkOutput, type OutputOptions } from './output.js';
+
 export interface CommandResult<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
+}
+
+export interface BaseCommandOptions extends OutputOptions {
+  silent?: boolean;
 }
 
 /**
@@ -28,7 +39,18 @@ export interface CommandResult<T = unknown> {
  */
 export abstract class BaseCommand {
   protected startTime: number = Date.now();
-  protected loggingEnabled: boolean = true;
+  protected output: CyberpunkOutput;
+  protected opts: BaseCommandOptions;
+
+  constructor(opts: BaseCommandOptions = {}) {
+    this.opts = opts;
+    this.output = new CyberpunkOutput({
+      verbose: opts.verbose ?? false,
+      colors: opts.colors ?? true,
+      timestamps: opts.timestamps ?? false,
+      silent: opts.silent ?? false,
+    });
+  }
 
   /**
    * Main entry point - must be implemented by subclasses
@@ -39,102 +61,111 @@ export abstract class BaseCommand {
    * Run the command with error handling and timing
    */
   async execute(options: Record<string, unknown>): Promise<void> {
-    this.loggingEnabled = !options.silent;
-    try {
-      const result = await this.run(options);
+    const result = await this.run(options);
 
-      if (result.success) {
-        this.success(result.message);
-        if (result.data) {
-          this.printData(result.data);
-        }
-      } else {
-        this.error(result.message);
-        process.exit(1);
+    if (result.success) {
+      this.success(result.message);
+      if (result.data) {
+        this.printData(result.data);
       }
-    } catch (error) {
-      this.error('Command failed:', error instanceof Error ? error.message : String(error));
+    } else {
+      this.error(result.message);
       process.exit(1);
-    } finally {
-      this.printTiming();
     }
+
+    this.printTiming();
+    this.output.cleanup();
   }
 
-  // Colored output methods
-  protected info(message: string, ...args: unknown[]): void {
-    if (!this.loggingEnabled) return;
-    console.log(`\x1b[36mℹ️  ${message}\x1b[0m`, ...args);
+  // ==================== Output Methods ====================
+
+  /**
+   * Display info message
+   */
+  protected info(message: string, details?: string): void {
+    this.output.info(message, details);
   }
 
-  protected success(message: string, ...args: unknown[]): void {
-    if (!this.loggingEnabled) return;
-    console.log(`\x1b[32m✅ ${message}\x1b[0m`, ...args);
+  /**
+   * Display success message
+   */
+  protected success(message: string, details?: string): void {
+    this.output.success(message, details);
   }
 
-  protected warning(message: string, ...args: unknown[]): void {
-    if (!this.loggingEnabled) return;
-    console.log(`\x1b[33m⚠️  ${message}\x1b[0m`, ...args);
+  /**
+   * Display warning message
+   */
+  protected warning(message: string, details?: string): void {
+    this.output.warning(message, details);
   }
 
-  protected error(message: string, ...args: unknown[]): void {
-    if (!this.loggingEnabled) return;
-    console.error(`\x1b[31m❌ ${message}\x1b[0m`, ...args);
+  /**
+   * Display error message
+   */
+  protected error(message: string, details?: string): void {
+    this.output.error(message, details);
   }
 
-  protected progress(message: string): void {
-    if (!this.loggingEnabled) return;
-    console.log(`\x1b[90m▶️  ${message}\x1b[0m`);
+  /**
+   * Display progress message
+   */
+  protected progress(message: string, details?: string): void {
+    this.output.progress(message, details);
   }
 
+  /**
+   * Display step progress
+   */
   protected step(step: number, total: number, message: string): void {
-    if (!this.loggingEnabled) return;
-    console.log(`\x1b[90m[${step}/${total}] ${message}\x1b[0m`);
+    this.output.progress(`[${step}/${total}] ${message}`);
   }
+
+  // ==================== Helper Methods ====================
 
   /**
    * Print data in a structured way
    */
   protected printData(data: unknown): void {
-    if (!this.loggingEnabled) return;
+    this.output.newLine();
+    this.info('Results');
+    this.output.separator('─', 50);
+
     if (typeof data === 'object' && data !== null) {
-      console.log('\n📊 Results:');
-      console.log('─'.repeat(50));
       if (Array.isArray(data)) {
-        data.forEach(item => console.log(`  • ${item}`));
+        data.forEach(item => this.output.logger.log(`  • ${item}`));
       } else {
         Object.entries(data).forEach(([key, value]) => {
-          console.log(`  ${key}: ${value}`);
+          this.output.logger.log(`  ${key}: ${value}`);
         });
       }
-      console.log('─'.repeat(50));
     } else {
-      console.log('\n📊 Result:', data);
+      this.output.logger.log(`  ${data}`);
     }
+
+    this.output.separator('─', 50);
   }
 
   /**
    * Print execution timing
    */
   protected printTiming(): void {
-    if (!this.loggingEnabled) return;
     const duration = Date.now() - this.startTime;
     const seconds = (duration / 1000).toFixed(2);
-    console.log(`\x1b[90m⏱️  Completed in ${seconds}s\x1b[0m`);
+    this.output.progress(`Completed in ${seconds}s`);
   }
 
   /**
    * Print a separator for better readability
    */
   protected separator(): void {
-    if (!this.loggingEnabled) return;
-    console.log('');
+    this.output.newLine();
   }
 
   /**
    * Confirm an action with the user
    */
   protected confirm(message: string): boolean {
-    if (!this.loggingEnabled) return true;
     // For now, always return true. Could be enhanced with readline in the future
     this.info(`${message} (y/N)`);
     return true;

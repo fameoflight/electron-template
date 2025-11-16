@@ -1,19 +1,20 @@
-import React from "react";
-import _ from "lodash";
+import React, { useState } from "react";
+import { Form, message } from "antd";
 import { graphql } from 'react-relay/hooks';
-import { Button, Form, message, Spin } from "antd";
+import { useCompatMutation, useNetworkLazyReloadQuery } from "@ui/hooks/relay";
+import { AnimatePresence } from "@ui/Components/Motion";
 
-import { ConnectionPageQuery } from "./__generated__/ConnectionPageQuery.graphql";
+import type { ConnectionPageQuery } from "./__generated__/ConnectionPageQuery.graphql";
 import type { ConnectionPageCreateUpdateMutation } from "./__generated__/ConnectionPageCreateUpdateMutation.graphql";
 import type { ConnectionPageDestroyMutation } from "./__generated__/ConnectionPageDestroyMutation.graphql";
-import { useCompatMutation, useNetworkLazyReloadQuery } from "@ui/hooks/relay";
-import useFormRecordState from "@ui/hooks/useFormRecordState";
-import PageContainer from "@ui/Components/PageContainer";
-import ConnectionList from "@ui/Pages/Settings/Connections/ConnectionList";
-import ConnectionForm from "@ui/Pages/Settings/Connections/ConnectionForm";
-import { ArrowLeftCircleIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 
-const ConnectionPagePageQuery = graphql`
+import SettingsPageContainer from "../Shared/SettingsPageContainer";
+import SettingsPageHeader from "../Shared/SettingsPageHeader";
+import SettingsPageActions from "../Shared/SettingsPageActions";
+import ConnectionForm from "../Connections/ConnectionForm";
+import ConnectionList from "../Connections/ConnectionList";
+
+const ConnectionPageQuery = graphql`
   query ConnectionPageQuery {
     currentUser {
      id
@@ -21,11 +22,15 @@ const ConnectionPagePageQuery = graphql`
     connectionsArray {
       id
       name
+      apiKey
+      baseUrl
+      provider
+      kind
       ...ConnectionList_records
       ...ConnectionForm_record
     }
   }
-`
+`;
 
 const ConnectionPageCreateUpdateMutation = graphql`
   mutation ConnectionPageCreateUpdateMutation($input: CreateUpdateConnectionInput!) {
@@ -36,55 +41,53 @@ const ConnectionPageCreateUpdateMutation = graphql`
       baseUrl
       provider
       kind
-      customHeaders
     }
   }
-`
+`;
 
 const ConnectionPageDestroyMutation = graphql`
   mutation ConnectionPageDestroyMutation($id: String!) {
     destroyConnection(id: $id)
   }
-`
+`;
 
 function ConnectionPage() {
   const [form] = Form.useForm();
   const [data, refreshData] = useNetworkLazyReloadQuery<ConnectionPageQuery>(
-    ConnectionPagePageQuery,
+    ConnectionPageQuery,
     {}
   );
-  const connections = data.connectionsArray || [];
-  const [modeOrRecord, setMode] = useFormRecordState('list', connections);
+  const [modeOrRecord, setMode] = useState<'list' | 'new' | any>('list');
 
-  const [commitCreateUpdate, isInFlight] = useCompatMutation<
-    ConnectionPageCreateUpdateMutation
-  >(ConnectionPageCreateUpdateMutation);
+  const connections = [...(data?.connectionsArray || [])];
 
-  const [commitDestroy] = useCompatMutation<
-    ConnectionPageDestroyMutation
-  >(ConnectionPageDestroyMutation);
+  const [commitCreateUpdate, isInFlight] = useCompatMutation(ConnectionPageCreateUpdateMutation);
+  const [commitDestroy] = useCompatMutation(ConnectionPageDestroyMutation);
 
-  const onAddConnection = () => {
+  const onAdd = () => {
     setMode('new');
     form.resetFields();
   };
 
-  const onEditConnection = (recordId: string) => {
-    const record = connections.find(c => c.id === recordId);
+  const onEdit = (recordId: string) => {
+    const record = connections.find(item => item.id === recordId);
     if (record) {
       setMode(record);
       form.setFieldsValue(record);
     }
   };
 
-  const onDeleteConnection = (recordId: string) => {
+  const onDelete = (recordId: string) => {
     commitDestroy({
       variables: { id: recordId },
       onCompleted: (response, errors) => {
         if (!errors || errors.length === 0) {
           message.success('Connection deleted successfully');
         }
-        refreshData();
+        refreshData?.();
+      },
+      onError: () => {
+        message.error('Failed to delete Connection');
       }
     });
   };
@@ -96,12 +99,14 @@ function ConnectionPage() {
       },
       onCompleted: (response, errors) => {
         if (!errors || errors.length === 0) {
-          message.success(modeOrRecord !== 'new' && modeOrRecord !== 'list' ? 'Connection updated successfully' : 'Connection created successfully');
+          message.success(modeOrRecord === 'new' ? 'Connection created successfully' : 'Connection updated successfully');
           setMode('list');
           form.resetFields();
         }
-
-        refreshData();
+        refreshData?.();
+      },
+      onError: () => {
+        message.error('Failed to save Connection');
       }
     });
   };
@@ -112,38 +117,67 @@ function ConnectionPage() {
   };
 
   const isShowingForm = modeOrRecord !== 'list';
+  const isEdit = modeOrRecord !== 'new' && modeOrRecord !== 'list';
+
+  const getHeaderInfo = () => {
+    if (isShowingForm) {
+      return {
+        title: isEdit ? 'Edit Connection' : 'New Connection',
+        subtitle: isEdit ? 'Edit connection settings' : 'Configure API connection settings'
+      };
+    } else {
+      return {
+        title: connections.length === 0 ? 'No Connections yet' : `Connections (${connections.length})`,
+        subtitle: 'Manage your API connections'
+      };
+    }
+  };
+
+  const headerInfo = getHeaderInfo();
 
   return (
-    <PageContainer
-      title="Connections"
-      extra={isShowingForm ?
-        { title: 'Back', onClick: onCancelForm, icon: <ArrowLeftCircleIcon className="h-5 w-5" /> } :
-        { title: 'Add Connection', onClick: onAddConnection, icon: <PlusCircleIcon className="h-5 w-5" /> }
-      }
+    <SettingsPageContainer
+      title={headerInfo.title}
+      subtitle={headerInfo.subtitle}
+      isShowingForm={isShowingForm}
+      onBack={isShowingForm ? onCancelForm : undefined}
     >
-      <Spin spinning={isInFlight}>
+      <SettingsPageHeader
+        title={headerInfo.title}
+        subtitle={headerInfo.subtitle}
+        isShowingForm={isShowingForm}
+        isEdit={isEdit}
+        onAdd={!isShowingForm ? onAdd : undefined}
+        onBack={isShowingForm ? onCancelForm : undefined}
+        addButtonText="Add Connection"
+      />
+
+      <AnimatePresence mode="wait">
         {isShowingForm ? (
-          <div className="mt-2">
+          <div key="form" className="surface-elevated p-6 rounded-xl border border-border-default">
             <ConnectionForm
               form={form}
               record={modeOrRecord === 'new' ? null : modeOrRecord}
               onSubmit={onSubmitForm}
             />
 
-            <Button className="mt-4" onClick={() => form.submit()} type="primary" block>
-              {modeOrRecord === 'new' ? 'Create Connection' : 'Update Connection'}
-            </Button>
+            <SettingsPageActions
+              isLoading={isInFlight}
+              isEdit={isEdit}
+              onSave={() => form.submit()}
+              onCancel={onCancelForm}
+            />
           </div>
         ) : (
           <ConnectionList
-            records={connections}
-            onEdit={onEditConnection}
-            onDelete={onDeleteConnection}
+            records={data?.connectionsArray}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         )}
-      </Spin>
-    </PageContainer>
+      </AnimatePresence>
+    </SettingsPageContainer>
   );
-};
+}
 
 export default ConnectionPage;

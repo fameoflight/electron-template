@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup } from '@ui/Components/Motion';
 import { Select } from 'antd';
 import _ from 'lodash';
 import Tab, { TabProps } from './Tab';
-import Shift from '../Motion/Shift';
+import { MotionWrapper } from '../Motion';
 
 export interface StateTabItem<T = string> {
   key: T;
@@ -109,15 +109,19 @@ function StateTabs<T extends string>({
         )}
       </div>
 
-      <Shift
+      <MotionWrapper
         motionKey={String(activeKey)}
         variant={shiftVariant}
-        values={shift}
-        transition={{ duration: 0.3 }}
+        customConfig={{
+          initial: { x: shift.x, y: shift.y, opacity: 0 },
+          animate: { x: 0, y: 0, opacity: 1 },
+          exit: { x: -shift.x, y: -shift.y, opacity: 0 },
+          transition: { duration: 0.3 }
+        }}
         className={contentClassName}
       >
         {currentTab?.render()}
-      </Shift>
+      </MotionWrapper>
     </LayoutGroup>
   );
 }

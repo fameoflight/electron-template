@@ -2,7 +2,7 @@ import { DataSourceProvider } from '@base/db/index.js';
 import { Message } from '@db/entities/Message.js';
 import { Chat } from '@db/entities/Chat.js';
 import { MessageVersion } from '@db/entities/MessageVersion.js';
-import { File } from '@db/entities/File.js';
+import { FileEntity } from '@db/entities/FileEntity.js';
 import { CustomDataSource } from '@main/base/CustomDataSource.js';
 import { ObjectLiteral } from 'typeorm';
 
@@ -34,7 +34,7 @@ export abstract class BaseService {
       messageRepository: this.dataSource.getRepository(Message),
       chatRepository: this.dataSource.getRepository(Chat),
       messageVersionRepository: this.dataSource.getRepository(MessageVersion),
-      fileRepository: this.dataSource.getRepository(File)
+      fileRepository: this.dataSource.getRepository(FileEntity)
     };
   }
 

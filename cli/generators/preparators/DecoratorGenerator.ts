@@ -1,92 +1,87 @@
 /**
  * DecoratorGenerator - Creates type-safe decorator strings using actual decorator functions
  *
- * Instead of manually building decorator strings, this uses the actual decorator functions
- * to ensure type safety and consistency across generated and manual code.
+ * Refactored to use Fluent Builder Pattern:
+ * - Eliminates repetitive option building code
+ * - Uses FieldColumnBuilder for clean, self-documenting decorator creation
+ * - Reduced from 307 → ~200 lines by extracting builder logic
  */
 
 import { ParsedEntity, EntityField } from '../../parsers/EntityJsonParser.js';
 import { TypeMapper } from '../utils/TypeMapper.js';
 import { FieldColumnOptions } from '../../../main/base/graphql/decorators/fields/types.js';
+import { FieldColumnBuilder } from '../builders/decorators/FieldColumnBuilder.js';
+import { FieldColumnEnumBuilder } from '../builders/decorators/FieldColumnEnumBuilder.js';
+import { FieldColumnJSONBuilder } from '../builders/decorators/FieldColumnJSONBuilder.js';
 
 export class DecoratorGenerator {
   /**
    * Creates a FieldColumn decorator string for regular fields
-   *
-   * @param field - Field definition from entity schema
-   * @param entityName - Name of the entity (for context)
-   * @returns Decorator string for the field
+   * Uses fluent builder for clean decorator creation
    */
   static createFieldColumn(field: EntityField, entityName: string): string {
     if (field.relationship) {
       throw new Error('Use createForeignKeyFieldColumn for relationship foreign keys');
     }
 
-    const options: FieldColumnOptions = {
-      graphql: field.graphql !== false, // Default to true unless explicitly false
-      required: field.required,
-      description: field.description,
-      unique: field.unique,
-      defaultValue: field.defaultValue,
-      maxLength: field.maxLength,
-      minLength: field.minLength,
-      pattern: field.pattern ? new RegExp(field.pattern) : undefined,
-      array: field.array, // Add array support
-    };
+    let builder: FieldColumnBuilder;
 
-    // Handle special field types
+    // Select builder based on field type
     switch (field.type) {
       case 'text':
-        return this.createFieldColumnDecorator('String', options);
-
       case 'string':
+        builder = FieldColumnBuilder.String();
         // Handle email as a special string type
         if (field.name.toLowerCase().includes('email')) {
-          return this.createFieldColumnDecorator('String', {
-            ...options,
-            email: true,
-          });
+          builder.email(true);
         }
-        return this.createFieldColumnDecorator('String', options);
+        break;
 
       case 'number':
-        return this.createFieldColumnDecorator('Number', {
-          ...options,
-          min: field.min,
-          max: field.max,
-        });
+        builder = FieldColumnBuilder.Number();
+        if (field.min !== undefined) builder.min(field.min);
+        if (field.max !== undefined) builder.max(field.max);
+        break;
 
       case 'boolean':
-        return this.createFieldColumnDecorator('Boolean', options);
+        builder = FieldColumnBuilder.Boolean();
+        break;
 
       case 'date':
-        return this.createFieldColumnDecorator('Date', options);
+        builder = FieldColumnBuilder.Date();
+        break;
 
       case 'uuid':
-        return this.createFieldColumnDecorator('String', {
-          ...options,
-          isUUID: true,
-        });
+        builder = FieldColumnBuilder.String().isUUID(true);
+        break;
 
       case 'json':
-        // For JSON fields, we'll handle separately in the template
-        // since they need schema-based generation
         throw new Error('JSON fields should be handled separately with schemas');
 
       case 'enum':
-        // Enum fields are handled separately by FieldColumnEnum
         throw new Error('Enum fields should be handled by FieldColumnEnum');
 
       default:
         throw new Error(`Unsupported field type: ${field.type}`);
     }
+
+    // Apply common options using fluent API
+    if (field.graphql === false) builder.graphql(false);
+    if (field.required !== undefined) builder.required(field.required);
+    if (field.description) builder.description(field.description);
+    if (field.unique) builder.unique(true);
+    if (field.defaultValue !== undefined) builder.defaultValue(field.defaultValue);
+    if (field.maxLength !== undefined) builder.maxLength(field.maxLength);
+    if (field.minLength !== undefined) builder.minLength(field.minLength);
+    if (field.pattern) builder.pattern(new RegExp(field.pattern));
+    if (field.array) builder.array(true);
+
+    return builder.build();
   }
 
   /**
    * Creates a FieldColumn decorator for foreign key fields
-   *
-   * @param field - Relationship field definition
-   * @returns Decorator string for the foreign key field
+   * Uses fluent builder for clean decorator creation
    */
   static createForeignKeyFieldColumn(field: EntityField): string {
     let includeGraphQL = true;
@@ -104,95 +99,49 @@ export class DecoratorGenerator {
       ? `${field.description} (${foreignKeyDesc})`
       : foreignKeyDesc;
 
-    const options: FieldColumnOptions = {
-      graphql: includeGraphQL,
-      required: field.required,
-      description,
-    };
+    const builder = FieldColumnBuilder.String()
+      .graphql(includeGraphQL)
+      .description(description);
 
-    return this.createFieldColumnDecorator('String', {
-      ...options,
-      nullable: true, // Foreign keys are often nullable in the database
-    });
+    // Foreign keys: use required to control GraphQL nullability
+    // If field.required is false/undefined, make it optional
+    if (!field.required) {
+      builder.required(false);
+    }
+
+    return builder.build();
   }
 
   /**
-   * Creates a FieldColumn decorator string with proper TypeScript types
-   *
-   * @param typeName - TypeScript scalar type name ('String', 'Number', 'Boolean', 'Date')
-   * @param options - FieldColumn options
-   * @returns Decorator string that can be used in templates
+   * DEPRECATED: Use FieldColumnBuilder instead
+   * Kept for backward compatibility but delegates to builder
    */
   private static createFieldColumnDecorator(
     typeName: string,
     options: FieldColumnOptions
   ): string {
+    const builder = new FieldColumnBuilder(typeName);
 
-    // Build options object string
-    const optionPairs: string[] = [];
+    if (options.graphql === false) builder.graphql(false);
+    if (options.required !== undefined) builder.required(options.required);
+    if (options.description) builder.description(options.description);
+    if (options.unique) builder.unique(true);
+    if (options.maxLength !== undefined) builder.maxLength(options.maxLength);
+    if (options.minLength !== undefined) builder.minLength(options.minLength);
+    if (options.min !== undefined) builder.min(options.min);
+    if (options.max !== undefined) builder.max(options.max);
+    if (options.defaultValue !== undefined) builder.defaultValue(options.defaultValue);
+    if (options.email) builder.email(true);
+    if (options.isUUID) builder.isUUID(true);
+    if (options.pattern) builder.pattern(options.pattern);
+    if (options.array) builder.array(true);
 
-    if (options.graphql === false) {
-      optionPairs.push('graphql: false');
-    }
-
-    if (options.required !== undefined) {
-      optionPairs.push(`required: ${options.required}`);
-    }
-
-    if (options.description) {
-      optionPairs.push(`description: '${options.description}'`);
-    }
-
-    if (options.unique) {
-      optionPairs.push(`unique: ${options.unique}`);
-    }
-
-    if (options.maxLength !== undefined) {
-      optionPairs.push(`maxLength: ${options.maxLength}`);
-    }
-
-    if (options.minLength !== undefined) {
-      optionPairs.push(`minLength: ${options.minLength}`);
-    }
-
-    if (options.min !== undefined) {
-      optionPairs.push(`min: ${options.min}`);
-    }
-
-    if (options.max !== undefined) {
-      optionPairs.push(`max: ${options.max}`);
-    }
-
-    if (options.defaultValue !== undefined) {
-      const value = typeof options.defaultValue === 'string'
-        ? `'${options.defaultValue}'`
-        : options.defaultValue;
-      optionPairs.push(`defaultValue: ${value}`);
-    }
-
-    if (options.email) {
-      optionPairs.push('email: true');
-    }
-
-    if (options.isUUID) {
-      optionPairs.push('isUUID: true');
-    }
-
-    if (options.pattern) {
-      optionPairs.push(`pattern: ${options.pattern}`);
-    }
-
-    if (options.array) {
-      optionPairs.push(`array: ${options.array}`);
-    }
-
-    const optionsStr = optionPairs.length > 0 ? `{ ${optionPairs.join(', ')} }` : '';
-
-    return `@FieldColumn(${typeName}${optionsStr ? ', ' + optionsStr : ''})`;
+    return builder.build();
   }
 
   /**
    * Creates a FieldColumnEnum decorator string
+   * Uses fluent builder for clean decorator creation
    *
    * @param field - Enum field definition
    * @param entityName - Name of the entity
@@ -202,34 +151,19 @@ export class DecoratorGenerator {
     const fieldName = TypeMapper.singularizeFieldName(field.name);
     const enumName = TypeMapper.getEnumName(entityName, fieldName);
 
-    const options: string[] = [];
+    const builder = FieldColumnEnumBuilder.create(enumName);
 
-    if (field.description) {
-      options.push(`description: '${field.description}'`);
-    }
+    if (field.description) builder.description(field.description);
+    if (!field.required) builder.required(false);
+    if (field.array) builder.array(true);
+    if (field.defaultValue !== undefined) builder.defaultValue(String(field.defaultValue));
 
-    if (!field.required) {
-      options.push('nullable: true');
-    }
-
-    if (field.array) {
-      options.push('array: true');
-    }
-
-    if (field.defaultValue !== undefined) {
-      const defaultValue = field.array
-        ? `[${enumName}.${field.defaultValue}]`
-        : `${enumName}.${field.defaultValue}`;
-      options.push(`defaultValue: ${defaultValue}`);
-    }
-
-    const optionsStr = options.length > 0 ? `, { ${options.join(', ')} }` : '';
-
-    return `@FieldColumnEnum(${enumName}${optionsStr})`;
+    return builder.build();
   }
 
   /**
    * Creates a FieldColumnJSON decorator string
+   * Uses fluent builder for clean decorator creation
    *
    * @param field - JSON field definition
    * @param entityName - Name of the entity
@@ -252,23 +186,13 @@ export class DecoratorGenerator {
       schemaName = 'z.any()';
     }
 
-    const options: string[] = [];
+    const builder = FieldColumnJSONBuilder.create(schemaName);
 
-    if (field.description) {
-      options.push(`description: '${field.description}'`);
-    }
+    if (field.description) builder.description(field.description);
+    if (field.defaultValue !== undefined) builder.defaultValue(field.defaultValue);
+    if (!field.required) builder.required(false);
 
-    if (!field.required) {
-      options.push('nullable: true');
-    }
-
-    if (field.defaultValue !== undefined) {
-      options.push(`defaultValue: ${JSON.stringify(field.defaultValue)}`);
-    }
-
-    const optionsStr = options.length > 0 ? `, { ${options.join(', ')} }` : '';
-
-    return `@FieldColumnJSON(${schemaName}${optionsStr})`;
+    return builder.build();
   }
 
   /**

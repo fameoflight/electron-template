@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import * as fs from 'fs';
 import * as path from 'path';
+import { cyberOutput } from '../../utils/output';
 
 export function formatTypeScriptCode(code: string): string {
   const compilerOptions: ts.CompilerOptions = {
@@ -112,14 +113,14 @@ export function writeCodeToFile(
         finalContent = formatTypeScriptCode(content);
       } catch (formatError) {
         // If formatting fails, use the original content
-        console.warn(`Warning: Could not format ${filePath}, using original content`);
+        cyberOutput.warning(`Could not format ${filePath}, using original content`);
         finalContent = content;
       }
     }
 
     fs.writeFileSync(filePath, finalContent, encoding);
   } catch (error) {
-    console.error(`Error writing file ${filePath}:`, error);
+    cyberOutput.error(`Error writing file ${filePath}: ${error}`);
     throw new Error(`Failed to write file: ${filePath}`);
   }
 }

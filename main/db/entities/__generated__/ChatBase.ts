@@ -112,7 +112,7 @@ export abstract class ChatBase extends OwnedEntity {
   description?: string;
 
   @Field(() => ID, { description: 'Default LLM model for this chat' })
-  @FieldColumn(String, { required: true, description: 'Default LLM model for this chat (Foreign key for llmModel)' })
+  @FieldColumn(String, { description: 'Default LLM model for this chat (Foreign key for llmModel)' })
   llmModelId!: string;
 
   @FieldColumnEnum(ChatStatus, { description: 'Chat status for organization', defaultValue: ChatStatus.active })
@@ -124,7 +124,7 @@ export abstract class ChatBase extends OwnedEntity {
   @FieldColumn(String, { required: false, description: 'Custom system prompt override for this chat' })
   systemPrompt?: string;
 
-  @FieldColumnJSON(ChatTagsSchema, { description: 'Chat tags for organization', nullable: true })
+  @FieldColumnJSON(ChatTagsSchema, { description: 'Chat tags for organization', required: false })
   tags?: string[];
 
   @FieldColumn(String, { required: true, description: 'Chat title', maxLength: 255 })

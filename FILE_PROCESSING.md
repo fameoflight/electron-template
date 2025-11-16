@@ -88,7 +88,7 @@ mutation ProcessFile($id: String!) {
 
 ```typescript
 // React component
-import { useUploadFiles } from '@ui/hooks/useUploadFiles';
+import { useUploadFiles } from "@ui/hooks/useUploadFiles";
 
 const { uploadFiles, isUploading } = useUploadFiles();
 
@@ -99,11 +99,11 @@ const handleFileUpload = async (files: File[]) => {
       onFileUploaded: (file, fileId) => {
         console.log(`Uploaded ${file.name} as ${fileId}`);
         // ProcessFileJob is automatically enqueued at this point
-      }
+      },
     });
-    console.log('All files uploaded:', fileIds);
+    console.log("All files uploaded:", fileIds);
   } catch (error) {
-    console.error('Upload failed:', error);
+    console.error("Upload failed:", error);
   }
 };
 ```
@@ -113,8 +113,8 @@ const handleFileUpload = async (files: File[]) => {
 The `useUploadFiles` hook sends this GraphQL mutation:
 
 ```graphql
-mutation CreateFile($input: CreateFileInput!) {
-  createFile(input: $input) {
+mutation CreateFile($input: CreateFileEntityInput!) {
+  createFileEntity(input: $input) {
     id
     filename
     fullPath
@@ -125,6 +125,7 @@ mutation CreateFile($input: CreateFileInput!) {
 ```
 
 With variables like:
+
 ```json
 {
   "input": {
@@ -224,33 +225,30 @@ private getFileType(mimeType: string): FileFileType {
 ### Creating Test Files
 
 ```typescript
-import { createFileWithContent } from '@factories/fileFactory';
+import { createFileWithContent } from "@factories/fileFactory";
 
 // Create a file with actual content on disk
 const file = await createFileWithContent(dataSource, {
   userId: testUser.id,
-  filename: 'test-document.txt',
-  extension: '.txt',
-  content: 'This is test content for file processing'
+  filename: "test-document.txt",
+  extension: ".txt",
+  content: "This is test content for file processing",
 });
 ```
 
 ### Testing Job Execution
 
 ```typescript
-import { ProcessFileJob } from '@main/jobs/ProcessFileJob';
+import { ProcessFileJob } from "@main/jobs/ProcessFileJob";
 
 // Execute job immediately (synchronous for testing)
-const result = await ProcessFileJob.performNow(
-  testUser.id,
-  file.id
-);
+const result = await ProcessFileJob.performNow(testUser.id, file.id);
 
 expect(result.success).toBe(true);
 
 // Verify file was processed
-const updatedFile = await dataSource.getRepository('File').findOne({
-  where: { id: file.id }
+const updatedFile = await dataSource.getRepository("File").findOne({
+  where: { id: file.id },
 });
 
 expect(updatedFile.status).toBe(FileStatus.completed);
@@ -268,12 +266,12 @@ const job = await ProcessFileJob.performLater(
   {},
   {
     priority: 50,
-    timeoutMs: 300000
+    timeoutMs: 300000,
   }
 );
 
-expect(job.type).toBe('ProcessFileJob');
-expect(job.status).toBe('PENDING');
+expect(job.type).toBe("ProcessFileJob");
+expect(job.status).toBe("PENDING");
 ```
 
 ## Error Handling
@@ -281,6 +279,7 @@ expect(job.status).toBe('PENDING');
 ### File Not Found
 
 If the file doesn't exist on disk:
+
 ```typescript
 // Job marks file status as 'error'
 file.status = FileStatus.error;
@@ -290,6 +289,7 @@ console.error(`Error processing file ID ${file.id}: File not found`);
 ### Job Queue Failures
 
 If job enqueueing fails during file creation:
+
 ```typescript
 try {
   await ProcessFileJob.performLater(/*...*/);
@@ -337,7 +337,7 @@ query PendingFiles {
 
 ```typescript
 // Execute job to process ALL pending files
-await ProcessFileJob.performNow(userId, 'batch-processing-target');
+await ProcessFileJob.performNow(userId, "batch-processing-target");
 ```
 
 ### Re-process Specific File
@@ -389,7 +389,9 @@ Enable debug logging to see job execution:
 
 ```typescript
 // Job execution logs
-console.log(`✅ Enqueued ProcessFileJob for file ${file.id} (${file.filename})`);
+console.log(
+  `✅ Enqueued ProcessFileJob for file ${file.id} (${file.filename})`
+);
 console.log(`✅ Processed file ${file.id}: ${updatedFile.fileSize} bytes`);
 ```
 

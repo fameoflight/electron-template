@@ -129,6 +129,7 @@ constructor(
 **Target: 100-200 lines, max 300 for complex cases**
 
 **Real examples from this codebase:**
+
 - `ChatService.ts`: 162 lines - Data fetching and caching
 - `WindowManager.ts`: 101 lines - Window state management
 - `MessageService.ts`: 475 lines - Complete message lifecycle (exception: genuinely complex)
@@ -241,12 +242,14 @@ export const normalizeEmail = ...
 ```
 
 **Key Benefits:**
+
 - **Zero Duplication**: Single BaseField handles GraphQL + validation for all field types
 - **Context-Aware**: Different behavior for entity vs input contexts
 - **Consistent API**: Same options across FieldColumn and FieldInput decorators
 - **Type Safety**: Unified interfaces with proper inheritance
 
 **FieldInput System:**
+
 - **Code Generation**: Auto-generates input decorators with context-aware behavior
 - **Input Types**: `create` (required), `update` (optional), `createUpdate` (optional)
 - **Array Support**: Consistent `array: true` handling across all field types
@@ -268,13 +271,15 @@ export class CustomRepository<T extends { id: string; __typename?: string }> {
   }
 
   // All methods support both entity instances and plain objects:
-  async update(criteria: any, partialEntity: DeepPartial<T>): Promise<any>
-  async recover(entity: T | DeepPartial<T>): Promise<T>
-  async remove(entity: T | DeepPartial<T>): Promise<T>
+  async update(criteria: any, partialEntity: DeepPartial<T>): Promise<any>;
+  async recover(entity: T | DeepPartial<T>): Promise<T>;
+  async remove(entity: T | DeepPartial<T>): Promise<T>;
 }
 
 // ✅ OwnedRepository - User ownership security layer
-export class OwnedRepository<T extends OwnedEntity> extends CustomRepository<T> {
+export class OwnedRepository<
+  T extends OwnedEntity
+> extends CustomRepository<T> {
   // Automatic userId filtering for ALL operations
   // Auto-attaches userId on create
   // Verifies ownership on update/delete
@@ -283,6 +288,7 @@ export class OwnedRepository<T extends OwnedEntity> extends CustomRepository<T> 
 ```
 
 **Smart Loading Features:**
+
 - **100% Automatic**: CustomDataSource returns CustomRepository instances automatically
 - **Plain Object Support**: `save({ name: 'test' })` works transparently
 - **Constructor Preservation**: No spread operators that destroy entity constructors
@@ -291,22 +297,24 @@ export class OwnedRepository<T extends OwnedEntity> extends CustomRepository<T> 
 - **Smart Relationship Loading**: Post-save reload triggers SmartLoadingSubscriber for relationship loading
 
 **Usage Examples:**
+
 ```typescript
 // BaseResolver provides ready-to-use repositories
 const repo = this.getBaseRepository(User); // CustomRepository
 const ownedRepo = this.getOwnedRepository(Chat, ctx); // OwnedRepository
 
 // All methods support plain objects and entities
-await repo.save({ name: 'New User' });           // Plain object ✅
-await repo.save(existingUser);                  // Entity instance ✅
-await repo.update({ id: '123' }, { name: 'Updated' }); // Mixed ✅
+await repo.save({ name: "New User" }); // Plain object ✅
+await repo.save(existingUser); // Entity instance ✅
+await repo.update({ id: "123" }, { name: "Updated" }); // Mixed ✅
 
 // OwnedRepository enforces security automatically
-await ownedRepo.save({ title: 'New Chat' });     // Auto-attaches userId ✅
-await ownedRepo.findById(chatId);                // Verifies ownership ✅
+await ownedRepo.save({ title: "New Chat" }); // Auto-attaches userId ✅
+await ownedRepo.findById(chatId); // Verifies ownership ✅
 ```
 
 **DRY Utility Functions:**
+
 ```typescript
 // Internal utilities that make the pattern DRY
 private detectEntityType(input: any): boolean        // Entity vs plain object
@@ -342,14 +350,14 @@ export class Post extends BaseEntity {
   @FieldColumnEnum(PostStatus, {
     description: "Post status",
     required: true,
-    defaultValue: PostStatus.DRAFT
+    defaultValue: PostStatus.DRAFT,
   })
   status!: PostStatus;
 
   @FieldColumnEnum(PostTag, {
     description: "Post tags",
     array: true,
-    required: false
+    required: false,
   })
   tags?: PostTag[];
 }
@@ -360,11 +368,13 @@ export class Post extends BaseEntity {
 **`@FieldColumnEnum`** combines: `@Field` + `@Column` + enum registration + array handling
 
 **Array Handling:**
+
 - Use `array: true` for array fields (both string and enum arrays)
 - SQLite: Arrays stored as JSON with ArrayTransformer
 - PostgreSQL: Native array support with `array: true`
 
 **Enum Arrays:**
+
 ```typescript
 // Before (5 decorators)
 @Field(() => [PostStatus!], { description: 'Post status' })
@@ -385,6 +395,7 @@ statuses!: PostStatus[];
 ```
 
 **BaseEntity includes:**
+
 - `id`: UUID (crypto-random)
 - `createdAt`, `updatedAt`: Date
 - `deletedAt`: Date | null (soft delete)
@@ -394,7 +405,7 @@ statuses!: PostStatus[];
 
 ```typescript
 // Chat.ts - 41 lines total
-@Entity('chats')
+@Entity("chats")
 export class Chat extends ChatBase {
   async generateTitle(): Promise<{ title: string; description: string }> {
     // Custom business logic
@@ -406,6 +417,7 @@ export class Chat extends ChatBase {
 ```
 
 **Pattern:** Most logic in generated base. Extensions only add:
+
 - Custom relationships
 - Computed properties
 - Helper methods
@@ -448,6 +460,7 @@ export class MessageService {
 ```
 
 **Why this works:**
+
 - No constructor complexity
 - No instance state to manage
 - Clear, composable functions
@@ -494,6 +507,7 @@ class ChatService {
 ```
 
 **What makes this readable:**
+
 - Single clear constructor (1 parameter)
 - Small methods (3-25 lines each)
 - Clear data flow: constructor → getChat → other methods use cached data
@@ -565,11 +579,13 @@ const result = await window.electron["custom:doSomething"]({ id: "123" });
 ### 6. React Component Pattern
 
 **Component size distribution:**
+
 - Small reusable: 25-90 lines (MessageVersionView, LLMModelSelect, CodeBlock)
 - Medium pages: 150-200 lines (ChatNodePage, MessageList)
 - Complex forms: 250-300 lines (UnifiedMessageInput)
 
 **MessageList.tsx structure (191 lines):**
+
 ```typescript
 // 1. Fragment definition
 const fragment = graphql`...`;
@@ -591,6 +607,7 @@ export default function MessageList({ chatId }) {
 ```
 
 **Pattern:**
+
 - Extract sub-components at 100+ lines
 - Helper functions above component
 - Single responsibility per component
@@ -622,6 +639,7 @@ yarn type-check
 ### Field Types
 
 **Basic Types:**
+
 - `string` → VARCHAR
 - `text` → TEXT
 - `number` → INTEGER
@@ -632,11 +650,13 @@ yarn type-check
 - `json` → JSON
 
 **Array Types:**
+
 - `array: true` with any basic type → JSON (SQLite) / Array (PostgreSQL)
 - Enum arrays: `@FieldColumnEnum(MyEnum, { array: true })`
 - String arrays: `@FieldColumn(String, { array: true })`
 
 **Decorator Examples:**
+
 ```typescript
 // Basic fields
 @FieldColumn(String, { description: 'Name', required: true })
@@ -753,26 +773,43 @@ ui/App/index.tsx               # App wrapper
 ## Resources
 
 **Internal Docs:**
+
 - [CONSOLE.md](./CONSOLE.md) - Interactive console guide (REPL, factories, utilities)
 - [/cli/README.md](/cli/README.md) - Code generation CLI
 - [/cli/GENERATOR.md](/cli/GENERATOR.md) - Generator details
 
 **External Docs:**
+
 - [Electron](https://www.electronjs.org/docs) | [TypeORM](https://typeorm.io/) | [Type-GraphQL](https://typegraphql.com/)
 - [Relay](https://relay.dev/) | [Vite](https://vitejs.dev/) | [Vitest](https://vitest.dev/)
 
 ## Anti-Patterns to Avoid
 
 ### ❌ Over-Parameterization
+
 ```typescript
 // BAD
-function createMessage(chatId, content, role, userId, llmModelId, priority, timeout, attachments) {}
+function createMessage(
+  chatId,
+  content,
+  role,
+  userId,
+  llmModelId,
+  priority,
+  timeout,
+  attachments
+) {}
 
 // GOOD
-function createMessage(chatId: string, content: string, options: MessageOptions) {}
+function createMessage(
+  chatId: string,
+  content: string,
+  options: MessageOptions
+) {}
 ```
 
 ### ❌ Complex Constructors with DI
+
 ```typescript
 // BAD - 6+ dependencies
 constructor(
@@ -792,9 +829,11 @@ constructor(opts: ServiceOptions) {
 ```
 
 ### ❌ God Classes
+
 Every file in this codebase has a clear boundary. Even large files (JobQueue: 541 lines, MessageService: 475 lines) have ONE clear purpose.
 
 ### ❌ Deep Nesting
+
 ```typescript
 // BAD
 if (condition1) {
@@ -825,6 +864,20 @@ When adding features:
 7. ✅ Type check with `yarn type-check`
 8. ✅ Run tests with `yarn test`
 9. ✅ Update CLAUDE.md if adding patterns
+
+## Refactor Guidelines (repository-specific)
+
+Follow the project's refactor rules for readable, DRY, encapsulated code. The full guidelines live at `.claude/skills/refactor.md`; key rules for an AI agent to enforce or follow are:
+
+- **Maximum 5 parameters (ever):** prefer an options object (`opts`) when you need 3+ params.
+- **Constructors: max 2 parameters:** use an `opts` object for clarity and extensibility.
+- **Prefer small helper methods:** extract repeated logic into helpers (<20 lines) to remove friction.
+- **Static vs instance:** Use static methods for stateless utilities (MessageService pattern); use instances for state/caching (ChatService pattern).
+- **Max 5 exports per file & small files:** keep files ~100–200 lines; avoid >300 lines unless justified.
+- **Convenience getters:** centralize repository access (e.g., `getRepositories()`) to keep code DRY.
+- **Encapsulation:** hide internals behind a small public API; avoid exposing repositories or caches directly.
+
+When making automated edits, prefer the `opts` pattern and small, focused changes. See `.claude/skills/refactor.md` for examples and the full checklist the team follows.
 
 ---
 

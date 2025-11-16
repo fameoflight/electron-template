@@ -172,9 +172,6 @@ export default function DetailScreen() {
     <div>
 
       <Sidebar
-        navigation={navigation}
-        teams={teams}
-        userProfile={userProfile}
         isOpen={sidebarOpen}
         onToggle={setSidebarOpen}
       />

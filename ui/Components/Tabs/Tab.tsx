@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@ui/Components/Motion';
 import { TabVariant, tabVariants, TabVariantConfig } from './variants';
 import { tabMotionVariants } from '../Motion/variants';
 

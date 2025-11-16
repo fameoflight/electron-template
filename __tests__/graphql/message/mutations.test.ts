@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { initializeGraphQLSchema, executeGraphQLQuery } from '@main/graphql/server';
-import { fromGlobalIdToLocalId } from '@base/graphql/index';
+import { fromGlobalIdToLocalId, toGlobalId } from '@base/graphql/index';
 import {
   createTestDatabase,
   cleanupTestDatabase,
@@ -20,6 +20,7 @@ import { MessageVersionStatus } from '@db/entities/__generated__/MessageVersionB
 import { setupPolly, PollyContext } from '@tests/polly/helpers';
 import { createConnection, createLLMModel, createChat } from '@factories/index';
 import { EntityClasses, getEntity, loadEntities } from '@main/db/entityMap';
+import { MessageVersion } from '@main/db/entities/MessageVersion.js';
 import JobQueue from '@main/services/JobQueue';
 import { StreamMessageVersionJob } from '@main/jobs/StreamMessageVersionJob';
 import { DataSource } from 'typeorm';
@@ -56,12 +57,12 @@ describe('Message GraphQL Mutations', () => {
     Message = entities.Message;
     Job = getEntity('Job');
 
-    // Set up JobQueue for job integration tests
+    // Set up JobQueue for job integration tests (create but don't start)
     jobQueue = JobQueue.getInstance()!;
     if (!jobQueue) {
       const newJobQueue = new JobQueue();
       newJobQueue.registerJob(StreamMessageVersionJob);
-      await newJobQueue.start();
+      // Don't start the queue - jobs should remain PENDING for testing
       // Store the instance for cleanup
       (global as any).__testJobQueue = newJobQueue;
     }
@@ -71,10 +72,14 @@ describe('Message GraphQL Mutations', () => {
     DataSourceProvider.clearTestDataSource();
     await cleanupTestDatabase(dataSource);
 
-    // Clean up job queue
+    // Clean up job queue (safe stop even if not running)
     const testJobQueue = (global as any).__testJobQueue;
     if (testJobQueue) {
-      await testJobQueue.stop();
+      try {
+        await testJobQueue.stop();
+      } catch (error) {
+        // Ignore errors if queue wasn't running
+      }
       delete (global as any).__testJobQueue;
     }
   });
@@ -258,6 +263,161 @@ describe('Message GraphQL Mutations', () => {
       expect(result.errors).toBeDefined();
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.data?.sendMessage).toBeUndefined();
+    });
+  });
+
+  describe('updateMessage mutation', () => {
+    let connection: any;
+    let llmModel: any;
+    let chat: any;
+    let message: any;
+
+    beforeEach(async () => {
+      // Create connection for AI provider
+      connection = await createConnection(dataSource, {
+        userId: testData.id,
+        name: 'Test OpenAI Connection',
+        apiKey: 'not-required',
+        baseUrl: 'http://localhost:1234/v1',
+        kind: ConnectionKind.OPENAI,
+        provider: 'OpenAI'
+      });
+
+      // Create LLM model
+      llmModel = await createLLMModel(dataSource, {
+        connectionId: connection.id,
+        name: 'Google Gemma 3 4B',
+        modelIdentifier: 'google/gemma-3-4b',
+        temperature: 0.7,
+        contextLength: 4096,
+        capabilities: [LLMModelCapability.TEXT],
+        userId: testData.id
+      });
+
+      // Create chat
+      chat = await createChat(dataSource, {
+        title: 'Test Chat',
+        llmModelId: llmModel.id,
+        userId: testData.id
+      });
+
+      // Create an initial message to update
+      const messageRepo = dataSource.getRepository(Message);
+      const messageVersionRepo = dataSource.getRepository('MessageVersion');
+
+      // Create message version first
+      const version = await messageVersionRepo.save({
+        content: 'Original message content',
+        status: 'completed',
+        userId: testData.id,
+        messageId: null, // Will be set after creating the message
+        llmModelId: llmModel.id
+      });
+
+      // Create message
+      message = await messageRepo.save({
+        chatId: chat.id,
+        role: MessageRole.user,
+        userId: testData.id,
+        currentVersionId: version.id,
+        llmModelId: llmModel.id
+      });
+
+      // Update version with messageId
+      await messageVersionRepo.update(version.id, { messageId: message.id });
+    });
+
+    it('should update message currentVersionId successfully', async () => {
+      // Create a new version to update to
+      const messageVersionRepo = dataSource.getRepository('MessageVersion');
+      const newVersion = await messageVersionRepo.save({
+        content: 'Updated message content',
+        status: 'completed',
+        userId: testData.id,
+        messageId: null,
+        llmModelId: llmModel.id
+      });
+
+      const mutation = `
+        mutation UpdateMessage($input: UpdateMessageInput!) {
+          updateMessage(input: $input) {
+            id
+            role
+            currentVersionId
+            chat { id }
+          }
+        }
+      `;
+
+      const variables = {
+        input: {
+          id: message.id, // GraphQL automatically handles Relay ID conversion
+          chatId: chat.id, // Required field based on the current (buggy) input generation
+          currentVersionId: newVersion.id
+        }
+      };
+
+      const context = createAuthContext(testData);
+      const result = await executeGraphQLQuery<any>(mutation, variables, context);
+
+      expect(result.errors).toStrictEqual([]);
+      expect(result.data).toBeDefined();
+      expect(result.data.updateMessage).toBeDefined();
+
+      const updatedMessage = result.data.updateMessage;
+      expect(updatedMessage).toBeDefined();
+      expect(updatedMessage.role).toBe(MessageRole.user);
+
+      // Extract local ID from the global ID returned by GraphQL
+      const returnedLocalId = fromGlobalIdToLocalId(updatedMessage.id);
+      expect(returnedLocalId).toBe(message.id);
+
+      // Verify the change was persisted in database
+      const messageRepo = dataSource.getRepository(Message);
+      const persistedMessage = await messageRepo.findOne({
+        where: { id: message.id },
+        relations: ['currentVersion']
+      });
+
+      expect(persistedMessage).toBeDefined();
+      expect(persistedMessage!.currentVersionId).toBe(newVersion.id);
+    });
+
+    it('should update message with partial data (only currentVersionId)', async () => {
+      // Create a new version to update to
+      const messageVersionRepo = dataSource.getRepository('MessageVersion');
+      const newVersion = await messageVersionRepo.save({
+        content: 'Another updated content',
+        status: 'completed',
+        userId: testData.id,
+        messageId: null,
+        llmModelId: llmModel.id
+      });
+
+      const mutation = `
+        mutation UpdateMessage($input: UpdateMessageInput!) {
+          updateMessage(input: $input) {
+            id
+            currentVersionId
+          }
+        }
+      `;
+
+      // Only update currentVersionId, other fields should remain unchanged
+      const variables = {
+        input: {
+          id: message.id,
+          chatId: chat.id, // Required field based on the current (buggy) input generation
+          currentVersionId: newVersion.id
+          // Note: not sending llmModelId, role - they should remain unchanged
+        }
+      };
+
+      const context = createAuthContext(testData);
+      const result = await executeGraphQLQuery<any>(mutation, variables, context);
+
+      expect(result.errors).toStrictEqual([]);
+      expect(result.data.updateMessage.currentVersionId).toBe(newVersion.id);
     });
   });
 });

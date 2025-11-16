@@ -6,6 +6,12 @@ type BaseEntity implements Node {
   updatedAt: DateTimeISO!
 }
 
+"""Input for canceling a message version"""
+input CancelMessageVersionInput {
+  """Input: Message version to cancel (ID of MessageVersion)"""
+  messageVersionId: String!
+}
+
 """Chat conversation entity for managing AI conversations"""
 type Chat implements Node {
   createdAt: DateTimeISO!
@@ -119,8 +125,8 @@ type ConnectionEdge {
 
 """Generated schema"""
 type ConnectionModelType {
-  id: String
-  name: String
+  id: String!
+  name: String!
   provider: String
   version: String
 }
@@ -194,8 +200,8 @@ input CreateEmbeddingModelInput {
   systemPrompt: String
 }
 
-"""Input for creating File"""
-input CreateFileInput {
+"""Input for creating FileEntity"""
+input CreateFileEntityInput {
   """
   Input: File extension (e.g., jpg, png, pdf). Required field. Max 10 characters.
   """
@@ -306,7 +312,7 @@ input CreateUpdateConnectionInput {
 """Input for creating or updating EmbeddingModel"""
 input CreateUpdateEmbeddingModelInput {
   """Input: Connection for this LLM model (ID of Connection)"""
-  connectionId: String!
+  connectionId: String
 
   """Input: Maximum context length supported by the model. Required field."""
   contextLength: Float
@@ -339,7 +345,7 @@ input CreateUpdateLLMModelInput {
   capabilities: [LLMBaseCapabilities!]
 
   """Input: Connection for this LLM model (ID of Connection)"""
-  connectionId: String!
+  connectionId: String
 
   """Input: Context length. Required field."""
   contextLength: Float
@@ -388,7 +394,7 @@ input CreateUpdateMessageVersionInput {
   isRegenerated: Boolean
 
   """Input: LLM model used to generate this version (ID of LLMModel)"""
-  llmModelId: String!
+  llmModelId: String
 
   """Input: Parent message ID (ID of Message)"""
   messageId: String
@@ -463,8 +469,25 @@ type EmbeddingModelEdge {
   node: EmbeddingModel!
 }
 
+"""File type category"""
+enum FileBaseFileType {
+  audio
+  document
+  image
+  other
+  video
+}
+
+"""File processing status"""
+enum FileBaseStatus {
+  completed
+  error
+  pending
+  processing
+}
+
 """File entity for storing file references with AI-generated descriptions"""
-type File implements Node {
+type FileEntity implements Node {
   createdAt: DateTimeISO!
   deletedAt: DateTimeISO
 
@@ -512,32 +535,15 @@ type File implements Node {
   userId: String!
 }
 
-"""File type category"""
-enum FileBaseFileType {
-  audio
-  document
-  image
-  other
-  video
-}
-
-"""File processing status"""
-enum FileBaseStatus {
-  completed
-  error
-  pending
-  processing
-}
-
-type FileConnection {
-  edges: [FileEdge!]!
+type FileEntityConnection {
+  edges: [FileEntityEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
 }
 
-type FileEdge {
+type FileEntityEdge {
   cursor: String!
-  node: File!
+  node: FileEntity!
 }
 
 """
@@ -675,7 +681,7 @@ type MessageVersion implements Node {
   deletedAt: DateTimeISO
 
   """Files attached to this message version"""
-  files: [File!]!
+  files: [FileEntity!]!
 
   """Time in milliseconds taken to generate this response"""
   generationTime: Float
@@ -737,7 +743,7 @@ type Mutation {
   archiveChat(id: String!): Chat!
 
   """Cancel a streaming message version"""
-  cancelMessageVersion(messageVersionId: String!): Message!
+  cancelMessageVersion(input: CancelMessageVersionInput!): MessageVersion
 
   """Create new Chat"""
   createChat(input: CreateChatInput!): Chat!
@@ -748,8 +754,8 @@ type Mutation {
   """Create new EmbeddingModel"""
   createEmbeddingModel(input: CreateEmbeddingModelInput!): EmbeddingModel!
 
-  """Create new File"""
-  createFile(input: CreateFileInput!): File!
+  """Create file with deduplication"""
+  createFileEntity(input: CreateFileEntityInput!): FileEntity!
 
   """Create new LLMModel"""
   createLLMModel(input: CreateLLMModelInput!): LLMModel!
@@ -779,8 +785,8 @@ type Mutation {
   """Hard delete EmbeddingModel (permanent)"""
   deleteEmbeddingModel(id: String!): Boolean!
 
-  """Hard delete File (permanent)"""
-  deleteFile(id: String!): Boolean!
+  """Hard delete FileEntity (permanent)"""
+  deleteFileEntity(id: String!): Boolean!
 
   """Hard delete LLMModel (permanent)"""
   deleteLLMModel(id: String!): Boolean!
@@ -800,8 +806,8 @@ type Mutation {
   """Soft delete EmbeddingModel"""
   destroyEmbeddingModel(id: String!): Boolean!
 
-  """Soft delete File"""
-  destroyFile(id: String!): Boolean!
+  """Soft delete FileEntity"""
+  destroyFileEntity(id: String!): Boolean!
 
   """Soft delete LLMModel"""
   destroyLLMModel(id: String!): Boolean!
@@ -813,6 +819,11 @@ type Mutation {
   destroyMessageVersion(id: String!): Boolean!
   login(input: LoginInput!): User!
 
+  """
+  Regenerate assistant response from a specific version (creates new version)
+  """
+  regenerateMessage(input: RegenerateMessageInput!): Message!
+
   """Restore soft-deleted Chat"""
   restoreChat(id: String!): Chat
 
@@ -822,8 +833,8 @@ type Mutation {
   """Restore soft-deleted EmbeddingModel"""
   restoreEmbeddingModel(id: String!): EmbeddingModel
 
-  """Restore soft-deleted File"""
-  restoreFile(id: String!): File
+  """Restore soft-deleted FileEntity"""
+  restoreFileEntity(id: String!): FileEntity
 
   """Restore soft-deleted LLMModel"""
   restoreLLMModel(id: String!): LLMModel
@@ -915,17 +926,17 @@ type Query {
   """Fetch EmbeddingModel array"""
   embeddingModelsArray(kind: String! = "default"): [EmbeddingModel!]!
 
-  """Fetch File by ID"""
-  file(id: String!): File
+  """Fetch FileEntity collection (paginated)"""
+  fileEntities(after: String, before: String, first: Int, kind: String! = "default", last: Int): FileEntityConnection!
 
-  """Fetch File collection (paginated)"""
-  files(after: String, before: String, first: Int, kind: String! = "default", last: Int): FileConnection!
+  """Fetch FileEntity array"""
+  fileEntitiesArray(kind: String! = "default"): [FileEntity!]!
 
-  """Fetch File array"""
-  filesArray(kind: String! = "default"): [File!]!
+  """Fetch FileEntity by ID"""
+  fileEntity(id: String!): FileEntity
 
-  """Fetch Files by owner type and optional owner ID"""
-  filesByOwnerType(ownerId: String, ownerType: String): [File!]!
+  """Find file by content hash"""
+  findFileEntityByHash(fileHash: String!): FileEntity
 
   """Fetch LLMModel by ID"""
   lLMModel(id: String!): LLMModel
@@ -960,6 +971,17 @@ type Query {
 }
 
 """
+Input for regenerating an assistant response from a specific message version
+"""
+input RegenerateMessageInput {
+  """LLM model ID to use for regeneration (optional)"""
+  llmModelId: String
+
+  """Assistant message version ID to regenerate from"""
+  messageVersionId: String!
+}
+
+"""
 Unified input for sending messages (creates new chat if chatId is not provided)
 """
 input SendMessageInput {
@@ -977,9 +999,6 @@ input SendMessageInput {
 
   """System prompt override (only used when creating new chat)"""
   systemPrompt: String
-
-  """Chat title (only used when creating new chat)"""
-  title: String
 }
 
 """Input for updating Connection"""
@@ -1009,7 +1028,7 @@ input UpdateConnectionInput {
 """Input for updating EmbeddingModel"""
 input UpdateEmbeddingModelInput {
   """Input: Connection for this LLM model (ID of Connection)"""
-  connectionId: String!
+  connectionId: String
 
   """Input: Maximum context length supported by the model. Required field."""
   contextLength: Float
@@ -1042,7 +1061,7 @@ input UpdateLLMModelInput {
   capabilities: [LLMBaseCapabilities!]
 
   """Input: Connection for this LLM model (ID of Connection)"""
-  connectionId: String!
+  connectionId: String
 
   """Input: Context length. Required field."""
   contextLength: Float
@@ -1069,10 +1088,10 @@ input UpdateLLMModelInput {
 """Input for updating Message"""
 input UpdateMessageInput {
   """Input: Parent chat ID (ID of Chat)"""
-  chatId: String!
+  chatId: String
 
   """Input: Current version of the message (ID of MessageVersion)"""
-  currentVersionId: String!
+  currentVersionId: String
 
   """ID of Message to update"""
   id: String!
@@ -1111,7 +1130,7 @@ input UpdateMessageVersionInput {
   isRegenerated: Boolean
 
   """Input: LLM model used to generate this version (ID of LLMModel)"""
-  llmModelId: String!
+  llmModelId: String
 
   """Input: Parent message ID (ID of Message)"""
   messageId: String

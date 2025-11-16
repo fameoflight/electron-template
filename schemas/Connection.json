@@ -51,6 +51,10 @@
       ],
       "itemSchema": {
         "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -64,13 +68,7 @@
           "provider": {
             "type": "string"
           }
-        },
-        "required": [
-          "id",
-          "name",
-          "version",
-          "provider"
-        ]
+        }
       }
     }
   }

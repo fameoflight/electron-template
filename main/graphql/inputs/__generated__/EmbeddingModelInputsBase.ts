@@ -93,7 +93,7 @@ export class UpdateEmbeddingModelInputBase extends BaseInput {
   @Field(() => String, { description: 'ID of EmbeddingModel to update' })
   id!: string;
 
-  @FieldInput(String, { inputType: 'update', description: 'Input: Connection for this LLM model (ID of Connection)', required: true })
+  @FieldInput(String, { inputType: 'update', description: 'Input: Connection for this LLM model (ID of Connection)', required: false })
   connectionId?: string;
 
   @FieldInput(Number, { inputType: 'update', description: 'Input: Maximum context length supported by the model. Required field.' })
@@ -132,7 +132,7 @@ export class CreateUpdateEmbeddingModelInputBase extends BaseInput {
   @IsOptional()
   id?: string;
 
-  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Connection for this LLM model (ID of Connection)', required: true })
+  @FieldInput(String, { inputType: 'createUpdate', description: 'Input: Connection for this LLM model (ID of Connection)', required: false })
   connectionId?: string;
 
   @FieldInput(Number, { inputType: 'createUpdate', description: 'Input: Maximum context length supported by the model. Required field.' })

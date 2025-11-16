@@ -5,6 +5,9 @@ import { getDatabasePath } from '@base/utils/index.js';
 import { getEntitiesArray as getEntitiesArrayFromMap } from './entityMap.js';
 import { CustomDataSource } from '@main/base/CustomDataSource.js';
 
+// Re-export CustomDataSource for convenience
+export { CustomDataSource } from '@main/base/CustomDataSource.js';
+
 import { createDataSource } from './utils/index.js';
 import { backupDatabase, restoreFromBackup, cleanupOldBackups } from './utils/migrations.js';
 
@@ -33,19 +36,25 @@ export const applySQLiteOptimizations = async (dataSource: DataSource): Promise<
 
     // ⚡ Performance optimizations for frequent writes
     { sql: 'PRAGMA journal_mode = WAL', description: 'Write-Ahead Logging (concurrent reads/writes)' },
-    { sql: 'PRAGMA synchronous = NORMAL', description: 'Balance safety and performance' },
-    { sql: 'PRAGMA cache_size = -32768', description: '32MB cache for better performance' },
+    // Use 'PRAGMA synchronous = OFF' for max speed, but risk of data loss on crash.
+    // 'NORMAL' is a safer compromise, but can still cause locking under heavy write load.
+    // Try 'OFF' if you can tolerate some risk, or keep 'NORMAL' for more safety.
+    { sql: `PRAGMA synchronous = OFF`, description: 'Max performance (riskier, but reduces locking)' },
+
+    // Reduce cache size if you have many concurrent connections (prevents locking)
+    { sql: 'PRAGMA cache_size = -16384', description: '16MB cache (smaller to reduce lock contention)' },
+
     { sql: 'PRAGMA temp_store = MEMORY', description: 'Keep temp tables in memory' },
     { sql: 'PRAGMA mmap_size = 134217728', description: '128MB memory-mapped I/O' },
 
-    // 🔒 Locking for better concurrency
-    { sql: 'PRAGMA busy_timeout = 30000', description: 'Wait 30s for locks instead of failing' },
+    // Lower busy_timeout to avoid long waits on lock (tune as needed)
+    { sql: 'PRAGMA busy_timeout = 5000', description: 'Wait 5s for locks (shorter to fail fast)' },
 
     // 🧹 Memory management
     { sql: 'PRAGMA shrink_memory', description: 'Clean up memory' },
 
-    // ⚡ WAL optimizations
-    { sql: 'PRAGMA wal_autocheckpoint = 1000', description: 'Checkpoint every 1000 pages' }
+    // WAL checkpointing: lower value = more frequent, less lock buildup
+    { sql: 'PRAGMA wal_autocheckpoint = 500', description: 'Checkpoint every 500 pages (more frequent)' }
   ];
 
   for (const { sql, description } of optimizations) {
@@ -74,7 +83,11 @@ export const getDatabaseSettings = async (dataSource: DataSource): Promise<void>
     { sql: 'PRAGMA cache_size', name: 'Cache size (KB)' },
     { sql: 'PRAGMA temp_store', name: 'Temp store' },
     { sql: 'PRAGMA mmap_size', name: 'Memory-mapped I/O (bytes)' },
-    { sql: 'PRAGMA busy_timeout', name: 'Busy timeout (ms)' }
+    { sql: 'PRAGMA busy_timeout', name: 'Busy timeout (ms)' },
+    { sql: 'PRAGMA wal_autocheckpoint', name: 'WAL autocheckpoint (pages)' },
+    { sql: 'PRAGMA locking_mode', name: 'Locking mode' },
+    { sql: 'PRAGMA page_size', name: 'Page size (bytes)' },
+    { sql: 'PRAGMA max_page_count', name: 'Max page count' },
   ];
 
   for (const { sql, name } of settings) {

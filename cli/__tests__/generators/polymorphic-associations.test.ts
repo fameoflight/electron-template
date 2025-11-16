@@ -2,7 +2,7 @@
  * Tests for polymorphic association support in entity generation
  */
 
-import { EntityJsonParser } from '@cli/parsers/EntityJsonParser';
+import { EntityJsonParser, EntityField, ParsedEntity } from '@cli/parsers/EntityJsonParser';
 import { EntityGenerator } from '@cli/generators/EntityGenerator';
 import { TypeMapper } from '@cli/generators/utils/TypeMapper';
 import { FieldPreparator } from '@cli/generators/preparators/FieldPreparator';
@@ -29,7 +29,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Basic Polymorphic Fields', () => {
-    it('should generate polymorphic columns and methods correctly', () => {
+    it('should generate polymorphic columns and methods correctly', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Comment',
@@ -59,7 +59,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       // Verify files were created
       expect(fs.existsSync(result.basePath)).toBe(true);
@@ -88,7 +88,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Optional Polymorphic Fields', () => {
-    it('should generate optional polymorphic fields correctly', () => {
+    it('should generate optional polymorphic fields correctly', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Activity',
@@ -113,7 +113,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       const baseContent = fs.readFileSync(result.basePath, 'utf-8');
 
@@ -124,7 +124,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Multiple Polymorphic Fields', () => {
-    it('should handle multiple polymorphic fields in one entity', () => {
+    it('should handle multiple polymorphic fields in one entity', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Notification',
@@ -154,7 +154,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       const baseContent = fs.readFileSync(result.basePath, 'utf-8');
 
@@ -175,7 +175,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
   });
 
   describe('Integration with Regular Fields', () => {
-    it('should work alongside regular fields and relationships', () => {
+    it('should work alongside regular fields and relationships', async () => {
       const schema = {
         $schema: './entity-schema.json',
         name: 'Like',
@@ -204,7 +204,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
       const entity = EntityJsonParser.parseFile(schemaContent);
 
       const generator = new EntityGenerator(entity, projectRoot, tempDir);
-      const result = generator.generate();
+      const result = await generator.generate();
 
       const baseContent = fs.readFileSync(result.basePath, 'utf-8');
 
@@ -226,7 +226,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
 
   describe('TypeMapper Integration', () => {
     it('should correctly map polymorphic field types', () => {
-      const polymorphicField = {
+      const polymorphicField: EntityField = {
         name: 'commentable',
         type: 'polymorphic',
         required: true
@@ -251,7 +251,7 @@ describe('Entity Generator - Polymorphic Associations', () => {
 
   describe('FieldPreparator Integration', () => {
     it('should prepare polymorphic fields correctly', () => {
-      const entity = {
+      const entity: ParsedEntity = {
         name: 'Comment',
         fields: [
           {
@@ -265,7 +265,8 @@ describe('Entity Generator - Polymorphic Associations', () => {
             type: 'text',
             required: true
           }
-        ]
+        ],
+        indexes: []
       };
 
       const preparator = new FieldPreparator(entity);
@@ -275,19 +276,19 @@ describe('Entity Generator - Polymorphic Associations', () => {
       // Should have polymorphic columns + regular fields
       expect(fields.length).toBe(3); // commentableId, commentableType, content
 
-      const idField = fields.find(f => f.name === 'commentableId');
-      const typeField = fields.find(f => f.name === 'commentableType');
+      const idField = fields.find(f => f!.name === 'commentableId');
+      const typeField = fields.find(f => f!.name === 'commentableType');
 
       expect(idField).toBeDefined();
       expect(typeField).toBeDefined();
-      expect(idField?.isPolymorphicId).toBe(true);
-      expect(typeField?.isPolymorphicType).toBe(true);
+      expect((idField as any)?.isPolymorphicId).toBe(true);
+      expect((typeField as any)?.isPolymorphicType).toBe(true);
 
       // Test polymorphic methods generation
       expect(polymorphicMethods.length).toBe(1);
       expect(polymorphicMethods[0]).toEqual({
         fieldName: 'commentable',
-        methodName: 'getCommentable',
+        getterName: 'getCommentable',
         idColumn: 'commentableId',
         typeColumn: 'commentableType',
         required: true
